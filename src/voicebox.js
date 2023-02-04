@@ -48,7 +48,6 @@ module.exports = class Voicebox{
       query_data.intonationScale = param.intonation;
       query_data.volumeScale = param.volume;
 
-      console.log(query_data);
       const synth = await this.rpc.post(`synthesis?speaker=${voice_id}`, JSON.stringify(query_data), {
         responseType: 'arraybuffer',
         headers: {
