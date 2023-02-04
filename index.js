@@ -10,6 +10,7 @@ const fs = require('fs');
 const kuromojijs = require('kuromoji');
 const { toHiragana } = require('wanakana');
 const emoji_regex = require('emoji-regex');
+const log4js = require('log4js');
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
@@ -31,6 +32,11 @@ const client = new Client({
 
 const connections_map = new Map();
 
+const logger = log4js.getLogger();
+logger.level = "debug";
+
+if(process.env.NODE_ENV === "production") logger.level = "info";
+
 let voice_list = [];
 let kuromoji;
 
@@ -45,7 +51,7 @@ async function main(){
 
   kuromojijs.builder({ dicPath: DIC_PATH }).build((err, tokenizer) => {
     if(err != null){
-      console.log(err);
+      logger.info(err);
       process.exit(1);
     }
 
@@ -54,7 +60,7 @@ async function main(){
 
   voice_list = await get_voicelist();
 
-  console.debug(voice_list);
+  logger.debug(voice_list);
 
   const setvoice_commands = [];
 
@@ -87,17 +93,17 @@ async function main(){
     for(const commandName in commands) data.push(commands[commandName].data);
 
     data = data.concat(setvoice_commands);
-    console.debug(data);
+    logger.debug(data);
 
     await client.application.commands.set(data);
-    console.log("Ready!");
-  })
+    logger.info("Ready!");
+  });
 
   client.on('interactionCreate', async (interaction) => {
     if(!(interaction.isChatInputCommand())) return;
     if(!(interaction.inGuild())) return;
 
-    console.debug(interaction);
+    logger.debug(interaction);
 
     // コマンド実行
     const command = commands[interaction.commandName];
@@ -155,7 +161,7 @@ async function main(){
           break;
       }
     } catch (error) {
-      console.log(error);
+      logger.info(error);
       await interaction.reply({
           content: 'そんなコマンドないよ。',
       });
@@ -166,7 +172,7 @@ async function main(){
     if(!(msg.guild)) return;
     if(msg.author.bot) return;
 
-    console.debug(msg);
+    logger.debug(msg);
 
     if(msg.content === "s"){
       skip_current_text(msg.guild.id);
@@ -187,7 +193,7 @@ async function main(){
     client.destroy();
   });
   process.on("exit", exitCode => {
-    console.log("Exit!");
+    logger.info("Exit!");
     client.destroy();
   });
 
@@ -225,18 +231,18 @@ function add_text_queue(msg){
 
   // 1
   let content = replace_at_dict(msg.cleanContent, msg.guild.id);
-  console.debug(`content(replace dict): ${content}`);
+  logger.debug(`content(replace dict): ${content}`);
   // 2
   content = clean_message(content);
-  console.debug(`content(clean): ${content}`);
+  logger.debug(`content(clean): ${content}`);
   // 3
   content = fix_reading(content);
-  console.debug(`content(fix reading): ${content}`);
+  logger.debug(`content(fix reading): ${content}`);
 
   const q = { str: content, id: msg.member.id }
 
   const connection = connections_map.get(msg.guild.id);
-  console.debug(`play connection: ${connection}`);
+  logger.debug(`play connection: ${connection}`);
   if(!connection) return;
 
   connection.queue.push(q);
@@ -253,23 +259,23 @@ async function play(guild_id){
   if(connection.is_play || connection.queue.length === 0) return;
 
   connection.is_play = true;
-  console.debug(`play start`);
+  logger.debug(`play start`);
 
   const q = connection.queue.shift();
   // 何もないなら次へ
   if(!(q.str) || q.str.trim().length === 0){
     connection.is_play = false;
     play(guild_id);
-    console.debug(`play empty next`);
+    logger.debug(`play empty next`);
     return;
   }
 
   // connectionあるならデフォルトボイスはある
   let voice = connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"];
-  console.debug(`play voice: ${voice}`);
+  logger.debug(`play voice: ${voice}`);
 
   const text_data = get_text_and_speed(q.str);
-  console.debug(`play text speed: ${text_data.speed}`);
+  logger.debug(`play text speed: ${text_data.speed}`);
 
   const voice_data = {
     // 加速はユーザー設定と加速設定のうち速い方を利用する。
@@ -282,11 +288,11 @@ async function play(guild_id){
   try{
     const voice_path = await voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
     const audio_res = createAudioResource(voice_path);
-    console.debug(`play voice path: ${voice_path}`);
+    logger.debug(`play voice path: ${voice_path}`);
 
     connection.audio_player.play(audio_res);
   }catch(e){
-    console.dir(e, { depth: null });
+    logger.info(e);
 
     play(guild_id);
   }
@@ -351,7 +357,7 @@ function fix_reading(text){
   const tokens = kuromoji.tokenize(text);
 
   for(let token of tokens){
-    console.debug(token);
+    logger.debug(token);
     if(token.word_type === "KNOWN" && token.pronunciation){
       result.push(toHiragana(token.pronunciation));
     }else{
@@ -417,9 +423,9 @@ async function connect_vc(interaction){
       connectinfo.user_voices = json.user_voices ?? connectinfo.user_voices;
       connectinfo.dict = json.dict ?? connectinfo.dict;
 
-      console.debug(`loaded server conf: ${json}`);
+      logger.debug(`loaded server conf: ${json}`);
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }else{
     write_serverinfo(guild_id, { user_voices: connectinfo.user_voices, dict: connectinfo.dict });
@@ -441,7 +447,7 @@ async function connect_vc(interaction){
       ]);
     }catch(e){
       connection.destroy();
-      console.debug(`system disconnected`);
+      logger.debug(`system disconnected`);
     }
   });
 
@@ -452,11 +458,11 @@ async function connect_vc(interaction){
   connection.on(VoiceConnectionStatus.Destroyed, async() => {
     player.stop();
     connections_map.delete(guild_id);
-    console.debug(`self disconnected`);
+    logger.debug(`self disconnected`);
   });
 
   player.on(AudioPlayerStatus.Idle, async () => {
-    console.debug(`queue end`);
+    logger.debug(`queue end`);
     await sleep(20);
     connectinfo.is_play = false;
     play(guild_id);
@@ -480,9 +486,9 @@ function check_join_and_leave(old_s, new_s){
 
   const new_voice_id = new_s.channelId;
   const old_voice_id = old_s.channelId;
-  console.debug(`old_voice_id: ${old_voice_id}`);
-  console.debug(`new_voice_id: ${new_voice_id}`);
-  console.debug(`con voice id: ${connection.voice}`);
+  logger.debug(`old_voice_id: ${old_voice_id}`);
+  logger.debug(`new_voice_id: ${new_voice_id}`);
+  logger.debug(`con voice id: ${connection.voice}`);
 
   // 現在の監視対象じゃないなら抜ける
   if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id)) return;
@@ -490,9 +496,9 @@ function check_join_and_leave(old_s, new_s){
   const is_join = (!!(new_s.channelId)) && (!(old_s.channelId));
   const is_leave = (!(new_s.channelId)) && (!!(old_s.channelId));
 
-  console.debug(`is_join: ${is_join}`);
-  console.debug(`is_leave: ${is_leave}`);
-  console.debug(`xor: ${xor(is_join, is_leave)}`);
+  logger.debug(`is_join: ${is_join}`);
+  logger.debug(`is_leave: ${is_leave}`);
+  logger.debug(`xor: ${xor(is_join, is_leave)}`);
 
   if(!xor(is_join, is_leave)) return;
 
@@ -539,7 +545,7 @@ function write_serverinfo(guild_id, data){
   try{
     fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(data));
   }catch(e){
-    console.log(e);
+    logger.info(e);
   }
 }
 
@@ -558,7 +564,7 @@ async function setvoice(interaction, type){
       voices = json.user_voices ?? voices;
       dict = json.dict ?? dict;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
@@ -613,7 +619,7 @@ async function setvoiceall(interaction, override_id = null){
       voices = json.user_voices ?? voices;
       dict = json.dict ?? dict;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
@@ -682,7 +688,7 @@ async function currentvoice(interaction, override_id = null){
       const json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
       voices = json.user_voices ?? voices;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
@@ -763,7 +769,7 @@ async function dicadd(interaction){
       voices = json.user_voices ?? voices;
       dict = json.dict ?? dict;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
@@ -808,7 +814,7 @@ async function dicdel(interaction){
       voices = json.user_voices ?? voices;
       dict = json.dict ?? dict;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
@@ -850,7 +856,7 @@ async function diclist(interaction){
       const json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
       dict = json.dict ?? dict;
     }catch(e){
-      console.log(e);
+      logger.info(e);
     }
   }
 
