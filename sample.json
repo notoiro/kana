@@ -1,0 +1,8 @@
+{
+  "VOICEBOX_ENGINE": "http://127.0.0.1:2970/",
+  "TMP_DIR": "/tmp",
+  "TOKEN": "YOUR_DISCORD_TOKEN",
+  "PREFIX": ";",
+  "SERVER_DIR": "./servers",
+  "DIC_PATH": "./node_modules/kuromoji/dict"
+}
