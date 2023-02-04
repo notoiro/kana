@@ -1,0 +1,18 @@
+{
+  "name": "voicevox-tts-discord",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@discordjs/opus": "^0.8.0",
+    "@discordjs/voice": "^0.14.0",
+    "axios": "^1.3.1",
+    "discord.js": "^14.7.1",
+    "kuromoji": "^0.1.2",
+    "sodium": "^3.0.2",
+    "wanakana": "^5.0.2"
+  }
+}
