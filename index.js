@@ -190,11 +190,15 @@ async function main(){
   });
 
   process.on('uncaughtExceptionMonitor', (err) => {
-    client.destroy();
+    if(process.env.NODE_ENV === "production"){
+      client.destroy();
+    }
   });
   process.on("exit", exitCode => {
     logger.info("Exit!");
-    client.destroy();
+    if(process.env.NODE_ENV === "production"){
+      client.destroy();
+    }
   });
 
   client.login(TOKEN);
@@ -294,6 +298,9 @@ async function play(guild_id){
   }catch(e){
     logger.info(e);
 
+    await sleep(10);
+    connectinfo.is_play = false;
+
     play(guild_id);
   }
 }
@@ -329,6 +336,8 @@ function clean_message(text){
   result = result.replace(/<:([a-z0-9_-]+):[0-9]+>/gi, "$1");
   // 絵文字
   result = result.replace(emoji_regex(), "");
+  // 記号
+  result = result.replace(/["#'^\;:,|`{}<>]/, "");
   // 改行
   result = result.replace(/\r?\n/g, "。")
 
@@ -359,6 +368,7 @@ function fix_reading(text){
   for(let token of tokens){
     logger.debug(token);
     if(token.word_type === "KNOWN" && token.pronunciation){
+      logger.debug(`KNOWN: ${token.pronunciation}`);
       result.push(toHiragana(token.pronunciation));
     }else{
       result.push(token.surface_form);
@@ -470,8 +480,11 @@ async function connect_vc(interaction){
 
   connections_map.set(guild_id, connectinfo);
 
-  await interaction.reply({ content: '接続しました。' });
-  add_system_message("接続しました！", guild_id);
+
+  if(process.env.NODE_ENV === "production"){
+    await interaction.reply({ content: '接続しました。' });
+    add_system_message("接続しました！", guild_id);
+  }
   return;
 }
 
