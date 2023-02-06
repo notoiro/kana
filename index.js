@@ -7,10 +7,13 @@ const {
 } = require("@discordjs/voice");
 const { Client, GatewayIntentBits, ApplicationCommandOptionType, InteractionType, EmbedBuilder } = require('discord.js')
 const fs = require('fs');
-const kuromojijs = require('kuromoji');
-const { toHiragana } = require('wanakana');
+const { isRomaji, toKana } = require('wanakana');
 const emoji_regex = require('emoji-regex');
 const log4js = require('log4js');
+let sudachi;
+async function import_sudachi(){
+  sudachi = await import('sudachi');
+};
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
@@ -38,9 +41,11 @@ logger.level = "debug";
 if(process.env.NODE_ENV === "production") logger.level = "info";
 
 let voice_list = [];
-let kuromoji;
 
 async function main(){
+  logger.info("Loading sudachi...");
+  await import_sudachi();
+
   // コマンド取得
   const commands = {};
   const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'))
@@ -48,15 +53,6 @@ async function main(){
     const command = require(`./commands/${file}`);
     commands[command.data.name] = command;
   }
-
-  kuromojijs.builder({ dicPath: DIC_PATH }).build((err, tokenizer) => {
-    if(err != null){
-      logger.info(err);
-      process.exit(1);
-    }
-
-    kuromoji = tokenizer;
-  });
 
   voice_list = await get_voicelist();
 
@@ -172,8 +168,6 @@ async function main(){
     if(!(msg.guild)) return;
     if(msg.author.bot) return;
 
-    logger.debug(msg);
-
     if(msg.content === "s"){
       skip_current_text(msg.guild.id);
       return;
@@ -231,7 +225,7 @@ function add_text_queue(msg){
   // テキストの処理順
   // 1. 辞書の変換
   // 2. 問題のある文字列の処理
-  // 3. kuromoji.jsで固有名詞などの読みを正常化、英単語の日本語化
+  // 3. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
   // 1
   let content = replace_at_dict(msg.cleanContent, msg.guild.id);
@@ -361,17 +355,33 @@ function replace_at_dict(text, guild_id){
 }
 
 function fix_reading(text){
-  const result = [];
+  let tokens = {};
+  try{
+    tokens = JSON.parse(sudachi.tokenize(text, sudachi.TokenizeMode.C));
+    logger.debug(tokens);
+  }catch(e){
+    logger.info(e);
+    return text;
+  }
 
-  const tokens = kuromoji.tokenize(text);
+  let result = [];
 
   for(let token of tokens){
-    logger.debug(token);
-    if(token.word_type === "KNOWN" && token.pronunciation){
-      logger.debug(`KNOWN: ${token.pronunciation}`);
-      result.push(toHiragana(token.pronunciation));
+    // 本当はreading_formのはずなんだけどそれっぽいのがdictionary_formに入ってるのでそれを使う
+    if(token.dictionary_form){
+      logger.debug(`KNOWN: ${token.dictionary_form}`);
+      // 記号を記号と読まないように
+      if((token.poses[0].match(/記号/gi) || token.poses[0].match(/空白/gi)) && token.dictionary_form === "キゴウ"){
+        result.push(token.surface)
+      }else{
+        result.push(token.dictionary_form);
+      }
     }else{
-      result.push(token.surface_form);
+      if(isRomaji(token.surface)){
+        result.push(toKana(token.surface));
+      }else{
+        result.push(token.surface);
+      }
     }
   }
 
@@ -480,7 +490,6 @@ async function connect_vc(interaction){
 
   connections_map.set(guild_id, connectinfo);
 
-
   if(process.env.NODE_ENV === "production"){
     await interaction.reply({ content: '接続しました。' });
     add_system_message("接続しました！", guild_id);
@@ -504,14 +513,21 @@ function check_join_and_leave(old_s, new_s){
   logger.debug(`con voice id: ${connection.voice}`);
 
   // 現在の監視対象じゃないなら抜ける
-  if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id)) return;
+  if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id) && (old_voice_id === new_voice_id)) return;
 
-  const is_join = (!!(new_s.channelId)) && (!(old_s.channelId));
-  const is_leave = (!(new_s.channelId)) && (!!(old_s.channelId));
+  const is_join = (new_s.channelId === connection.voice);
+  const is_leave = (old_s.channelId === connection.voice);
 
   logger.debug(`is_join: ${is_join}`);
   logger.debug(`is_leave: ${is_leave}`);
   logger.debug(`xor: ${xor(is_join, is_leave)}`);
+
+  if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
+    const d_connection = getVoiceConnection(guild_id);
+    d_connection.destroy();
+
+    return;
+  }
 
   if(!xor(is_join, is_leave)) return;
 
