@@ -23,8 +23,7 @@ const Voicebox = require('./src/voicebox.js');
 const {
   TOKEN,
   PREFIX,
-  SERVER_DIR,
-  DIC_PATH
+  SERVER_DIR
 } = require('./config.json');
 
 // etc
