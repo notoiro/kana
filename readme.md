@@ -11,12 +11,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 
 ## あるといい
 
-1. kuromoji用に変換されたmecab-ipadic-neologd
-    - https://qiita.com/mabasasi/items/17b0bf735c38b4642682
-    - https://github.com/sable-virt/kuromoji-js-dictionary
-    - https://qiita.com/abcang/items/078d57d70b9ec83f02e0
-
-2. メモリ上に乗ったキャッシュ用ディレクトリ
+1. メモリ上に乗ったキャッシュ用ディレクトリ
     - Linuxなら/tmpで良い気がする
 
 ## 動かし方
@@ -43,7 +38,6 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
         - `TOKEN`は上でメモったBotトークン
         - `PREFIX`はそれで始まる文章は読まないやつ
         - `SERVER_DIR`はサーバーごとの設定ファイルが保存されるディレクトリ、そのまま使うなら`servers`ってフォルダを作ること
-        - `DIC_PATH`はkuromojiで使われる辞書の指定、もし変換済のmecab-ipadic-neologdがあるならここから指定してあげる
     4. `npm install`
     5. npm production
     6. 上でメモった招待用のURLで招待する
