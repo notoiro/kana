@@ -157,9 +157,13 @@ async function main(){
       }
     } catch (error) {
       logger.info(error);
-      await interaction.reply({
-          content: 'そんなコマンドないよ。',
-      });
+      try{
+        await interaction.reply({
+            content: 'そんなコマンドないよ。',
+        });
+      }catch(e){
+        // 元のインタラクションないのは知らない…
+      }
     }
   });
 
@@ -221,13 +225,17 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
 
 // TODO: テキスト以外の処理
 function add_text_queue(msg){
+  let content = msg.cleanContent;
+  if(msg.attachments.size !== 0){
+    content = `添付ファイル、${content}`;
+  }
   // テキストの処理順
   // 1. 辞書の変換
   // 2. 問題のある文字列の処理
   // 3. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
   // 1
-  let content = replace_at_dict(msg.cleanContent, msg.guild.id);
+  content = replace_at_dict(content, msg.guild.id);
   logger.debug(`content(replace dict): ${content}`);
   // 2
   content = clean_message(content);
