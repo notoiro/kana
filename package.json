@@ -2,6 +2,7 @@
   "name": "voicevox-tts-discord",
   "version": "1.0.0",
   "main": "index.js",
+  "homepage": "https://github.com/notoiro/voicevox-tts-discord",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
