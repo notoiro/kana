@@ -22,6 +22,9 @@ module.exports = {
         { name: "diclist", value: "辞書。" },
         { name: "currentvoice", value: "現在の声の設定を表示します。" },
         { name: "help", value: "これ。" },
+        { name: "その他", value: "文章の先頭に「;」をつけると読まれません。" + '\n' +
+                                 "読み上げ中に「s」でスキップします。" + '\n' +
+                                 "文章の先頭に「音量(0-100)」で動的に音量調整ができます。" }
       );
     await interaction.reply({ embeds: [em] });
 

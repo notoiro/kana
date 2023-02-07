@@ -18,6 +18,7 @@ async function import_sudachi(){
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
 const Voicebox = require('./src/voicebox.js');
 const {
@@ -226,9 +227,24 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
 // TODO: テキスト以外の処理
 function add_text_queue(msg){
   let content = msg.cleanContent;
+
+  let volume_order = null;
+  let command = content.match(/^音量[\(（][0-9０-９]{1,3}[\)）]/);
+  if(command && command[0]){
+    let volume = parseInt(zenint2hanint(command[0].match(/[0-9０-９]+/)[0]));
+    if(!isNaN(volume)){
+      if(volume > 100) volume = 100;
+
+      volume_order = volume;
+    }
+
+    content = content.replace(command[0], "");
+  }
+
   if(msg.attachments.size !== 0){
     content = `添付ファイル、${content}`;
   }
+
   // テキストの処理順
   // 1. 辞書の変換
   // 2. 問題のある文字列の処理
@@ -244,7 +260,8 @@ function add_text_queue(msg){
   content = fix_reading(content);
   logger.debug(`content(fix reading): ${content}`);
 
-  const q = { str: content, id: msg.member.id }
+
+  const q = { str: content, id: msg.member.id, volume_order: volume_order }
 
   const connection = connections_map.get(msg.guild.id);
   logger.debug(`play connection: ${connection}`);
@@ -287,8 +304,10 @@ async function play(guild_id){
     speed: map_voice_setting(((voice.speed > text_data.speed) ? voice.speed : text_data.speed), 0.5, 1.5),
     pitch: map_voice_setting(voice.pitch, -0.15, 0.15),
     intonation: map_voice_setting(voice.intonation, 0, 2),
-    volume: map_voice_setting(voice.volume, 0, 1, 0, 100)
+    volume: map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
   }
+
+  logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
   try{
     const voice_path = await voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
