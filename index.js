@@ -41,6 +41,7 @@ logger.level = "debug";
 if(process.env.NODE_ENV === "production") logger.level = "info";
 
 let voice_list = [];
+let voice_liblary_list = [];
 
 async function main(){
   logger.info("Loading sudachi...");
@@ -54,7 +55,9 @@ async function main(){
     commands[command.data.name] = command;
   }
 
-  voice_list = await get_voicelist();
+  const voiceinfos = await get_voicelist();
+  voice_list = voiceinfos.speaker_list;
+  voice_liblary_list = voiceinfos.voice_liblary_list;
 
   logger.debug(voice_list);
 
@@ -146,7 +149,9 @@ async function main(){
         case "diclist":
           await diclist(interaction);
           break;
-
+        case "credit":
+          await credit_list(interaction);
+          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
@@ -581,8 +586,11 @@ async function get_voicelist(){
   const list = await voicebox.speakers();
 
   const speaker_list = [];
+  const lib_list = [];
 
   for(let sp of list){
+    lib_list.push(sp.name);
+
     for(let v of sp.styles){
       let speaker = {
         name: `${sp.name}(${v.name})`,
@@ -593,7 +601,7 @@ async function get_voicelist(){
     }
   }
 
-  return speaker_list;
+  return { speaker_list: speaker_list, voice_liblary_list: lib_list };
 }
 
 function write_serverinfo(guild_id, data){
@@ -942,5 +950,20 @@ async function diclist(interaction){
   return;
 }
 
-main();
+async function credit_list(interaction){
+  const guild_id = interaction.guild.id;
 
+  const voice_list_tmp = Array.from(voice_liblary_list).map((val) => `VOICEVOX:${val}`);
+
+  const em = new EmbedBuilder()
+    .setTitle(`利用可能な音声ライブラリのクレジット一覧です。`)
+    .setDescription("詳しくは各音声ライブラリの利用規約をご覧ください。\nhttps://voicevox.hiroshiba.jp")
+    .addFields(
+      { name: "一覧", value: `${voice_list_tmp.join("\n")}`},
+    );
+
+  await interaction.reply({ embeds: [em] });
+  return;
+}
+
+main();
