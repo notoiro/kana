@@ -229,7 +229,6 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
   return;
 }
 
-// TODO: テキスト以外の処理
 function add_text_queue(msg){
   let content = msg.cleanContent;
 
@@ -250,6 +249,10 @@ function add_text_queue(msg){
     content = `添付ファイル、${content}`;
   }
 
+  if(msg.stickers.size !== 0){
+    for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+  }
+
   // テキストの処理順
   // 1. 辞書の変換
   // 2. 問題のある文字列の処理
@@ -264,7 +267,6 @@ function add_text_queue(msg){
   // 3
   content = fix_reading(content);
   logger.debug(`content(fix reading): ${content}`);
-
 
   const q = { str: content, id: msg.member.id, volume_order: volume_order }
 
