@@ -219,6 +219,12 @@ function is_target(msg){
 }
 
 function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
+  // 辞書と記号処理だけはやる
+  text = replace_at_dict(text, guild_id);
+  logger.debug(`text(replace dict): ${text}`);
+
+  text= text.replace(/["#'^\;:,|`{}<>]/, "");
+
   const q = { str: text, id: voice_ref_id };
 
   const connection = connections_map.get(guild_id);
@@ -566,9 +572,9 @@ function check_join_and_leave(old_s, new_s){
 
   let text = "にゃーん";
   if(is_join){
-    text = `${member.displayName}さんが入室しました！`;
+    text = `${member.displayName}さんが入室しました`;
   }else if(is_leave){
-    text = `${member.displayName}さんが退出しました…`;
+    text = `${member.displayName}さんが退出しました`;
   }
 
   add_system_message(text, guild_id, member.id);
