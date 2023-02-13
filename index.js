@@ -335,7 +335,7 @@ async function play(guild_id){
     logger.info(e);
 
     await sleep(10);
-    connectinfo.is_play = false;
+    connection.is_play = false;
 
     play(guild_id);
   }
