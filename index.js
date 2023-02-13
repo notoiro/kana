@@ -143,6 +143,9 @@ async function main(){
         case "dicadd":
           await dicadd(interaction);
           break;
+        case "dicedit":
+          await dicedit(interaction);
+          break;
         case "dicdel":
           await dicdel(interaction);
           break;
@@ -912,6 +915,63 @@ async function dicdel(interaction){
   if(connection) connection.dict = dict;
 
   await interaction.reply({ content: "削除しました。" });
+  return;
+}
+
+async function dicedit(interaction){
+  const guild_id = interaction.guild.id;
+
+  const connection = connections_map.get(guild_id);
+
+  let voices = {};
+  let dict = [];
+
+  if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
+    try{
+      const json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
+      voices = json.user_voices ?? voices;
+      dict = json.dict ?? dict;
+    }catch(e){
+      logger.info(e);
+    }
+  }
+
+  const word_from = interaction.options.get("from").value;
+  const word_to = interaction.options.get("to").value;
+
+  let exist = false;
+
+  for(let d of dict){
+    if(d[0] === word_from){
+      exist = true;
+      break;
+    }
+  }
+
+  if(!exist){
+    await interaction.reply({ content: "ないよ" });
+    return;
+  }
+
+  dict = dict.map(val => {
+    let result = val;
+    if(val[0] === word_from) result[1] = word_to;
+
+    return result;
+  });
+
+  write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+
+  if(connection) connection.dict = dict;
+
+  const em = new EmbedBuilder()
+    .setTitle(`編集しました。`)
+    .addFields(
+      { name: "変換元", value: `${word_from}`},
+      { name: "変換先", value: `${word_to}`},
+    );
+
+  await interaction.reply({ embeds: [em] });
   return;
 }
 
