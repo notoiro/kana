@@ -227,12 +227,45 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
   text = replace_at_dict(text, guild_id);
   logger.debug(`text(replace dict): ${text}`);
 
+  let volume_order = null;
+  const vol_regexp = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
+  let vol_command = text.match(vol_regexp);
+  if(vol_command && vol_command[0]){
+    let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
+    if(!isNaN(volume)){
+      if(volume > 100) volume = 100;
+
+      volume_order = volume;
+    }
+
+    text = text.replace(vol_regexp, "");
+  }
+
+  let voice_override = null;
+  let voice_regexp = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
+  let voice_command = text.match(voice_regexp);
+  if(voice_command && voice_command[0]){
+    let voice = null;
+    try{
+      voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
+      if(!(voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+    }catch(e){
+      logger.debug(e);
+      voice = null;
+    }
+
+    if(voice) voice_override = voice;
+
+    text = text.replace(voice_regexp, "");
+  }
+
   text= text.replace(/["#'^\;:,|`{}<>]/, "");
 
-  const q = { str: text, id: voice_ref_id };
+  const q = { str: text, id: voice_ref_id, volume_order: volume_order }
 
   const connection = connections_map.get(guild_id);
   if(!connection) return;
+  if(voice_override) q.voice_override = voice_override;
 
   connection.queue.push(q);
   play(guild_id);
@@ -242,6 +275,27 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
 function add_text_queue(msg){
   let content = msg.cleanContent;
 
+  // テキストの処理順
+  // 0. テキスト追加系
+  // 1. 辞書の変換
+  // 2. ボイス、音量の変換
+  // 3. 問題のある文字列の処理
+  // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
+
+  // 0
+  if(msg.attachments.size !== 0){
+    content = `添付ファイル、${content}`;
+  }
+
+  if(msg.stickers.size !== 0){
+    for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+  }
+
+  // 1
+  content = replace_at_dict(content, msg.guild.id);
+  logger.debug(`content(replace dict): ${content}`);
+
+  // 2
   let volume_order = null;
   const vol_regexp = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
   let vol_command = content.match(vol_regexp);
@@ -265,7 +319,7 @@ function add_text_queue(msg){
       voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
       if(!(voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
     }catch(e){
-      console.debug(e);
+      logger.debug(e);
       voice = null;
     }
 
@@ -274,26 +328,10 @@ function add_text_queue(msg){
     content = content.replace(voice_regexp, "");
   }
 
-  if(msg.attachments.size !== 0){
-    content = `添付ファイル、${content}`;
-  }
-
-  if(msg.stickers.size !== 0){
-    for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
-  }
-
-  // テキストの処理順
-  // 1. 辞書の変換
-  // 2. 問題のある文字列の処理
-  // 3. sudachiで固有名詞などの読みを正常化、英単語の日本語化
-
-  // 1
-  content = replace_at_dict(content, msg.guild.id);
-  logger.debug(`content(replace dict): ${content}`);
-  // 2
+  // 3
   content = clean_message(content);
   logger.debug(`content(clean): ${content}`);
-  // 3
+  // 4
   content = fix_reading(content);
   logger.debug(`content(fix reading): ${content}`);
 
@@ -724,7 +762,7 @@ async function setvoiceall(interaction, override_id = null){
   try{
     voice = ResurrectionSpell.decode(voice);
   }catch(e){
-    console.debug(e);
+    logger.debug(e);
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
   }
 

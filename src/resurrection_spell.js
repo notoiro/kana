@@ -52,7 +52,6 @@ module.exports = class ResurrectionSpell{
   // こっちは値のバリデーションする
   // ボイスあるかは別でやるけど
   static decode(str){
-    console.log(str.match(new RegExp(`[^${Object.keys(table).join()}${split_str}]`, "g")));
     if(str.match(new RegExp(`[^${Object.keys(table).join()}${split_str}]`, "g"))) throw "ふっかつのじゅもんが違います！";
 
     let values = str.split(split_str);
