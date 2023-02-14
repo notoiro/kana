@@ -1,5 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const pkgjson = require("../package.json");
+const { PREFIX } = require('../config.json');
+
 module.exports = {
   data: {
     name: "help",
@@ -19,12 +21,13 @@ module.exports = {
         { name: "setvoiceall", value: "声の一括設定。", inline: true },
         { name: "setdefaultvoice", value: "デフォルトの声の一括設定。", inline: true },
         { name: "dicadd", value: "辞書登録。", inline: true },
+        { name: "dicedit", value: "辞書編集。", inline: true },
         { name: "dicdel", value: "辞書から消す。", inline: true },
         { name: "diclist", value: "辞書。", inline: true },
         { name: "currentvoice", value: "現在の声の設定を表示します。", inline: true },
         { name: "credit", value: "このBotで利用できる音声ライブラリのクレジットを生成します。詳細は各音声ライブラリの利用規約をご覧ください。" },
         { name: "help", value: "これ。", inline: true },
-        { name: "その他", value: "文章の先頭に「;」をつけると読まれません。" + '\n' +
+        { name: "その他", value: "文章の先頭に「" + PREFIX + "」をつけると読まれません。" + '\n' +
                                  "読み上げ中に「s」でスキップします。" + '\n' +
                                  "文章の先頭に「音量(0-100)」で動的に音量調整ができます。" + '\n\n' +
                                  "各音声ライブラリの利用規約に従ってご利用ください。"},
