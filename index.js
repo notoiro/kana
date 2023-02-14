@@ -243,16 +243,35 @@ function add_text_queue(msg){
   let content = msg.cleanContent;
 
   let volume_order = null;
-  let command = content.match(/^音量[\(（][0-9０-９]{1,3}[\)）]/);
-  if(command && command[0]){
-    let volume = parseInt(zenint2hanint(command[0].match(/[0-9０-９]+/)[0]));
+  const vol_regexp = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
+  let vol_command = content.match(vol_regexp);
+  if(vol_command && vol_command[0]){
+    let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
     if(!isNaN(volume)){
       if(volume > 100) volume = 100;
 
       volume_order = volume;
     }
 
-    content = content.replace(command[0], "");
+    content = content.replace(vol_regexp, "");
+  }
+
+  let voice_override = null;
+  let voice_regexp = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
+  let voice_command = content.match(voice_regexp);
+  if(voice_command && voice_command[0]){
+    let voice = null;
+    try{
+      voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
+      if(!(voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+    }catch(e){
+      console.debug(e);
+      voice = null;
+    }
+
+    if(voice) voice_override = voice;
+
+    content = content.replace(voice_regexp, "");
   }
 
   if(msg.attachments.size !== 0){
@@ -284,6 +303,8 @@ function add_text_queue(msg){
   logger.debug(`play connection: ${connection}`);
   if(!connection) return;
 
+  if(voice_override) q.voice_override = voice_override;
+
   connection.queue.push(q);
 
   play(msg.guild.id);
@@ -310,8 +331,9 @@ async function play(guild_id){
   }
 
   // connectionあるならデフォルトボイスはある
-  let voice = connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"];
-  logger.debug(`play voice: ${voice}`);
+  // もしvoice_overrideがあるならそれを優先する
+  let voice = q.voice_override ?? (connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"]);
+  logger.debug(`play voice: ${JSON.stringify(voice)}`);
 
   const text_data = get_text_and_speed(q.str);
   logger.debug(`play text speed: ${text_data.speed}`);

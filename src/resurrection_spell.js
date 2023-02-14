@@ -87,5 +87,9 @@ module.exports = class ResurrectionSpell{
       volume: 100
     }
   }
+
+  static spell_chars(){
+    return Object.keys(table).join() + split_str;
+  }
 }
 
