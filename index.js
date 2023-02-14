@@ -21,6 +21,7 @@ const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
 const Voicebox = require('./src/voicebox.js');
+const ResurrectionSpell = require('./src/resurrection_spell.js');
 const {
   TOKEN,
   PREFIX,
@@ -697,36 +698,17 @@ async function setvoiceall(interaction, override_id = null){
     }
   }
 
-  let value = interaction.options.get("voiceall").value;
-  value = value.split(',');
+  let voice = interaction.options.get("voiceall").value;
+  try{
+    voice = ResurrectionSpell.decode(voice);
+  }catch(e){
+    console.debug(e);
+    await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
+  }
 
-  if(value.length !== 4){
+  if(!(voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
     return;
-  }
-
-  let voice_values = [];
-  for(let val of value){
-    const val_int = parseInt(val, 10);
-    if(isNaN(val_int) || val > 200){
-      await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-      return;
-    }
-
-    voice_values.push(val_int);
-  }
-
-  if(!(voice_list.find(el => parseInt(el.value, 10) === voice_values[0]))){
-    await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-    return;
-  }
-
-  let voice = {
-    voice: voice_values[0],
-    speed: voice_values[1],
-    pitch: voice_values[2],
-    intonation: voice_values[3],
-    volume: 100
   }
 
   voices[member_id] = voice;
@@ -799,7 +781,7 @@ async function currentvoice(interaction, override_id = null){
       { name: "声のイントネーション(intonation)", value: `${sample_voice_info.intonation}`},
     )
     .addFields(
-      { name: "ふっかつのじゅもん", value: `${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`},
+      { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
     );
 
   if(member_id !== "DEFAULT"){
