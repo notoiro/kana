@@ -223,6 +223,8 @@ function is_target(msg){
 }
 
 function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
+  text = text.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
+
   // 辞書と記号処理だけはやる
   text = replace_at_dict(text, guild_id);
   logger.debug(`text(replace dict): ${text}`);
@@ -290,6 +292,8 @@ function add_text_queue(msg){
   if(msg.stickers.size !== 0){
     for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
   }
+
+  content = content.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
 
   // 1
   content = replace_at_dict(content, msg.guild.id);
@@ -428,7 +432,7 @@ function get_text_and_speed(text){
 function clean_message(text){
   let result = text;
 
-  result = result.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
+
   // カスタム絵文字
   result = result.replace(/<:([a-z0-9_-]+):[0-9]+>/gi, "$1");
   // 絵文字
