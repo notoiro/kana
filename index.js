@@ -20,6 +20,10 @@ const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
+const priority_list = [
+  "最弱", "よわい", "普通", "つよい", "最強"
+];
+
 const Voicebox = require('./src/voicebox.js');
 const ResurrectionSpell = require('./src/resurrection_spell.js');
 const {
@@ -149,6 +153,9 @@ async function main(){
           break;
         case "dicdel":
           await dicdel(interaction);
+          break;
+        case "dicpriority":
+          await dicpriority(interaction);
           break;
         case "diclist":
           await diclist(interaction);
@@ -454,8 +461,10 @@ function replace_at_dict(text, guild_id){
 
   let result = text;
 
-  for(let d of dict){
-    result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
+  for(let p = 0; p < 5; p++){
+    const tmp_dict = dict.filter(word => word[2] === p);
+
+    for(let d of tmp_dict) result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
   }
 
   return result;
@@ -540,7 +549,7 @@ async function connect_vc(interaction){
         volume: 100
       }
     },
-    dict: [["Discord", "でぃすこーど"]]
+    dict: [["Discord", "でぃすこーど", 2]]
   };
 
   if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
@@ -903,7 +912,7 @@ async function dicadd(interaction){
     }
   }
 
-  dict.push([word_from, word_to]);
+  dict.push([word_from, word_to, 2]);
 
   write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
@@ -1021,6 +1030,63 @@ async function dicedit(interaction){
   return;
 }
 
+async function dicpriority(interaction){
+  const guild_id = interaction.guild.id;
+
+  const connection = connections_map.get(guild_id);
+
+  let voices = {};
+  let dict = [];
+
+  if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
+    try{
+      const json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
+      voices = json.user_voices ?? voices;
+      dict = json.dict ?? dict;
+    }catch(e){
+      logger.info(e);
+    }
+  }
+
+  const target = interaction.options.get("target").value;
+  const priority = interaction.options.get("priority").value;
+
+  let exist = false;
+
+  for(let d of dict){
+    if(d[0] === target){
+      exist = true;
+      break;
+    }
+  }
+
+  if(!exist){
+    await interaction.reply({ content: "ないよ" });
+    return;
+  }
+
+  dict = dict.map(val => {
+    let result = val;
+    if(val[0] === target) result[2] = priority;
+
+    return result;
+  });
+
+  write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+
+  if(connection) connection.dict = dict;
+
+  const em = new EmbedBuilder()
+    .setTitle(`設定しました。`)
+    .addFields(
+      { name: "単語", value: `${target}`},
+      { name: "優先度", value: `${priority_list[priority]}`},
+    );
+
+  await interaction.reply({ embeds: [em] });
+  return;
+}
+
 async function diclist(interaction){
   const guild_id = interaction.guild.id;
 
@@ -1040,13 +1106,24 @@ async function diclist(interaction){
   let list = "";
   let is_limit = false;
 
-  for(let d of dict){
-    const s = `${d[0]} → ${d[1]}\n`;
-    if((s.length + list.length) > 1024){
+  for(let p = 0; p < 5; p++){
+    const tmp_dict = dict.filter(word => word[2] === p);
+
+    if((list.length + `**${priority_list[p]}**\n`.length) > 1024){
       is_limit = true;
       break;
     }else{
-      list += s;
+      list += `**${priority_list[p]}**\n`;
+
+      for(let d of tmp_dict){
+        const s = `${d[0]} → ${d[1]}\n`;
+        if((s.length + list.length) > 1024){
+          is_limit = true;
+          break;
+        }else{
+          list += s;
+        }
+      }
     }
   }
 

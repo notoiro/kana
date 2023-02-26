@@ -23,6 +23,7 @@ module.exports = {
         { name: "dicadd", value: "辞書登録。", inline: true },
         { name: "dicedit", value: "辞書編集。", inline: true },
         { name: "dicdel", value: "辞書から消す。", inline: true },
+        { name: "dicpriority", value: "辞書の優先度。", inline: true },
         { name: "diclist", value: "辞書。", inline: true },
         { name: "currentvoice", value: "現在の声の設定を表示します。", inline: true },
         { name: "credit", value: "このBotで利用できる音声ライブラリのクレジットを生成します。詳細は各音声ライブラリの利用規約をご覧ください。" },
