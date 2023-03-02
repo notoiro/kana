@@ -39,7 +39,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
         - `PREFIX`はそれで始まる文章は読まないやつ
         - `SERVER_DIR`はサーバーごとの設定ファイルが保存されるディレクトリ、そのまま使うなら`servers`ってフォルダを作ること
     4. `npm install`
-    5. npm production
+    5. `npm run production`
     6. 上でメモった招待用のURLで招待する
 
 ## 使い方
