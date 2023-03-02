@@ -587,6 +587,14 @@ async function connect_vc(interaction){
     }
   });
 
+  // Temporary workaround to https://github.com/discordjs/discord.js/issues/9185
+  connection.on('stateChange', (old_state, new_state) => {
+    if (old_state.status === VoiceConnectionStatus.Ready && new_state.status === VoiceConnectionStatus.Connecting){
+      logger.debug("Fixing...");
+      connection.configureNetworking();
+    }
+  });
+
   const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
   connectinfo.audio_player = player;
   connection.subscribe(player);
