@@ -5,7 +5,7 @@ const {
   createAudioPlayer, NoSubscriberBehavior, generateDependencyReport, VoiceConnectionStatus,
   entersState, AudioPlayerStatus, PermissionsBitField
 } = require("@discordjs/voice");
-const { Client, GatewayIntentBits, ApplicationCommandOptionType, InteractionType, EmbedBuilder } = require('discord.js')
+const { Client, GatewayIntentBits, ApplicationCommandOptionType, InteractionType, EmbedBuilder, ActivityType } = require('discord.js')
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const emoji_regex = require('emoji-regex');
@@ -101,6 +101,8 @@ async function main(){
 
     await client.application.commands.set(data);
     logger.info("Ready!");
+
+    update_status_text();
   });
 
   client.on('interactionCreate', async (interaction) => {
@@ -216,6 +218,12 @@ async function main(){
   });
 
   client.login(TOKEN);
+}
+
+function update_status_text(){
+  const count = connections_map.size;
+
+  client.user.setActivity(`${count}本の接続`, { type: ActivityType.Playing });
 }
 
 function is_target(msg){
@@ -608,6 +616,7 @@ async function connect_vc(interaction){
   connection.on(VoiceConnectionStatus.Destroyed, async() => {
     player.stop();
     connections_map.delete(guild_id);
+    update_status_text();
     logger.debug(`self disconnected`);
   });
 
@@ -624,6 +633,9 @@ async function connect_vc(interaction){
     await interaction.reply({ content: '接続しました。' });
     add_system_message("接続しました！", guild_id);
   }
+
+  update_status_text();
+
   return;
 }
 
@@ -894,6 +906,8 @@ async function resetconnection(interaction){
   const connection = connections_map.get(guild_id);
   if(connection) connection.audio_player.stop();
   connections_map.delete(guild_id);
+
+  update_status_text();
 
   interaction.reply({ content: "どっかーん！" })
 }
