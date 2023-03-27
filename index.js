@@ -590,7 +590,13 @@ async function connect_vc(interaction){
         entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
       ]);
     }catch(e){
-      connection.destroy();
+      try{
+        // すでに接続が破棄されてる場合がある
+        connection.destroy();
+      }catch(e){
+        logger.log(e);
+      }
+
       logger.debug(`system disconnected`);
     }
   });
