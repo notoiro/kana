@@ -15,7 +15,6 @@
     "discord.js": "^14.7.1",
     "log4js": "^6.9.1",
     "sodium": "^3.0.2",
-    "sudachi": "^0.1.5",
     "wanakana": "^5.1.0"
   }
 }

@@ -10,10 +10,6 @@ const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const emoji_regex = require('emoji-regex');
 const log4js = require('log4js');
-let sudachi;
-async function import_sudachi(){
-  sudachi = await import('sudachi');
-};
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
@@ -25,6 +21,7 @@ const priority_list = [
 ];
 
 const Voicebox = require('./src/voicebox.js');
+const Kagome = require('./src/kagome.js');
 const ResurrectionSpell = require('./src/resurrection_spell.js');
 const {
   TOKEN,
@@ -34,6 +31,7 @@ const {
 
 // etc
 const voicebox = new Voicebox();
+const kagome = new Kagome();
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
@@ -49,9 +47,6 @@ let voice_list = [];
 let voice_liblary_list = [];
 
 async function main(){
-  logger.info("Loading sudachi...");
-  await import_sudachi();
-
   // コマンド取得
   const commands = {};
   const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'))
@@ -289,7 +284,7 @@ function add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
   return;
 }
 
-function add_text_queue(msg){
+async function add_text_queue(msg){
   let content = msg.cleanContent;
 
   // テキストの処理順
@@ -351,7 +346,7 @@ function add_text_queue(msg){
   content = clean_message(content);
   logger.debug(`content(clean): ${content}`);
   // 4
-  content = fix_reading(content);
+  content = await fix_reading(content);
   logger.debug(`content(fix reading): ${content}`);
 
   const q = { str: content, id: msg.member.id, volume_order: volume_order }
@@ -478,11 +473,11 @@ function replace_at_dict(text, guild_id){
   return result;
 }
 
-function fix_reading(text){
-  let tokens = {};
+async function fix_reading(text){
+  let tokens;
+
   try{
-    tokens = JSON.parse(sudachi.tokenize(text, sudachi.TokenizeMode.C));
-    logger.debug(tokens);
+    tokens = await kagome.tokenize(text);
   }catch(e){
     logger.info(e);
     return text;
@@ -491,14 +486,16 @@ function fix_reading(text){
   let result = [];
 
   for(let token of tokens){
-    // 本当はreading_formのはずなんだけどそれっぽいのがdictionary_formに入ってるのでそれを使う
-    if(token.dictionary_form){
-      logger.debug(`KNOWN: ${token.dictionary_form}`);
-      // 記号を記号と読まないように
-      if((token.poses[0].match(/記号/gi) || token.poses[0].match(/空白/gi)) && token.dictionary_form === "キゴウ"){
-        result.push(token.surface)
+    if(token.class === "KNOWN"){
+      if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] == "固有名詞"){
+        logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
+        result.push(token.pronunciation);
+      }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
+        logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
+        result.push(token.pronunciation);
       }else{
-        result.push(token.dictionary_form);
+        logger.debug(token);
+        result.push(token.surface);
       }
     }else{
       if(isRomaji(token.surface)){
@@ -506,6 +503,7 @@ function fix_reading(text){
       }else{
         result.push(token.surface);
       }
+
     }
   }
 
