@@ -6,8 +6,10 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 
 1. Git
 2. Node.js
-3. [Voicevox Engine](https://github.com/VOICEVOX/voicevox_engine/)
-4. Discord APIのトークン
+3. Go
+4. [Voicevox Engine](https://github.com/VOICEVOX/voicevox_engine/)
+5. Discord APIのトークン
+6. [Kagome front](https://github.com/notoiro/kagome_front)
 
 ## あるといい
 
@@ -26,10 +28,14 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 2. Voicevox Engineを入れる
     1. [Voicevox Engineのリポジトリ](https://github.com/VOICEVOX/voicevox_engine/releases/latest)からエンジン本体のうち自分の環境に合ったやつをダウンロードしてくる
     2. `run`って書いてるやつ実行する(環境によって違う)、`--port`でポート指定しておくと楽
-3. 環境を整える
+3. Kagome frontを入れる
+    1. `git clone https://github.com/notoiro/kagome_front.git; cd kagome_front`
+    2. `go build main.go`でエラーとして出てくるコマンド叩いて依存関係をどうにかする
+    3. ビルドできたら`./main`
+4. 環境を整える
     1. 好きな方法でNode.jsを入れる(npm, nodeコマンドが使えればいい)
     2. 好きな方法でGitを入れる(gitコマンドが使えればいい)
-4. そろそろ動かしたい
+5. そろそろ動かしたい
     1. `git clone https://github.com/notoiro/voicevox-tts-discord.git; cd voicevox-tts-discord`
     2. `cp sample.json config.json`
     3. config.jsonを編集する
