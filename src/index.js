@@ -253,6 +253,9 @@ module.exports = class App{
         case "credit":
           await this.credit_list(interaction);
           break;
+        case "systemvoicemute":
+          await this.systemvoicemute(interaction);
+          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
@@ -335,6 +338,13 @@ module.exports = class App{
   }
 
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
+    const connection = this.connections_map.get(guild_id);
+    if(!connection) return;
+    if(connection.system_mute_counter > 0){
+      connection.system_mute_counter--;
+      return;
+    }
+
     text = Utils.replace_url(text);
 
     // 辞書と記号処理だけはやる
@@ -352,8 +362,6 @@ module.exports = class App{
 
     const q = { str: text, id: voice_ref_id, volume_order: volume_order }
 
-    const connection = this.connections_map.get(guild_id);
-    if(!connection) return;
     if(voice_override) q.voice_override = voice_override;
 
     connection.queue.push(q);
@@ -570,6 +578,7 @@ module.exports = class App{
       queue: [],
       filename: `${guild_id}.wav`,
       is_play: false,
+      system_mute_counter: 0,
       user_voices: {
         DEFAULT: {
           voice: 1,
@@ -1159,6 +1168,21 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
+    return;
+  }
+
+  async systemvoicemute(interaction){
+    const guild_id = interaction.guild.id;
+    const connection = this.connections_map.get(guild_id);
+
+    if(!connection){
+      await interaction.reply("接続がないよ！");
+      return;
+    }
+
+    connection.system_mute_counter++;
+
+    await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
     return;
   }
 }
