@@ -539,7 +539,6 @@ module.exports = class App{
     let result = [];
 
     for(let token of tokens){
-      this.logger.info(token);
       if(token.class === "KNOWN"){
         if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] == "固有名詞"){
           this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
