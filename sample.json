@@ -3,5 +3,6 @@
   "TMP_DIR": "/tmp",
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
-  "SERVER_DIR": "./servers"
+  "SERVER_DIR": "./servers",
+  "DICT_DIR": "./dictionaries"
 }

@@ -47,7 +47,8 @@ const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_char
 const {
   TOKEN,
   PREFIX,
-  SERVER_DIR
+  SERVER_DIR,
+  DICT_DIR
 } = require('../config.json');
 
 module.exports = class App{
@@ -69,6 +70,8 @@ module.exports = class App{
     this.voice_liblary_list = [];
     this.commands = {};
 
+    this.dictionaries = [];
+
     this.logger.level = "debug";
     if(process.env.NODE_ENV === "production") this.logger.level = "info";
   }
@@ -78,6 +81,8 @@ module.exports = class App{
     await this.setup_kagome();
     this.setup_discord();
     this.setup_process();
+
+    this.setup_dictionaries();
 
     this.client.login(TOKEN);
   }
@@ -193,6 +198,29 @@ module.exports = class App{
     });
   }
 
+  setup_dictionaries(){
+    let json_tmp;
+
+    if(!fs.existsSync(`${DICT_DIR}`)){
+      this.logger.info("Global dictionary file does not exist!");
+      return;
+    }
+    for(const dir of fs.readdirSync(`${DICT_DIR}`)){
+      try {
+        if(fs.existsSync(`${DICT_DIR}/${dir}`)){
+          json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
+          json_tmp.dict.forEach( (dict) => {
+            this.dictionaries.push(dict);
+          });
+        }
+      } catch (e) {
+        this.logger.info(e);
+      }
+    }
+    this.dictionaries.sort(function (a, b) { return b[0].length - a[0].length })
+    this.logger.info("Global dictionary files are loaded!");
+  }
+
   async onInteraction(interaction){
     if(!(interaction.isChatInputCommand())) return;
     if(!(interaction.inGuild())) return;
@@ -235,7 +263,7 @@ module.exports = class App{
         case "resetconnection":
           await this.resetconnection(interaction);
           break;
-        case "dicadd":
+        case "dicadd": 
           await this.dicadd(interaction);
           break;
         case "dicedit":
@@ -492,9 +520,17 @@ module.exports = class App{
 
   async fix_reading(text){
     let tokens;
+    
+    let text_tmp = text.toUpperCase();
+    
+    for(let p = 0; p < 5; p++){
+      const tmp_dict = this.dictionaries.filter(word => word[2] === p);
+
+      for(let d of this.dictionaries) text_tmp = text_tmp.replace(new RegExp(escape_regexp(d[0].toUpperCase()), "g"), d[1]);
+    }
 
     try{
-      tokens = await this.kagome.tokenize(text);
+      tokens = await this.kagome.tokenize(text_tmp);
     }catch(e){
       this.logger.info(e);
       return text;
@@ -503,6 +539,7 @@ module.exports = class App{
     let result = [];
 
     for(let token of tokens){
+      this.logger.info(token);
       if(token.class === "KNOWN"){
         if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] == "固有名詞"){
           this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);

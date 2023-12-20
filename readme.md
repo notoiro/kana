@@ -44,6 +44,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
         - `TOKEN`は上でメモったBotトークン
         - `PREFIX`はそれで始まる文章は読まないやつ
         - `SERVER_DIR`はサーバーごとの設定ファイルが保存されるディレクトリ、そのまま使うなら`servers`ってフォルダを作ること
+        - `DICT_DIR`は全サーバーに影響するグローバル辞書を保存するディレクトリ、そのまま使うなら`dictionaries`ってフォルダを作ること
     4. `npm install`
     5. `npm run production`
     6. 上でメモった招待用のURLで招待する
