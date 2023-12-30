@@ -212,7 +212,9 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            map_tmp.set(dict[0], dict[1]);
+            if(!map_tmp.has(dict[0])){
+              map_tmp.set(dict[0], dict[1]);
+            }
           });
         }
       } catch (e) {
