@@ -70,7 +70,7 @@ module.exports = class App{
     this.voice_liblary_list = [];
     this.commands = {};
 
-    this.dictionaries = [];
+    this.dictionaries = new Map(); //[];
 
     this.logger.level = "debug";
     if(process.env.NODE_ENV === "production") this.logger.level = "info";
@@ -201,6 +201,8 @@ module.exports = class App{
   setup_dictionaries(){
     let json_tmp;
 
+    let map_tmp = new Map();
+
     if(!fs.existsSync(`${DICT_DIR}`)){
       this.logger.info("Global dictionary file does not exist!");
       return;
@@ -210,14 +212,14 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            this.dictionaries.push(dict);
+            map_tmp.set(dict[0], dict[1]);
           });
         }
       } catch (e) {
         this.logger.info(e);
       }
     }
-    this.dictionaries.sort(function (a, b) { return b[0].length - a[0].length })
+    this.dictionaries = new Map([...map_tmp].sort((a, b) => b[1].length - a[1].length))
     this.logger.info("Global dictionary files are loaded!");
   }
 
@@ -523,11 +525,9 @@ module.exports = class App{
     
     let text_tmp = text.toUpperCase();
     
-    for(let p = 0; p < 5; p++){
-      const tmp_dict = this.dictionaries.filter(word => word[2] === p);
-
-      for(let d of this.dictionaries) text_tmp = text_tmp.replace(new RegExp(escape_regexp(d[0].toUpperCase()), "g"), d[1]);
-    }
+    this.dictionaries.forEach((value, key) => {
+        text_tmp = text_tmp.replace(new RegExp(escape_regexp(key.toUpperCase()), "g"), value);
+    });
 
     try{
       tokens = await this.kagome.tokenize(text_tmp);
