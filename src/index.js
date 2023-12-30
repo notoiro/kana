@@ -212,8 +212,8 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            if(!map_tmp.has(dict[0])){
-              map_tmp.set(dict[0], dict[1]);
+            if(!map_tmp.has(dict[0].toUpperCase())){
+              map_tmp.set(dict[0].toUpperCase(), dict[1]);
             }
           });
         }
@@ -221,7 +221,7 @@ module.exports = class App{
         this.logger.info(e);
       }
     }
-    this.dictionaries = new Map([...map_tmp].sort((a, b) => b[1].length - a[1].length))
+    this.dictionaries = new Map([...map_tmp].sort((a, b) => b[0].length - a[0].length))
     this.logger.info("Global dictionary files are loaded!");
   }
 
