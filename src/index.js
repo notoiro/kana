@@ -212,8 +212,8 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            if(!map_tmp.has(dict[0].toUpperCase())){
-              map_tmp.set(dict[0].toUpperCase(), dict[1]);
+            if(!map_tmp.has(dict[0])){
+              map_tmp.set(dict[0], dict[1]);
             }
           });
         }
@@ -525,10 +525,10 @@ module.exports = class App{
   async fix_reading(text){
     let tokens;
     
-    let text_tmp = text.toUpperCase();
+    let text_tmp = text;
     
     this.dictionaries.forEach((value, key) => {
-        text_tmp = text_tmp.replace(new RegExp(escape_regexp(key.toUpperCase()), "g"), value);
+        text_tmp = text_tmp.replace(new RegExp(escape_regexp(key.toUpperCase()), "gi"), value);
     });
 
     try{
