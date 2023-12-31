@@ -6,10 +6,11 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 
 1. Git
 2. Node.js
-3. Go
-4. [Voicevox Engine](https://github.com/VOICEVOX/voicevox_engine/)
-5. Discord APIのトークン
-6. [Kagome front](https://github.com/notoiro/kagome_front)
+3. Pnpm
+4. Go
+5. [Voicevox Engine](https://github.com/VOICEVOX/voicevox_engine/)
+6. Discord APIのトークン
+7. [Kagome front](https://github.com/notoiro/kagome_front)
 
 ## あるといい
 
@@ -45,7 +46,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
         - `PREFIX`はそれで始まる文章は読まないやつ
         - `SERVER_DIR`はサーバーごとの設定ファイルが保存されるディレクトリ、そのまま使うなら`servers`ってフォルダを作ること
         - `DICT_DIR`は全サーバーに影響するグローバル辞書を保存するディレクトリ、そのまま使うなら`dictionaries`ってフォルダを作ること
-    4. `npm install`
+    4. `pnpm install`
     5. `npm run production`
     6. 上でメモった招待用のURLで招待する
 
