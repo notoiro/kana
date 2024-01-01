@@ -1,0 +1,13 @@
+[Unit]
+Description=Voicevox Engine daemon
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+ExecStart=/home/YOUR_USERNAME/voicevox_engine/VOICEVOX/run --port YOUR_PORT --cpu_num_threads CORE_COUNT
+WorkingDirectory=/home/YOUR_USERNAME/voicevox_engine/VOICEVOX
+TimeoutSec=60
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
