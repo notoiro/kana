@@ -1,0 +1,13 @@
+[Unit]
+Description=Kagome front daemon
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+ExecStart=/home/YOUR_USERNAME/kagome_front/main
+WorkingDirectory=/home/YOUR_USERNAME/kagome_front
+TimeoutSec=60
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

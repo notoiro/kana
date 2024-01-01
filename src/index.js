@@ -44,6 +44,19 @@ const SKIP_PREFIX = "s";
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
 const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
 
+const DEFAULT_SETTING = {
+  user_voices: {
+    DEFAULT: {
+      voice: 1,
+      speed: 100,
+      pitch: 100,
+      intonation: 100,
+      volume: 100
+    }
+  },
+  dict: [["Discord", "でぃすこーど", 2]]
+}
+
 const {
   TOKEN,
   PREFIX,
@@ -565,7 +578,7 @@ module.exports = class App{
   }
 
   get_server_file(guild_id){
-    let result = null;
+    let result = DEFAULT_SETTING;
 
     if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
       try{
@@ -573,7 +586,7 @@ module.exports = class App{
         this.logger.debug(`loaded server conf: ${result}`);
       }catch(e){
         this.logger.info(e);
-        result = null;
+        result = DEFAULT_SETTING;
       }
     }
 
@@ -630,12 +643,9 @@ module.exports = class App{
     };
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      connectinfo.user_voices = server_file.user_voices ?? connectinfo.user_voices;
-      connectinfo.dict = server_file.dict ?? connectinfo.dict;
-    }else{
-      this.write_serverinfo(guild_id, { user_voices: connectinfo.user_voices, dict: connectinfo.dict });
-    }
+
+    connectinfo.user_voices = server_file.user_voices;
+    connectinfo.dict = server_file.dict;
 
     const connection = joinVoiceChannel({
       guildId: guild_id,
@@ -787,10 +797,9 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     let voice = {
       voice: 1,
@@ -838,10 +847,9 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     let voice = interaction.options.get("voiceall").value;
     try{
@@ -887,9 +895,8 @@ module.exports = class App{
     let voices = {};
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-    }
+
+    voices = server_file.user_voices;
 
     let sample_voice_info = {
       voice: 1,
@@ -965,10 +972,8 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
     const word_to = interaction.options.get("to").value;
@@ -1006,10 +1011,8 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
 
@@ -1046,10 +1049,8 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
     const word_to = interaction.options.get("to").value;
@@ -1099,10 +1100,8 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      voices = server_file.user_voices ?? voices;
-      dict = server_file.dict ?? dict;
-    }
+    voices = server_file.user_voices;
+    dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
     const priority = interaction.options.get("priority").value;
@@ -1151,9 +1150,7 @@ module.exports = class App{
     let dict = [];
 
     const server_file = this.get_server_file(guild_id);
-    if(server_file){
-      dict = server_file.dict ?? dict;
-    }
+    dict = server_file.dict;
 
     let list = "";
     let is_limit = false;
