@@ -53,10 +53,9 @@ const {
 
 const test_dictionaries = async (dictionaries, input, start, count) => {
   let result = [];
-  let arrayed_dictionaries = [...dictionaries];
-  for(let i = start; i < start + count && i < arrayed_dictionaries.length; i++){
-    if(new RegExp(escape_regexp(arrayed_dictionaries[i][0]), "gi").test(input)){
-      result.push(arrayed_dictionaries[i]);
+  for(let i = start; i < start + count && i < dictionaries.length; i++){
+    if(new RegExp(escape_regexp(dictionaries[i][0]), "gi").test(input)){
+      result.push(dictionaries[i]);
     }
   }
   return result;
@@ -81,7 +80,7 @@ module.exports = class App{
     this.voice_liblary_list = [];
     this.commands = {};
 
-    this.dictionaries = new Map(); //[];
+    this.dictionaries = [];
 
     this.logger.level = "debug";
     if(process.env.NODE_ENV === "production") this.logger.level = "info";
@@ -212,7 +211,7 @@ module.exports = class App{
   setup_dictionaries(){
     let json_tmp;
 
-    let map_tmp = new Map();
+    let map_tmp = [] //new Map();
 
     if(!fs.existsSync(`${DICT_DIR}`)){
       this.logger.info("Global dictionary file does not exist!");
@@ -223,8 +222,8 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            if(!map_tmp.has(dict[0])){
-              map_tmp.set(dict[0], dict[1]);
+            if(map_tmp.filter((dic) => dic[0] === dict[0] ).length == 0){
+              map_tmp.push(dict);
             }
           });
         }
@@ -232,7 +231,7 @@ module.exports = class App{
         this.logger.info(e);
       }
     }
-    this.dictionaries = new Map([...map_tmp].sort((a, b) => b[0].length - a[0].length))
+    this.dictionaries = map_tmp.toSorted((a, b) => b[0].length - a[0].length);
     this.logger.info("Global dictionary files are loaded!");
   }
 
@@ -422,6 +421,7 @@ module.exports = class App{
     // 3. 問題のある文字列の処理
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
+    console.time("youjo")
     // 0
     if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
@@ -447,6 +447,7 @@ module.exports = class App{
     // 4
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
+    console.timeEnd("youjo");
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order }
 
@@ -542,7 +543,7 @@ module.exports = class App{
     let test_separate_count = 1000;
     let dic_match_tests = [];
 
-    for(let i = 0; i < (this.dictionaries.size / test_separate_count) + (this.dictionaries.size % test_separate_count ? 1 : 0); i++){
+    for(let i = 0; i < (this.dictionaries.length / test_separate_count) + (this.dictionaries.length % test_separate_count ? 1 : 0); i++){
         dic_match_tests.push(
             test_dictionaries(this.dictionaries, text_tmp, i * test_separate_count, test_separate_count)
         );
@@ -550,10 +551,10 @@ module.exports = class App{
 
     dic_match_tests = await Promise.all(dic_match_tests);
     dic_match_tests = dic_match_tests.reduce((a, b)=>{return a.concat(b)}, []);
-    let matched_dic = new Map(dic_match_tests);
+    dic_match_tests.sort((a, b) => b[0].length - a[0].length);
 
-    matched_dic.forEach((value, key) => {
-        text_tmp = text_tmp.replace(new RegExp(escape_regexp(key.toUpperCase()), "gi"), value);
+    dic_match_tests.forEach((value) => {
+        text_tmp = text_tmp.replace(new RegExp(escape_regexp(value[0].toUpperCase()), "gi"), value[1]);
     });
 
     try{
