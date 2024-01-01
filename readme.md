@@ -11,6 +11,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 5. [Voicevox Engine](https://github.com/VOICEVOX/voicevox_engine/)
 6. Discord APIのトークン
 7. [Kagome front](https://github.com/notoiro/kagome_front)
+8. FFmpeg
 
 ## あるといい
 
@@ -26,9 +27,10 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
     4. `https://discord.com/oauth2/authorize?client_id=APPLICATIONID&scope=bot&permissions=2184268864`の`APPLICATIONID`をコピーしたやつに置き換えてメモっとく(招待用のURL)
     5. `Bot`→`Add Bot`でBotになる
     6. `Build-A-Bot`の`Reset Token`を押してトークンを生成する、生成されたらメモっとく(Botトークン)
+    7. その下の`MESSAGE CONTENT INTENT`を有効にする
 2. Voicevox Engineを入れる
-    1. [Voicevox Engineのリポジトリ](https://github.com/VOICEVOX/voicevox_engine/releases/latest)からエンジン本体のうち自分の環境に合ったやつをダウンロードしてくる
-    2. `run`って書いてるやつ実行する(環境によって違う)、`--port`でポート指定しておくと楽
+    1. [Voicevoxの公式](https://voicevox.hiroshiba.jp/ )から自分の環境に合ったやつをダウンロードしてくる(Engineのリポジトリが最新じゃないのでフル版のEngine部分だけ使う)
+    2. `run`って書いてるやつ実行する(環境によって違うけど概ねrunだけのやつが正解)、`--port`でポート指定しておくと楽
 3. Kagome frontを入れる
     1. `git clone https://github.com/notoiro/kagome_front.git; cd kagome_front`
     2. `go build main.go`でエラーとして出てくるコマンド叩いて依存関係をどうにかする
@@ -36,6 +38,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 4. 環境を整える
     1. 好きな方法でNode.jsを入れる(npm, nodeコマンドが使えればいい)
     2. 好きな方法でGitを入れる(gitコマンドが使えればいい)
+    3. 好きな方法でFFmpegを入れる(Linuxならパッケージマネージャーから入れるといい)
 5. そろそろ動かしたい
     1. `git clone https://github.com/notoiro/voicevox-tts-discord.git; cd voicevox-tts-discord`
     2. `cp sample.json config.json`
@@ -48,6 +51,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
     4. `pnpm install`
     5. `npm run production`
     6. 上でメモった招待用のURLで招待する
+    7. [SystemdのServiceのサンプル](https://github.com/notoiro/voicevox-tts-discord/tree/master/services )があるのでお好みで
 
 ## 使い方
 /help
