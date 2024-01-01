@@ -1,11 +1,12 @@
 [Unit]
 Description=voicevox tts discord daemon
-After=voicevox.service,kagome-daemon.service
-Requires=voicevox.service,kagome-daemon.service
+After=voicevox.service kagome-daemon.service
+Requires=voicevox.service kagome-daemon.service
 
 [Service]
 Type=simple
 User=YOUR_USERNAME
+ExecStartPre=/usr/bin/sleep 5
 ExecStart=/usr/bin/npm run production
 WorkingDirectory=/home/YOUR_USERNAME/voicevox-tts-discord/
 TimeoutSec=60
