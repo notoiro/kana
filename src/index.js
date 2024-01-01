@@ -40,6 +40,7 @@ const priority_list = [
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
+const DICT_SEP_COUNT = 1000;
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
 const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
@@ -64,15 +65,7 @@ const {
   DICT_DIR
 } = require('../config.json');
 
-const test_dictionaries = async (dictionaries, input, start, count) => {
-  let result = [];
-  for(let i = start; i < start + count && i < dictionaries.length; i++){
-    if(new RegExp(escape_regexp(dictionaries[i][0]), "gi").test(input)){
-      result.push(dictionaries[i]);
-    }
-  }
-  return result;
-}
+
 
 module.exports = class App{
   constructor(){
@@ -244,7 +237,7 @@ module.exports = class App{
         this.logger.info(e);
       }
     }
-    this.dictionaries = map_tmp.toSorted((a, b) => b[0].length - a[0].length);
+    this.dictionaries = Utils.slice_by_num(map_tmp.toSorted((a, b) => b[0].length - a[0].length), DICT_SEP_COUNT);
     this.logger.info("Global dictionary files are loaded!");
   }
 
@@ -290,7 +283,7 @@ module.exports = class App{
         case "resetconnection":
           await this.resetconnection(interaction);
           break;
-        case "dicadd": 
+        case "dicadd":
           await this.dicadd(interaction);
           break;
         case "dicedit":
@@ -514,7 +507,9 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
+      console.time("synthesis");
       const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      console.timeEnd("synthesis");
       const audio_res = createAudioResource(voice_path);
       this.logger.debug(`play voice path: ${voice_path}`);
 
@@ -550,26 +545,35 @@ module.exports = class App{
 
   async fix_reading(text){
     let tokens;
-    
+
+    console.time("global dict");
     let text_tmp = text;
 
-    let test_separate_count = 1000;
-    let dic_match_tests = [];
+    let promises = [];
 
-    for(let i = 0; i < (this.dictionaries.length / test_separate_count) + (this.dictionaries.length % test_separate_count ? 1 : 0); i++){
-        dic_match_tests.push(
-            test_dictionaries(this.dictionaries, text_tmp, i * test_separate_count, test_separate_count)
-        );
+    for(let dics of this.dictionaries){
+      const tmp_promice = new Promise((resolve, reject) => {
+        let result = [];
+
+        for(let dic of dics){
+          if(new RegExp(escape_regexp(dic[0], 'gi')).test(text)) result.push(dic);
+        }
+        resolve(result);
+      });
+
+      promises.push(tmp_promice);
     }
 
-    dic_match_tests = await Promise.all(dic_match_tests);
-    dic_match_tests = dic_match_tests.reduce((a, b)=>{return a.concat(b)}, []);
-    dic_match_tests.sort((a, b) => b[0].length - a[0].length);
+    promises = await Promise.all(promises);
+    promises = Array.prototype.concat(...promises);
 
-    dic_match_tests.forEach((value) => {
-        text_tmp = text_tmp.replace(new RegExp(escape_regexp(value[0].toUpperCase()), "gi"), value[1]);
-    });
+    for(let dic of promises){
+      text_tmp = text_tmp.replace(new RegExp(escape_regexp(dic[0]), 'gi'), dic[1]);
+    }
 
+    console.timeEnd("global dict");
+
+    console.time("kagome")
     try{
       tokens = await this.kagome.tokenize(text_tmp);
     }catch(e){
@@ -599,6 +603,8 @@ module.exports = class App{
         }
       }
     }
+
+    console.timeEnd("kagome");
 
     return result.join("");
   }
