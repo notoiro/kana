@@ -51,6 +51,17 @@ const {
   DICT_DIR
 } = require('../config.json');
 
+const test_dictionaries = async (dictionaries, input, start, count) => {
+  let result = [];
+  let arrayed_dictionaries = [...dictionaries];
+  for(let i = start; i < start + count && i < arrayed_dictionaries.length; i++){
+    if(new RegExp(escape_regexp(arrayed_dictionaries[i][0]), "gi").test(input)){
+      result.push(arrayed_dictionaries[i]);
+    }
+  }
+  return result;
+}
+
 module.exports = class App{
   constructor(){
     this.voicebox = new Voicebox();
@@ -522,12 +533,26 @@ module.exports = class App{
     return result;
   }
 
+
   async fix_reading(text){
     let tokens;
     
     let text_tmp = text;
-    
-    this.dictionaries.forEach((value, key) => {
+
+    let test_separate_count = 1000;
+    let dic_match_tests = [];
+
+    for(let i = 0; i < (this.dictionaries.size / test_separate_count) + (this.dictionaries.size % test_separate_count ? 1 : 0); i++){
+        dic_match_tests.push(
+            test_dictionaries(this.dictionaries, text_tmp, i * test_separate_count, test_separate_count)
+        );
+    }
+
+    dic_match_tests = await Promise.all(dic_match_tests);
+    dic_match_tests = dic_match_tests.reduce((a, b)=>{return a.concat(b)}, []);
+    let matched_dic = new Map(dic_match_tests);
+
+    matched_dic.forEach((value, key) => {
         text_tmp = text_tmp.replace(new RegExp(escape_regexp(key.toUpperCase()), "gi"), value);
     });
 
