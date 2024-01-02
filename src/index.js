@@ -237,7 +237,14 @@ module.exports = class App{
         this.logger.info(e);
       }
     }
-    this.dictionaries = Utils.slice_by_num(map_tmp.toSorted((a, b) => b[0].length - a[0].length), DICT_SEP_COUNT);
+
+    map_tmp = map_tmp.toSorted((a, b) => b[0].length - a[0].length);
+    map_tmp = map_tmp.map((val) => {
+      val[0] = new RegExp(escape_regexp(val[0]), 'gi');
+      return val;
+    });
+
+    this.dictionaries = Utils.slice_by_num(map_tmp, DICT_SEP_COUNT);
     this.logger.info("Global dictionary files are loaded!");
   }
 
@@ -556,7 +563,7 @@ module.exports = class App{
         let result = [];
 
         for(let dic of dics){
-          if(new RegExp(escape_regexp(dic[0]), 'gi').test(text)) result.push(dic);
+          if(dic[0].test(text)) result.push(dic);
         }
         resolve(result);
       });
@@ -568,7 +575,7 @@ module.exports = class App{
     promises = Array.prototype.concat(...promises);
 
     for(let dic of promises){
-      text_tmp = text_tmp.replace(new RegExp(escape_regexp(dic[0]), 'gi'), dic[1]);
+      text_tmp = text_tmp.replace(dic[0], dic[1]);
     }
 
     console.timeEnd("global dict");
