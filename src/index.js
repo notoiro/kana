@@ -228,7 +228,7 @@ module.exports = class App{
         if(fs.existsSync(`${DICT_DIR}/${dir}`)){
           json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
           json_tmp.dict.forEach( (dict) => {
-            if(map_tmp.filter((dic) => dic[0] === dict[0] ).length == 0){
+            if(!map_tmp.some((dic) => dic[0] === dict[0] )){
               map_tmp.push(dict);
             }
           });
@@ -556,7 +556,7 @@ module.exports = class App{
         let result = [];
 
         for(let dic of dics){
-          if(new RegExp(escape_regexp(dic[0], 'gi')).test(text)) result.push(dic);
+          if(new RegExp(escape_regexp(dic[0]), 'gi').test(text)) result.push(dic);
         }
         resolve(result);
       });
