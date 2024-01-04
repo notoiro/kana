@@ -26,6 +26,7 @@ const log4js = require('log4js');
 
 const Voicebox = require('./voicebox.js');
 const Kagome = require('./kagome.js');
+const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 
@@ -67,6 +68,7 @@ module.exports = class App{
   constructor(){
     this.voicebox = new Voicebox();
     this.kagome = new Kagome();
+    this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
     this.client = new Client({
       intents: [
@@ -89,6 +91,7 @@ module.exports = class App{
   async start(){
     await this.setup_voicevox();
     await this.setup_kagome();
+    this.logger.info(`Remote replace enabled: ${this.remote_repalce.enabled}`);
     this.setup_discord();
     this.setup_process();
 
@@ -504,13 +507,24 @@ module.exports = class App{
   }
 
   async fix_reading(text){
+    let tmp_text = text;
+
+    try{
+      tmp_text = await this.remote_repalce.replace_http(text);
+    }catch(e){
+      this.logger.info(e);
+      tmp_text = text;
+    }
+
+    this.logger.debug(`remote replace: ${tmp_text}`);
+
     let tokens;
 
     try{
-      tokens = await this.kagome.tokenize(text);
+      tokens = await this.kagome.tokenize(tmp_text);
     }catch(e){
       this.logger.info(e);
-      return text;
+      return tmp_text;
     }
 
     let result = [];

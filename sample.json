@@ -3,5 +3,6 @@
   "TMP_DIR": "/tmp",
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
-  "SERVER_DIR": "./servers"
+  "SERVER_DIR": "./servers",
+  "REMOTE_REPLACE_HOST": "none"
 }
