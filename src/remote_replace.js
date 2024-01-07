@@ -15,7 +15,6 @@ module.exports = class RemoteReplace{
 
   // もし設定がなければ何もしない
   async replace_http(text){
-    console.log(this.enabled)
     if(!(this.enabled)) return text;
 
     let result;
