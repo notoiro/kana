@@ -471,7 +471,7 @@ module.exports = class App{
 
     try{
       const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
-      const audio_res = createAudioResource(voice_path);
+      const audio_res = createAudioResource(voice_path, { inlineVolume: false });
       this.logger.debug(`play voice path: ${voice_path}`);
 
       connection.audio_player.play(audio_res);
