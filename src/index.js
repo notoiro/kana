@@ -27,6 +27,7 @@ const ffmpeg = require('fluent-ffmpeg');
 
 const Voicebox = require('./voicebox.js');
 const Kagome = require('./kagome.js');
+const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 
@@ -69,6 +70,7 @@ module.exports = class App{
   constructor(){
     this.voicebox = new Voicebox();
     this.kagome = new Kagome();
+    this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
     this.client = new Client({
       intents: [
@@ -92,6 +94,7 @@ module.exports = class App{
     await this.setup_voicevox();
     await this.test_opus_convert();
     await this.setup_kagome();
+    this.logger.info(`Remote replace enabled: ${this.remote_repalce.enabled}`);
     this.setup_discord();
     this.setup_process();
 
@@ -433,7 +436,9 @@ module.exports = class App{
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
     // 4
+    console.time("fix_reading time");
     content = await this.fix_reading(content);
+    console.timeEnd("fix_reading time");
     this.logger.debug(`content(fix reading): ${content}`);
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order }
@@ -562,13 +567,28 @@ module.exports = class App{
   }
 
   async fix_reading(text){
-    let tokens;
+    let tmp_text = text;
 
+    console.time("remote replace time");
     try{
-      tokens = await this.kagome.tokenize(text);
+      tmp_text = await this.remote_repalce.replace_http(text);
     }catch(e){
       this.logger.info(e);
-      return text;
+      tmp_text = text;
+    }
+
+    console.timeEnd("remote replace time");
+
+    this.logger.debug(`remote replace: ${tmp_text}`);
+
+    let tokens;
+
+    console.time("kagome time");
+    try{
+      tokens = await this.kagome.tokenize(tmp_text);
+    }catch(e){
+      this.logger.info(e);
+      return tmp_text;
     }
 
     let result = [];
@@ -594,6 +614,7 @@ module.exports = class App{
       }
     }
 
+    console.timeEnd("kagome time");
     return result.join("");
   }
 
