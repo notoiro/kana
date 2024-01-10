@@ -23,6 +23,7 @@ const {
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
+const ffmpeg = require('fluent-ffmpeg');
 
 const Voicebox = require('./voicebox.js');
 const Kagome = require('./kagome.js');
@@ -60,7 +61,8 @@ const DEFAULT_SETTING = {
 const {
   TOKEN,
   PREFIX,
-  SERVER_DIR
+  SERVER_DIR,
+  TMP_DIR
 } = require('../config.json');
 
 module.exports = class App{
@@ -88,6 +90,7 @@ module.exports = class App{
 
   async start(){
     await this.setup_voicevox();
+    await this.test_opus_convert();
     await this.setup_kagome();
     this.setup_discord();
     this.setup_process();
@@ -117,6 +120,21 @@ module.exports = class App{
       this.logger.info(e);
     }
   }
+
+  async test_opus_convert(){
+      try{
+        const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+        if(opus_voice_path){
+          this.logger.info('opus convert: enabled')
+        }else{
+          this.logger.info('opus convert: disabled')
+        }
+      }catch(e){
+        this.logger.info('opus convert: disabled');
+      }
+  }
+
+
 
   // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
   async setup_kagome(){
@@ -471,8 +489,26 @@ module.exports = class App{
 
     try{
       const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
-      const audio_res = createAudioResource(voice_path, { inlineVolume: false });
-      this.logger.debug(`play voice path: ${voice_path}`);
+
+      let opus_voice_path;
+      // Opusへの変換は失敗してもいいので入れ子にする
+      try{
+        opus_voice_path = await this.convert_audio(voice_path, `${TMP_DIR}/${connection.opus_filename}`);
+      }catch(e){
+        this.logger.info(e);
+      }
+
+      let audio_res;
+      if(opus_voice_path){
+        audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
+          inputType: StreamType.OggOpus,
+          inlineVolume: false
+        });
+        this.logger.debug(`play opus voice path: ${opus_voice_path}`);
+      }else{
+        audio_res = createAudioResource(voice_path, { inlineVolume: false });
+        this.logger.debug(`play voice path: ${voice_path}`);
+      }
 
       connection.audio_player.play(audio_res);
     }catch(e){
@@ -483,6 +519,28 @@ module.exports = class App{
 
       this.play(guild_id);
     }
+  }
+
+  convert_audio(path, output_path){
+    return new Promise((resolve, reject) => {
+        const options = [
+          '-vn', // Video disable
+          '-ar', '24000', // 24000 Hz
+          '-ac', '1', // mono
+          '-acodec', 'libopus', // Opus Codec
+          '-ab', '96k', // Bitrate
+          '-vbr', 'on', // Variable bitrate
+          '-threads', '2', // 2core
+          '-y', // Overwrite
+          '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
+        ]
+        ffmpeg()
+          .input(path)
+          .outputOptions(options)
+          .saveToFile(output_path)
+          .on('end', () => { resolve(output_path) })
+          .on('error', (err) => { reject(e) });
+    });
   }
 
   replace_at_dict(text, guild_id){
@@ -590,6 +648,7 @@ module.exports = class App{
       audio_player: null,
       queue: [],
       filename: `${guild_id}.wav`,
+      opus_filename: `${guild_id}.ogg`,
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
