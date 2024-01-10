@@ -30,8 +30,6 @@ module.exports = class RemoteReplace{
       throw e;
     }
 
-    console.log(`remote replace: ${result}`)
-
     return result;
   }
 }
