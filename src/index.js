@@ -16,7 +16,7 @@ const log4js = require('log4js');
 const ffmpeg = require('fluent-ffmpeg');
 const os = require('os');
 
-const Voicebox = require('./voicebox.js');
+const Voicevox = require('./voicevox.js');
 const Kagome = require('./kagome.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
@@ -47,7 +47,7 @@ const {
 
 module.exports = class App{
   constructor(){
-    this.voicebox = new Voicebox();
+    this.voicevox = new Voicevox();
     this.kagome = new Kagome();
     this.logger = log4js.getLogger();
     this.client = new Client({
@@ -99,7 +99,7 @@ module.exports = class App{
   }
 
   async setup_voicevox(){
-    await this.voicebox.check_version();
+    await this.voicevox.check_version();
     const voiceinfos = await this.get_voicelist();
     this.voice_list = voiceinfos.speaker_list;
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
@@ -109,7 +109,7 @@ module.exports = class App{
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
-      await this.voicebox.synthesis("てすと", "test.wav", 0, tmp_voice);
+      await this.voicevox.synthesis("てすと", "test.wav", 0, tmp_voice);
     }catch(e){
       this.logger.info(e);
     }
@@ -240,7 +240,7 @@ module.exports = class App{
 
     console.log(`${indent}${fg_blue}os:              ${fg_default}  ${os.type()} ${os.release()} ${os.arch()}`);
     console.log(`${indent}${fg_blue}node.js:         ${fg_default}  ${process.version}`);
-    console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${this.voicebox.version}`);
+    console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${this.voicevox.version}`);
 
     console.log("");
 
@@ -517,7 +517,7 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      const voice_path = await this.voicevox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
 
       let opus_voice_path;
 
@@ -805,7 +805,7 @@ module.exports = class App{
   }
 
   async get_voicelist(){
-    const list = await this.voicebox.speakers();
+    const list = await this.voicevox.speakers();
 
     const speaker_list = [];
     const lib_list = [];
