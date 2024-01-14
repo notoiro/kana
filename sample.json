@@ -4,5 +4,10 @@
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
   "SERVER_DIR": "./servers",
-  "REMOTE_REPLACE_HOST": "none"
+  "REMOTE_REPLACE_HOST": "none",
+  "OPUS_CONVERT": {
+    "enable": false,
+    "bitrate": "96k",
+    "threads": 2
+  }
 }

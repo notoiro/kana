@@ -9,11 +9,13 @@ const {
 module.exports = class Voicebox{
   constructor(){
     this.rpc = axios.create({baseURL: VOICEBOX_ENGINE, proxy: false});
+    this.version = "Unknown";
   }
 
-  async check(){
+  async check_version(){
     try{
-      await this.rpc.get('version');
+      this.version = await this.rpc.get('version');
+      this.version = this.version.data;
     }catch(e){
       throw e;
     }

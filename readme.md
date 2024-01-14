@@ -49,6 +49,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
         - `PREFIX`はそれで始まる文章は読まないやつ
         - `SERVER_DIR`はサーバーごとの設定ファイルが保存されるディレクトリ、そのまま使うなら`servers`ってフォルダを作ること
         - `REMOTE_REPLACE_HOST`は[replace http](https://github.com/notoiro/replace_http )を利用する場合のサーバーアドレス
+        - `OPUS_CONVERT`はOpusへの変換機能の設定。`enable`以外の設定はわかってる人向け。
     4. `pnpm install`
     5. `npm run production`
     6. 上でメモった招待用のURLで招待する
