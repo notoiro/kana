@@ -10,8 +10,6 @@ module.exports = (path, output_path, bitrate = '96k', threads = '2') =>{
         '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
       ];
 
-      console.log(options)
-
       ffmpeg()
         .input(path)
         .outputOptions(options)
