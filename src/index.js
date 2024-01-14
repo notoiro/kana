@@ -17,31 +17,22 @@ const Voicevox = require('./voicevox.js');
 const Kagome = require('./kagome.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
+const BotUtils = require('./bot_utils.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
-const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
-const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
-const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
-
-const DEFAULT_SETTING = {
-  user_voices: {
-    DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
-  },
-  dict: [["Discord", "でぃすこーど", 2]]
-}
-
 const {
-  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT, VOICEVOX_ENGINE
+  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT
 } = require('../config.json');
 
 module.exports = class App{
@@ -55,6 +46,8 @@ module.exports = class App{
         GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
       ]
     });
+
+    this.bot_utils = new BotUtils(this.logger);
 
     this.connections_map = new Map();
     this.voice_list = [];
@@ -261,7 +254,6 @@ module.exports = class App{
           }else{
             await command.execute(interaction);
           }
-
           break;
       }
     } catch (error) {
@@ -286,43 +278,6 @@ module.exports = class App{
     return true;
   }
 
-  replace_volume_command(text){
-    return text.replace(VOL_REGEXP, "");
-  }
-
-  // volume or null
-  get_command_volume(command){
-    let vol_command = command.match(VOL_REGEXP);
-
-    if(!(vol_command && vol_command[0])) return null;
-
-    let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
-    if(isNaN(volume)) return null;
-
-    return volume < 100 ? volume : 100;
-  }
-
-  replace_voice_spell(text){
-    return text.replace(VOICE_REGEXP, "");
-  }
-
-  get_spell_voice(spell){
-    let voice_command = spell.match(VOICE_REGEXP);
-
-    if(!(voice_command && voice_command[0])) return null;
-
-    let voice = null;
-    try{
-      voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
-      if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
-    }catch(e){
-      logger.debug(e);
-      voice = null;
-    }
-
-    return voice;
-  }
-
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
     const connection = this.connections_map.get(guild_id);
     if(!connection) return;
@@ -338,11 +293,11 @@ module.exports = class App{
     text = this.replace_at_dict(text, guild_id);
     this.logger.debug(`text(replace dict): ${text}`);
 
-    let volume_order = this.get_command_volume(text);
-    if(volume_order !== null) text = this.replace_volume_command(text);
+    let volume_order = this.bot_utils.get_command_volume(text);
+    if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-    let voice_override = this.get_spell_voice(text);
-    if(voice_override !== null) text = this.replace_voice_spell(text);
+    let voice_override = this.bot_utils.get_spell_voice(text, this.voice_list);
+    if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
 
     text = Utils.clean_message(text);
 
@@ -378,11 +333,11 @@ module.exports = class App{
     this.logger.debug(`content(replace dict): ${content}`);
 
     // 2
-    let volume_order = this.get_command_volume(content);
-    if(volume_order !== null) content = this.replace_volume_command(content);
+    let volume_order = this.bot_utils.get_command_volume(content);
+    if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
 
-    let voice_override = this.get_spell_voice(content);
-    if(voice_override !== null) content = this.replace_voice_spell(content);
+    let voice_override = this.bot_utils.get_spell_voice(content, this.voice_list);
+    if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
 
     // 3
     content = Utils.clean_message(content);
@@ -532,21 +487,6 @@ module.exports = class App{
     return result.join("");
   }
 
-  get_server_file(guild_id){
-    let result = DEFAULT_SETTING;
-
-    if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
-      try{
-        result = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
-        this.logger.debug(`loaded server conf: ${result}`);
-      }catch(e){
-        this.logger.info(e);
-        result = DEFAULT_SETTING;
-      }
-    }
-
-    return result;
-  }
 
   async connect_vc(interaction){
     const guild = interaction.guild;
@@ -591,7 +531,7 @@ module.exports = class App{
       dict: [["Discord", "でぃすこーど", 2]]
     };
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
@@ -722,14 +662,6 @@ module.exports = class App{
     return { speaker_list: speaker_list, voice_liblary_list: lib_list };
   }
 
-  write_serverinfo(guild_id, data){
-    try{
-      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(data));
-    }catch(e){
-      this.logger.info(e);
-    }
-  }
-
   async setvoice(interaction, type){
     const guild_id = interaction.guild.id;
     const member_id = interaction.member.id;
@@ -739,7 +671,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     voices = server_file.user_voices;
     dict = server_file.dict;
@@ -751,7 +683,7 @@ module.exports = class App{
     voice[type] = interaction.options.get(type).value;
     voices[member_id] = voice;
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.user_voices = voices;
 
@@ -784,7 +716,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     voices = server_file.user_voices;
     dict = server_file.dict;
@@ -807,7 +739,7 @@ module.exports = class App{
 
     voices[member_id] = voice;
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.user_voices = voices;
 
@@ -832,7 +764,7 @@ module.exports = class App{
 
     let voices = {};
 
-    const server_file = this.get_server_file(interaction.guild.id);
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
 
     voices = server_file.user_voices;
 
@@ -902,7 +834,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -918,7 +850,7 @@ module.exports = class App{
 
     dict.push([word_from, word_to, 2]);
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -941,7 +873,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -963,7 +895,7 @@ module.exports = class App{
 
     dict = dict.filter(word => word[0] !== target);
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -979,7 +911,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1007,7 +939,7 @@ module.exports = class App{
       return result;
     });
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1030,7 +962,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1058,7 +990,7 @@ module.exports = class App{
       return result;
     });
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1076,7 +1008,7 @@ module.exports = class App{
   async diclist(interaction){
     let dict = [];
 
-    const server_file = this.get_server_file(interaction.guild.id);
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
     dict = server_file.dict;
 
     let list = "";
