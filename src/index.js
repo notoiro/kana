@@ -23,6 +23,8 @@ const {
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
+const ffmpeg = require('fluent-ffmpeg');
+const os = require('os');
 
 const Voicebox = require('./voicebox.js');
 const Kagome = require('./kagome.js');
@@ -60,7 +62,10 @@ const DEFAULT_SETTING = {
 const {
   TOKEN,
   PREFIX,
-  SERVER_DIR
+  SERVER_DIR,
+  TMP_DIR,
+  OPUS_CONVERT,
+  VOICEBOX_ENGINE
 } = require('../config.json');
 
 module.exports = class App{
@@ -81,13 +86,29 @@ module.exports = class App{
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.commands = {};
+    this.config = {
+      opus_convert: {
+        enable: false,
+        bitrate: '96k',
+        threads: 2
+      }
+    };
 
     this.logger.level = "debug";
     if(process.env.NODE_ENV === "production") this.logger.level = "info";
+
+    this.status = {
+      debug: !(process.env.NODE_ENV === "production"),
+      connected_servers: 0,
+      discord_username: "NAME",
+      opus_convert_available: false
+    }
   }
 
   async start(){
+    this.setup_config();
     await this.setup_voicevox();
+    await this.test_opus_convert();
     await this.setup_kagome();
     this.setup_discord();
     this.setup_process();
@@ -95,7 +116,20 @@ module.exports = class App{
     this.client.login(TOKEN);
   }
 
+  setup_config(){
+    if(OPUS_CONVERT !== undefined && OPUS_CONVERT.hasOwnProperty('enable')){
+      this.config.opus_convert.enable = OPUS_CONVERT.enable;
+      if(OPUS_CONVERT.enable){
+        this.config.opus_convert.bitrate ||= OPUS_CONVERT.bitrate;
+        this.config.opus_convert.threads ||= OPUS_CONVERT.threads;
+      }
+    }
+
+    this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
+  }
+
   async setup_voicevox(){
+    await this.voicebox.check_version();
     const voiceinfos = await this.get_voicelist();
     this.voice_list = voiceinfos.speaker_list;
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
@@ -116,6 +150,18 @@ module.exports = class App{
     }catch(e){
       this.logger.info(e);
     }
+  }
+
+  async test_opus_convert(){
+      try{
+        const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+        if(opus_voice_path){
+          this.status.opus_convert_available = true;
+        }
+      }catch(e){
+        this.logger.info(`Opus convert init err.`)
+        this.status.opus_convert_available = false;
+      }
   }
 
   // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
@@ -167,7 +213,11 @@ module.exports = class App{
       this.logger.debug(data);
 
       await this.client.application.commands.set(data);
-      this.logger.info("Discord Ready!");
+
+      this.status.connected_servers = this.client.guilds.cache.size;
+      this.status.discord_username = this.client.user.displayName;
+
+      this.print_bot_info();
 
       this.update_status_text();
     });
@@ -204,6 +254,61 @@ module.exports = class App{
         this.client.destroy();
       }
     });
+  }
+
+  print_bot_info(){
+    const indent = "          ";
+    const fg_default = "\x1b[1;39m";
+    const fg_green = "\x1b[38:5:107m";
+    const fg_blue = "\x1b[38:5:159m";
+    const fg_white = "\x1b[38:5:15m";
+
+    const bg_default = "\x1b[1;49m";
+    const bg_white = "\x1b[1;47m";
+    const bg_red = "\x1b[48:5:208m";
+    const bg_green = "\x1b[48:5:106m";
+
+    const reset = fg_default + bg_default;
+
+    const ans = (flag, true_text, false_text) => {
+      return flag ? `${bg_green}${fg_white} ${true_text} ${reset}`:`${bg_red}${fg_white} ${false_text} ${reset}`;
+    }
+
+    console.log(`\n`);
+
+    console.log(`    ${bg_white}  ${fg_green}_  _ ____ _ ____ ____ _  _ ____ _  _    ___ ___ ____  ${reset}`);
+    console.log(`    ${bg_white}  ${fg_green}|  | |  | | |    |___ |  | |  |  \\/      |   |  [__   ${reset}`);
+    console.log(`    ${bg_white}  ${fg_green} \\/  |__| | |___ |___  \\/  |__| _/\\_     |   |  ___]  ${reset}`);
+    console.log(`    ${bg_white}                                                        ${bg_default}`);
+    console.log("");
+
+    console.log(`${indent}${fg_blue}os:              ${fg_default}  ${os.type()} ${os.release()} ${os.arch()}`);
+    console.log(`${indent}${fg_blue}node.js:         ${fg_default}  ${process.version}`);
+    console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${this.voicebox.version}`);
+
+    console.log("");
+
+    console.log(`${indent}${fg_blue}voicevox host:   ${fg_default}  ${VOICEBOX_ENGINE}`);
+    console.log(`${indent}${fg_blue}temp directory:  ${fg_default}  ${TMP_DIR}`);
+    console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
+    console.log(`${indent}${fg_blue}pre opus convert:${fg_default}`);
+    console.log(`${indent}${fg_blue}  enabled:       ${fg_default}  ${ans(this.config.opus_convert.enable, "yes", "no")}`);
+    if(this.config.opus_convert.enable){
+      console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${this.config.opus_convert.bitrate}`);
+      console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${this.config.opus_convert.threads} core`);
+    }
+
+
+    console.log("");
+
+    console.log(`${indent}${fg_blue}production:      ${fg_default}  ${ans(!this.status.debug, 'yes', 'no')}`);
+    console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${this.status.connected_servers} servers`);
+    console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${this.voice_list.length} voices`);
+    console.log(`${indent}${fg_blue}pre opus convert:${fg_default}  ${ans(this.status.opus_convert_available, "available", "unavailable")}`);
+
+    console.log(`\n`);
+
+    console.log(`${indent}Ready in as ${fg_green}${this.status.discord_username}${reset}!`);
   }
 
   async onInteraction(interaction){
@@ -471,8 +576,29 @@ module.exports = class App{
 
     try{
       const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
-      const audio_res = createAudioResource(voice_path);
-      this.logger.debug(`play voice path: ${voice_path}`);
+
+      let opus_voice_path;
+
+      if(this.config.opus_convert.enable){
+        // Opusへの変換は失敗してもいいので入れ子にする
+        try{
+          opus_voice_path = await this.convert_audio(voice_path, `${TMP_DIR}/${connection.opus_filename}`);
+        }catch(e){
+          this.logger.info(e);
+        }
+      }
+
+      let audio_res;
+      if(opus_voice_path){
+        audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
+          inputType: StreamType.OggOpus,
+          inlineVolume: false
+        });
+        this.logger.debug(`play opus voice path: ${opus_voice_path}`);
+      }else{
+        audio_res = createAudioResource(voice_path, { inlineVolume: false });
+        this.logger.debug(`play voice path: ${voice_path}`);
+      }
 
       connection.audio_player.play(audio_res);
     }catch(e){
@@ -483,6 +609,29 @@ module.exports = class App{
 
       this.play(guild_id);
     }
+  }
+
+  convert_audio(path, output_path){
+    return new Promise((resolve, reject) => {
+        const options = [
+          '-vn', // Video disable
+          '-ar', '24000', // 24000 Hz
+          '-ac', '1', // mono
+          '-acodec', 'libopus', // Opus Codec
+          '-ab', this.config.opus_convert.bitrate, // Bitrate
+          '-vbr', 'on', // Variable bitrate
+          '-threads', this.config.opus_convert.threads, // encode threads
+          '-y', // Overwrite
+          '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
+        ];
+
+        ffmpeg()
+          .input(path)
+          .outputOptions(options)
+          .saveToFile(output_path)
+          .on('end', () => { resolve(output_path) })
+          .on('error', (err) => { reject(e) });
+    });
   }
 
   replace_at_dict(text, guild_id){
@@ -590,6 +739,7 @@ module.exports = class App{
       audio_player: null,
       queue: [],
       filename: `${guild_id}.wav`,
+      opus_filename: `${guild_id}.ogg`,
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
