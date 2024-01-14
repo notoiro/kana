@@ -62,7 +62,7 @@ module.exports = class App{
       connected_servers: 0,
       discord_username: "NAME",
       opus_convert_available: false
-    }
+    };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
   }
@@ -486,7 +486,6 @@ module.exports = class App{
 
     return result.join("");
   }
-
 
   async connect_vc(interaction){
     const guild = interaction.guild;
