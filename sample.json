@@ -5,7 +5,7 @@
   "PREFIX": ";",
   "SERVER_DIR": "./servers",
   "OPUS_CONVERT": {
-    "enable": true,
+    "enable": false,
     "bitrate": "96k",
     "threads": 2
   }
