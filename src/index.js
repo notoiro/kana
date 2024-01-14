@@ -13,13 +13,13 @@ const {
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
-const ffmpeg = require('fluent-ffmpeg');
 const os = require('os');
 
 const Voicevox = require('./voicevox.js');
 const Kagome = require('./kagome.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
+const convert_audio = require('./convert_audio.js');
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
@@ -117,7 +117,7 @@ module.exports = class App{
 
   async test_opus_convert(){
     try{
-      const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+      const opus_voice_path = await convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
       this.logger.info(`Opus convert init err.`);
@@ -275,58 +275,39 @@ module.exports = class App{
     const command = this.commands[interaction.commandName];
 
     try {
-      switch(interaction.commandName){
+      let command_name = interaction.commandName;
+
+      switch(command_name){
         case "connect":
-          await this.connect_vc(interaction);
+        case "setvoiceall":
+        case "currentvoice":
+        case "resetconnection":
+        case "dicadd":
+        case "dicedit":
+        case "dicdel":
+        case "dicpriority":
+        case "diclist":
+        case "credit":
+        case "systemvoicemute":
+          if(command_name === "connect") command_name = "connect_vc";
+          if(command_name === "credit") command_name = "credit_list"
+          await this[command_name](interaction);
           break;
         case "setspeed":
-          await this.setvoice(interaction, "speed");
-          break;
         case "setpitch":
-          await this.setvoice(interaction, "pitch");
-          break;
         case "setintonation":
-          await this.setvoice(interaction, "intonation");
-          break;
-        case "setvoiceall":
-          await this.setvoiceall(interaction);
+          command_name = command_name.replace("set", "");
+          await this.setvoice(interaction, command_name);
           break;
         case "setdefaultvoice":
           if(!(interaction.member.permissions.has('Administrator'))){
             await interaction.reply({ content: "権限がないよ！" });
-          }else{
-            await this.setvoiceall(interaction, "DEFAULT");
+            break;
           }
-          break;
-        case "currentvoice":
-          await this.currentvoice(interaction);
+          await this.setvoiceall(interaction, "DEFAULT");
           break;
         case "defaultvoice":
           await this.currentvoice(interaction, "DEFAULT");
-          break;
-        case "resetconnection":
-          await this.resetconnection(interaction);
-          break;
-        case "dicadd":
-          await this.dicadd(interaction);
-          break;
-        case "dicedit":
-          await this.dicedit(interaction);
-          break;
-        case "dicdel":
-          await this.dicdel(interaction);
-          break;
-        case "dicpriority":
-          await this.dicpriority(interaction);
-          break;
-        case "diclist":
-          await this.diclist(interaction);
-          break;
-        case "credit":
-          await this.credit_list(interaction);
-          break;
-        case "systemvoicemute":
-          await this.systemvoicemute(interaction);
           break;
         default:
           // setvoiceは無限に増えるのでここで処理
@@ -510,7 +491,7 @@ module.exports = class App{
       pitch: Utils.map_voice_setting(voice.pitch, -0.15, 0.15),
       intonation: Utils.map_voice_setting(voice.intonation, 0, 2),
       volume: Utils.map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
-    }
+    };
 
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
@@ -522,7 +503,10 @@ module.exports = class App{
       if(this.config.opus_convert.enable){
         // Opusへの変換は失敗してもいいので入れ子にする
         try{
-          opus_voice_path = await this.convert_audio(voice_path, `${TMP_DIR}/${connection.opus_filename}`);
+          opus_voice_path = await convert_audio(
+            voice_path, `${TMP_DIR}/${connection.opus_filename}`,
+            this.config.opus_convert.bitrate, this.config.opus_convert.threads
+          );
         }catch(e){
           this.logger.info(e);
           opus_voice_path = null;
@@ -549,29 +533,6 @@ module.exports = class App{
 
       this.play(guild_id);
     }
-  }
-
-  convert_audio(path, output_path){
-    return new Promise((resolve, reject) => {
-        const options = [
-          '-vn', // Video disable
-          '-ar', '24000', // 24000 Hz
-          '-ac', '1', // mono
-          '-acodec', 'libopus', // Opus Codec
-          '-ab', this.config.opus_convert.bitrate, // Bitrate
-          '-vbr', 'on', // Variable bitrate
-          '-threads', this.config.opus_convert.threads, // encode threads
-          '-y', // Overwrite
-          '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
-        ];
-
-        ffmpeg()
-          .input(path)
-          .outputOptions(options)
-          .saveToFile(output_path)
-          .on('end', () => { resolve(output_path) })
-          .on('error', (err) => { reject(e) });
-    });
   }
 
   replace_at_dict(text, guild_id){
