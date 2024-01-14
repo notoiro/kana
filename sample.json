@@ -3,5 +3,10 @@
   "TMP_DIR": "/tmp",
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
-  "SERVER_DIR": "./servers"
+  "SERVER_DIR": "./servers",
+  "OPUS_CONVERT": {
+    "enable": true,
+    "bitrate": "96k",
+    "threads": 2
+  }
 }
