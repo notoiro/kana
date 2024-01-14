@@ -32,7 +32,7 @@ const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT
 } = require('../config.json');
 
 module.exports = class App{
