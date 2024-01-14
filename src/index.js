@@ -1,24 +1,14 @@
 "use strict";
 // deps
 const {
-  joinVoiceChannel,
-  getVoiceConnection,
-  createAudioResource,
-  StreamType,
-  createAudioPlayer,
-  NoSubscriberBehavior,
-  generateDependencyReport,
-  VoiceConnectionStatus,
-  entersState,
-  AudioPlayerStatus,
-  PermissionsBitField
+  joinVoiceChannel, getVoiceConnection, createAudioResource,
+  StreamType, createAudioPlayer, NoSubscriberBehavior,
+  generateDependencyReport, VoiceConnectionStatus,
+  entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client,
-  GatewayIntentBits,
-  ApplicationCommandOptionType,
-  InteractionType, EmbedBuilder,
-  ActivityType
+  Client, GatewayIntentBits, ApplicationCommandOptionType,
+  EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
@@ -35,9 +25,7 @@ const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) 
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-const priority_list = [
-  "最弱", "よわい", "普通", "つよい", "最強"
-];
+const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
@@ -48,24 +36,13 @@ const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_char
 
 const DEFAULT_SETTING = {
   user_voices: {
-    DEFAULT: {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
+    DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
   },
   dict: [["Discord", "でぃすこーど", 2]]
 }
 
 const {
-  TOKEN,
-  PREFIX,
-  SERVER_DIR,
-  TMP_DIR,
-  OPUS_CONVERT,
-  VOICEBOX_ENGINE
+  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT, VOICEBOX_ENGINE
 } = require('../config.json');
 
 module.exports = class App{
@@ -75,10 +52,8 @@ module.exports = class App{
     this.logger = log4js.getLogger();
     this.client = new Client({
       intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
       ]
     });
 
@@ -87,15 +62,8 @@ module.exports = class App{
     this.voice_liblary_list = [];
     this.commands = {};
     this.config = {
-      opus_convert: {
-        enable: false,
-        bitrate: '96k',
-        threads: 2
-      }
+      opus_convert: { enable: false, bitrate: '96k', threads: 2 }
     };
-
-    this.logger.level = "debug";
-    if(process.env.NODE_ENV === "production") this.logger.level = "info";
 
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
@@ -103,6 +71,8 @@ module.exports = class App{
       discord_username: "NAME",
       opus_convert_available: false
     }
+
+    this.logger.level = this.status.debug ? 'debug' : 'info';
   }
 
   async start(){
@@ -120,8 +90,8 @@ module.exports = class App{
     if(OPUS_CONVERT !== undefined && OPUS_CONVERT.hasOwnProperty('enable')){
       this.config.opus_convert.enable = OPUS_CONVERT.enable;
       if(OPUS_CONVERT.enable){
-        this.config.opus_convert.bitrate ||= OPUS_CONVERT.bitrate;
-        this.config.opus_convert.threads ||= OPUS_CONVERT.threads;
+        this.config.opus_convert.bitrate = OPUS_CONVERT.bitrate ?? this.config.opus_convert.bitrate;
+        this.config.opus_convert.threads = OPUS_CONVERT.threads ?? this.config.opus_convert.threads;
       }
     }
 
@@ -134,34 +104,25 @@ module.exports = class App{
     this.voice_list = voiceinfos.speaker_list;
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
 
-    this.logger.info("Voice list load complate.");
     this.logger.debug(this.voice_list);
 
-    const tmp_voice = {
-      speed: 1,
-      pitch: 0,
-      intonation: 1,
-      volume: 1
-    };
+    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
       await this.voicebox.synthesis("てすと", "test.wav", 0, tmp_voice);
-      this.logger.info("Voicevox init complate.");
     }catch(e){
       this.logger.info(e);
     }
   }
 
   async test_opus_convert(){
-      try{
-        const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
-        if(opus_voice_path){
-          this.status.opus_convert_available = true;
-        }
-      }catch(e){
-        this.logger.info(`Opus convert init err.`)
-        this.status.opus_convert_available = false;
-      }
+    try{
+      const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+      this.status.opus_convert_available = !!opus_voice_path;
+    }catch(e){
+      this.logger.info(`Opus convert init err.`)
+      this.status.opus_convert_available = false;
+    }
   }
 
   // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
@@ -225,8 +186,7 @@ module.exports = class App{
     this.client.on('interactionCreate', this.onInteraction.bind(this));
 
     this.client.on('messageCreate', (msg) => {
-      if(!(msg.guild)) return;
-      if(msg.author.bot) return;
+      if(!(msg.guild) || msg.author.bot) return;
 
       if(msg.content === SKIP_PREFIX){
         this.skip_current_text(msg.guild.id);
@@ -244,15 +204,11 @@ module.exports = class App{
 
   setup_process(){
     process.on('uncaughtExceptionMonitor', (err) => {
-      if(process.env.NODE_ENV === "production"){
-        this.client.destroy();
-      }
+      if(process.env.NODE_ENV === "production") this.client.destroy();
     });
-    process.on("exit", exitCode => {
+    process.on("exit", _ => {
       this.logger.info("Exit!");
-      if(process.env.NODE_ENV === "production"){
-        this.client.destroy();
-      }
+      if(process.env.NODE_ENV === "production") this.client.destroy();
     });
   }
 
@@ -298,7 +254,6 @@ module.exports = class App{
       console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${this.config.opus_convert.threads} core`);
     }
 
-
     console.log("");
 
     console.log(`${indent}${fg_blue}production:      ${fg_default}  ${ans(!this.status.debug, 'yes', 'no')}`);
@@ -312,8 +267,7 @@ module.exports = class App{
   }
 
   async onInteraction(interaction){
-    if(!(interaction.isChatInputCommand())) return;
-    if(!(interaction.inGuild())) return;
+    if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
 
     this.logger.debug(interaction);
 
@@ -387,9 +341,7 @@ module.exports = class App{
     } catch (error) {
       this.logger.info(error);
       try{
-        await interaction.reply({
-            content: 'そんなコマンドないよ。',
-        });
+        await interaction.reply({ content: 'そんなコマンドないよ。' });
       }catch(e){
         // 元のインタラクションないのは知らない…
       }
@@ -401,8 +353,7 @@ module.exports = class App{
   }
 
   is_target(msg){
-    const guild_id = msg.guild.id;
-    const connection = this.connections_map.get(guild_id);
+    const connection = this.connections_map.get(msg.guild.id);
 
     if(!connection) return false;
     if(connection.text !== msg.channelId) return false;
@@ -417,19 +368,14 @@ module.exports = class App{
 
   // volume or null
   get_command_volume(command){
-    let volume_order = null;
     let vol_command = command.match(VOL_REGEXP);
 
-    if(vol_command && vol_command[0]){
-      let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
-      if(!isNaN(volume)){
-        if(volume > 100) volume = 100;
+    if(!(vol_command && vol_command[0])) return null;
 
-        volume_order = volume;
-      }
-    }
+    let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
+    if(isNaN(volume)) return null;
 
-    return volume_order;
+    return volume < 100 ? volume : 100;
   }
 
   replace_voice_spell(text){
@@ -437,22 +383,20 @@ module.exports = class App{
   }
 
   get_spell_voice(spell){
-    let voice_override = null;
     let voice_command = spell.match(VOICE_REGEXP);
-    if(voice_command && voice_command[0]){
-      let voice = null;
-      try{
-        voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
-        if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
-      }catch(e){
-        logger.debug(e);
-        voice = null;
-      }
 
-      if(voice) voice_override = voice;
+    if(!(voice_command && voice_command[0])) return null;
+
+    let voice = null;
+    try{
+      voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
+      if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+    }catch(e){
+      logger.debug(e);
+      voice = null;
     }
 
-    return voice_override;
+    return voice;
   }
 
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
@@ -523,7 +467,7 @@ module.exports = class App{
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
 
-    const q = { str: content, id: msg.member.id, volume_order: volume_order }
+    const q = { str: content, id: msg.member.id, volume_order: volume_order };
 
     const connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
@@ -540,9 +484,7 @@ module.exports = class App{
   async play(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection) return;
-
-    if(connection.is_play || connection.queue.length === 0) return;
+    if(!connection || connection.is_play || connection.queue.length === 0) return;
 
     connection.is_play = true;
     this.logger.debug(`play start`);
@@ -585,20 +527,20 @@ module.exports = class App{
           opus_voice_path = await this.convert_audio(voice_path, `${TMP_DIR}/${connection.opus_filename}`);
         }catch(e){
           this.logger.info(e);
+          opus_voice_path = null;
         }
       }
 
       let audio_res;
-      if(opus_voice_path){
+      if(this.config.opus_convert.enable && opus_voice_path){
         audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
-          inputType: StreamType.OggOpus,
-          inlineVolume: false
+          inputType: StreamType.OggOpus, inlineVolume: false
         });
-        this.logger.debug(`play opus voice path: ${opus_voice_path}`);
       }else{
         audio_res = createAudioResource(voice_path, { inlineVolume: false });
-        this.logger.debug(`play voice path: ${voice_path}`);
       }
+
+      this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
 
       connection.audio_player.play(audio_res);
     }catch(e){
@@ -743,13 +685,7 @@ module.exports = class App{
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
-        DEFAULT: {
-          voice: 1,
-          speed: 100,
-          pitch: 100,
-          intonation: 100,
-          volume: 100
-        }
+        DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
       dict: [["Discord", "でぃすこーど", 2]]
     };
@@ -763,11 +699,10 @@ module.exports = class App{
       guildId: guild_id,
       channelId: voice_channel_id,
       adapterCreator: guild.voiceAdapterCreator,
-      selfMute: false,
-      selfDeaf: true,
+      selfMute: false, selfDeaf: true,
     });
 
-    connection.on(VoiceConnectionStatus.Disconnected, async(oldState, newState)=>{
+    connection.on(VoiceConnectionStatus.Disconnected, async(_, __)=>{
       try{
         await Promise.race([
           entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
@@ -805,7 +740,7 @@ module.exports = class App{
 
     this.connections_map.set(guild_id, connectinfo);
 
-    if(process.env.NODE_ENV === "production"){
+    if(!this.status.debug){
       await interaction.reply({ content: '接続しました。' });
       this.add_system_message("接続しました！", guild_id);
     }
@@ -879,10 +814,7 @@ module.exports = class App{
       lib_list.push(sp.name);
 
       for(let v of sp.styles){
-        let speaker = {
-          name: `${sp.name}(${v.name})`,
-          value: parseInt(v.id, 10)
-        };
+        let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
 
         speaker_list.push(speaker);
       }
@@ -913,13 +845,8 @@ module.exports = class App{
     voices = server_file.user_voices;
     dict = server_file.dict;
 
-    let voice = {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
+    let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+
     voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 
     voice[type] = interaction.options.get(type).value;
@@ -971,6 +898,7 @@ module.exports = class App{
     }catch(e){
       this.logger.debug(e);
       await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
+      return;
     }
 
     if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
@@ -1001,22 +929,16 @@ module.exports = class App{
   }
 
   async currentvoice(interaction, override_id = null){
-    const guild_id = interaction.guild.id;
     const member_id = override_id ?? interaction.member.id;
 
     let voices = {};
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.get_server_file(interaction.guild.id);
 
     voices = server_file.user_voices;
 
-    let sample_voice_info = {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
+    let sample_voice_info = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+
     let is_default = false;
     let is_not_exist_server_settings = false;
 
@@ -1046,13 +968,11 @@ module.exports = class App{
         { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
       );
 
-    if(member_id !== "DEFAULT"){
-      if(is_default){
-        if(is_not_exist_server_settings){
-          em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。")
-        }else{
-          em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。");
-        }
+    if(member_id !== "DEFAULT" && is_default){
+      if(is_not_exist_server_settings){
+        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。")
+      }else{
+        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。");
       }
     }
 
@@ -1255,13 +1175,9 @@ module.exports = class App{
   }
 
   async diclist(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.get_server_file(interaction.guild.id);
     dict = server_file.dict;
 
     let list = "";
@@ -1294,17 +1210,13 @@ module.exports = class App{
         { name: "一覧", value: `${list}`},
       );
 
-    if(is_limit){
-      em.setDescription("表示上限を超えているため省略されています。");
-    }
+    if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
 
     await interaction.reply({ embeds: [em] });
     return;
   }
 
   async credit_list(interaction){
-    const guild_id = interaction.guild.id;
-
     const voice_list_tmp = Array.from(this.voice_liblary_list).map((val) => `VOICEVOX:${val}`);
 
     const em = new EmbedBuilder()
@@ -1319,8 +1231,7 @@ module.exports = class App{
   }
 
   async systemvoicemute(interaction){
-    const guild_id = interaction.guild.id;
-    const connection = this.connections_map.get(guild_id);
+    const connection = this.connections_map.get(interaction.guild.id);
 
     if(!connection){
       await interaction.reply("接続がないよ！");
