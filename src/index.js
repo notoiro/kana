@@ -42,7 +42,7 @@ const DEFAULT_SETTING = {
 }
 
 const {
-  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT, VOICEBOX_ENGINE
+  TOKEN, PREFIX, SERVER_DIR, TMP_DIR, OPUS_CONVERT, VOICEVOX_ENGINE
 } = require('../config.json');
 
 module.exports = class App{
@@ -244,7 +244,7 @@ module.exports = class App{
 
     console.log("");
 
-    console.log(`${indent}${fg_blue}voicevox host:   ${fg_default}  ${VOICEBOX_ENGINE}`);
+    console.log(`${indent}${fg_blue}voicevox host:   ${fg_default}  ${VOICEVOX_ENGINE}`);
     console.log(`${indent}${fg_blue}temp directory:  ${fg_default}  ${TMP_DIR}`);
     console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
     console.log(`${indent}${fg_blue}pre opus convert:${fg_default}`);
