@@ -1,108 +1,70 @@
 "use strict";
 // deps
 const {
-  joinVoiceChannel,
-  getVoiceConnection,
-  createAudioResource,
-  StreamType,
-  createAudioPlayer,
-  NoSubscriberBehavior,
-  generateDependencyReport,
-  VoiceConnectionStatus,
-  entersState,
-  AudioPlayerStatus,
-  PermissionsBitField
+  joinVoiceChannel, getVoiceConnection, createAudioResource,
+  StreamType, createAudioPlayer, NoSubscriberBehavior,
+  VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client,
-  GatewayIntentBits,
-  ApplicationCommandOptionType,
-  InteractionType, EmbedBuilder,
-  ActivityType
+  Client, GatewayIntentBits, ApplicationCommandOptionType,
+  EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
-const ffmpeg = require('fluent-ffmpeg');
-const os = require('os');
 
-const Voicebox = require('./voicebox.js');
+const Voicevox = require('./voicevox.js');
 const Kagome = require('./kagome.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
+const BotUtils = require('./bot_utils.js');
+const convert_audio = require('./convert_audio.js');
+const print_info = require('./print_info.js');
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
-const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-const priority_list = [
-  "最弱", "よわい", "普通", "つよい", "最強"
-];
+
+const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
-const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
-const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
-
-const DEFAULT_SETTING = {
-  user_voices: {
-    DEFAULT: {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
-  },
-  dict: [["Discord", "でぃすこーど", 2]]
-}
-
 const {
-  TOKEN,
-  PREFIX,
-  SERVER_DIR,
-  TMP_DIR,
-  OPUS_CONVERT,
-  VOICEBOX_ENGINE
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT
 } = require('../config.json');
 
 module.exports = class App{
   constructor(){
-    this.voicebox = new Voicebox();
+    this.voicevox = new Voicevox();
     this.kagome = new Kagome();
     this.logger = log4js.getLogger();
     this.client = new Client({
       intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
       ]
     });
+
+    this.bot_utils = new BotUtils(this.logger);
 
     this.connections_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.commands = {};
     this.config = {
-      opus_convert: {
-        enable: false,
-        bitrate: '96k',
-        threads: 2
-      }
+      opus_convert: { enable: false, bitrate: '96k', threads: 2 }
     };
-
-    this.logger.level = "debug";
-    if(process.env.NODE_ENV === "production") this.logger.level = "info";
 
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
       discord_username: "NAME",
       opus_convert_available: false
-    }
+    };
+
+    this.logger.level = this.status.debug ? 'debug' : 'info';
   }
 
   async start(){
@@ -120,8 +82,8 @@ module.exports = class App{
     if(OPUS_CONVERT !== undefined && OPUS_CONVERT.hasOwnProperty('enable')){
       this.config.opus_convert.enable = OPUS_CONVERT.enable;
       if(OPUS_CONVERT.enable){
-        this.config.opus_convert.bitrate ||= OPUS_CONVERT.bitrate;
-        this.config.opus_convert.threads ||= OPUS_CONVERT.threads;
+        this.config.opus_convert.bitrate = OPUS_CONVERT.bitrate ?? this.config.opus_convert.bitrate;
+        this.config.opus_convert.threads = OPUS_CONVERT.threads ?? this.config.opus_convert.threads;
       }
     }
 
@@ -129,39 +91,30 @@ module.exports = class App{
   }
 
   async setup_voicevox(){
-    await this.voicebox.check_version();
+    await this.voicevox.check_version();
     const voiceinfos = await this.get_voicelist();
     this.voice_list = voiceinfos.speaker_list;
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
 
-    this.logger.info("Voice list load complate.");
     this.logger.debug(this.voice_list);
 
-    const tmp_voice = {
-      speed: 1,
-      pitch: 0,
-      intonation: 1,
-      volume: 1
-    };
+    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
-      await this.voicebox.synthesis("てすと", "test.wav", 0, tmp_voice);
-      this.logger.info("Voicevox init complate.");
+      await this.voicevox.synthesis("てすと", "test.wav", 0, tmp_voice);
     }catch(e){
       this.logger.info(e);
     }
   }
 
   async test_opus_convert(){
-      try{
-        const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
-        if(opus_voice_path){
-          this.status.opus_convert_available = true;
-        }
-      }catch(e){
-        this.logger.info(`Opus convert init err.`)
-        this.status.opus_convert_available = false;
-      }
+    try{
+      const opus_voice_path = await convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+      this.status.opus_convert_available = !!opus_voice_path;
+    }catch(e){
+      this.logger.info(`Opus convert init err.`);
+      this.status.opus_convert_available = false;
+    }
   }
 
   // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
@@ -175,7 +128,7 @@ module.exports = class App{
 
   setup_discord(){
     // コマンド取得
-    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'))
+    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
       const command = require(`../commands/${file}`);
       this.commands[command.data.name] = command;
@@ -199,14 +152,14 @@ module.exports = class App{
             choices: this.voice_list.slice(start, end)
           }
         ]
-      }
+      };
 
       setvoice_commands.push(setvoice_command);
     }
 
     this.client.on('ready', async () => {
       // コマンド登録
-      let data = []
+      let data = [];
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
 
       data = data.concat(setvoice_commands);
@@ -217,7 +170,7 @@ module.exports = class App{
       this.status.connected_servers = this.client.guilds.cache.size;
       this.status.discord_username = this.client.user.displayName;
 
-      this.print_bot_info();
+      print_info(this);
 
       this.update_status_text();
     });
@@ -225,8 +178,7 @@ module.exports = class App{
     this.client.on('interactionCreate', this.onInteraction.bind(this));
 
     this.client.on('messageCreate', (msg) => {
-      if(!(msg.guild)) return;
-      if(msg.author.bot) return;
+      if(!(msg.guild) || msg.author.bot) return;
 
       if(msg.content === SKIP_PREFIX){
         this.skip_current_text(msg.guild.id);
@@ -244,76 +196,16 @@ module.exports = class App{
 
   setup_process(){
     process.on('uncaughtExceptionMonitor', (err) => {
-      if(process.env.NODE_ENV === "production"){
-        this.client.destroy();
-      }
+      if(process.env.NODE_ENV === "production") this.client.destroy();
     });
-    process.on("exit", exitCode => {
+    process.on("exit", _ => {
       this.logger.info("Exit!");
-      if(process.env.NODE_ENV === "production"){
-        this.client.destroy();
-      }
+      if(process.env.NODE_ENV === "production") this.client.destroy();
     });
-  }
-
-  print_bot_info(){
-    const indent = "          ";
-    const fg_default = "\x1b[1;39m";
-    const fg_green = "\x1b[38:5:107m";
-    const fg_blue = "\x1b[38:5:159m";
-    const fg_white = "\x1b[38:5:15m";
-
-    const bg_default = "\x1b[1;49m";
-    const bg_white = "\x1b[1;47m";
-    const bg_red = "\x1b[48:5:208m";
-    const bg_green = "\x1b[48:5:106m";
-
-    const reset = fg_default + bg_default;
-
-    const ans = (flag, true_text, false_text) => {
-      return flag ? `${bg_green}${fg_white} ${true_text} ${reset}`:`${bg_red}${fg_white} ${false_text} ${reset}`;
-    }
-
-    console.log(`\n`);
-
-    console.log(`    ${bg_white}  ${fg_green}_  _ ____ _ ____ ____ _  _ ____ _  _    ___ ___ ____  ${reset}`);
-    console.log(`    ${bg_white}  ${fg_green}|  | |  | | |    |___ |  | |  |  \\/      |   |  [__   ${reset}`);
-    console.log(`    ${bg_white}  ${fg_green} \\/  |__| | |___ |___  \\/  |__| _/\\_     |   |  ___]  ${reset}`);
-    console.log(`    ${bg_white}                                                        ${bg_default}`);
-    console.log("");
-
-    console.log(`${indent}${fg_blue}os:              ${fg_default}  ${os.type()} ${os.release()} ${os.arch()}`);
-    console.log(`${indent}${fg_blue}node.js:         ${fg_default}  ${process.version}`);
-    console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${this.voicebox.version}`);
-
-    console.log("");
-
-    console.log(`${indent}${fg_blue}voicevox host:   ${fg_default}  ${VOICEBOX_ENGINE}`);
-    console.log(`${indent}${fg_blue}temp directory:  ${fg_default}  ${TMP_DIR}`);
-    console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
-    console.log(`${indent}${fg_blue}pre opus convert:${fg_default}`);
-    console.log(`${indent}${fg_blue}  enabled:       ${fg_default}  ${ans(this.config.opus_convert.enable, "yes", "no")}`);
-    if(this.config.opus_convert.enable){
-      console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${this.config.opus_convert.bitrate}`);
-      console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${this.config.opus_convert.threads} core`);
-    }
-
-
-    console.log("");
-
-    console.log(`${indent}${fg_blue}production:      ${fg_default}  ${ans(!this.status.debug, 'yes', 'no')}`);
-    console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${this.status.connected_servers} servers`);
-    console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${this.voice_list.length} voices`);
-    console.log(`${indent}${fg_blue}pre opus convert:${fg_default}  ${ans(this.status.opus_convert_available, "available", "unavailable")}`);
-
-    console.log(`\n`);
-
-    console.log(`${indent}Ready in as ${fg_green}${this.status.discord_username}${reset}!`);
   }
 
   async onInteraction(interaction){
-    if(!(interaction.isChatInputCommand())) return;
-    if(!(interaction.inGuild())) return;
+    if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
 
     this.logger.debug(interaction);
 
@@ -321,58 +213,39 @@ module.exports = class App{
     const command = this.commands[interaction.commandName];
 
     try {
-      switch(interaction.commandName){
+      let command_name = interaction.commandName;
+
+      switch(command_name){
         case "connect":
-          await this.connect_vc(interaction);
+        case "setvoiceall":
+        case "currentvoice":
+        case "resetconnection":
+        case "dicadd":
+        case "dicedit":
+        case "dicdel":
+        case "dicpriority":
+        case "diclist":
+        case "credit":
+        case "systemvoicemute":
+          if(command_name === "connect") command_name = "connect_vc";
+          if(command_name === "credit") command_name = "credit_list"
+          await this[command_name](interaction);
           break;
         case "setspeed":
-          await this.setvoice(interaction, "speed");
-          break;
         case "setpitch":
-          await this.setvoice(interaction, "pitch");
-          break;
         case "setintonation":
-          await this.setvoice(interaction, "intonation");
-          break;
-        case "setvoiceall":
-          await this.setvoiceall(interaction);
+          command_name = command_name.replace("set", "");
+          await this.setvoice(interaction, command_name);
           break;
         case "setdefaultvoice":
           if(!(interaction.member.permissions.has('Administrator'))){
             await interaction.reply({ content: "権限がないよ！" });
-          }else{
-            await this.setvoiceall(interaction, "DEFAULT");
+            break;
           }
-          break;
-        case "currentvoice":
-          await this.currentvoice(interaction);
+          await this.setvoiceall(interaction, "DEFAULT");
           break;
         case "defaultvoice":
           await this.currentvoice(interaction, "DEFAULT");
-          break;
-        case "resetconnection":
-          await this.resetconnection(interaction);
-          break;
-        case "dicadd":
-          await this.dicadd(interaction);
-          break;
-        case "dicedit":
-          await this.dicedit(interaction);
-          break;
-        case "dicdel":
-          await this.dicdel(interaction);
-          break;
-        case "dicpriority":
-          await this.dicpriority(interaction);
-          break;
-        case "diclist":
-          await this.diclist(interaction);
-          break;
-        case "credit":
-          await this.credit_list(interaction);
-          break;
-        case "systemvoicemute":
-          await this.systemvoicemute(interaction);
           break;
         default:
           // setvoiceは無限に増えるのでここで処理
@@ -381,15 +254,12 @@ module.exports = class App{
           }else{
             await command.execute(interaction);
           }
-
           break;
       }
     } catch (error) {
       this.logger.info(error);
       try{
-        await interaction.reply({
-            content: 'そんなコマンドないよ。',
-        });
+        await interaction.reply({ content: 'そんなコマンドないよ。' });
       }catch(e){
         // 元のインタラクションないのは知らない…
       }
@@ -401,58 +271,11 @@ module.exports = class App{
   }
 
   is_target(msg){
-    const guild_id = msg.guild.id;
-    const connection = this.connections_map.get(guild_id);
+    const connection = this.connections_map.get(msg.guild.id);
 
-    if(!connection) return false;
-    if(connection.text !== msg.channelId) return false;
-    if(msg.cleanContent.indexOf(PREFIX) === 0) return false;
+    if(!connection || connection.text !== msg.channelId || msg.cleanContent.indexOf(PREFIX) === 0) return false;
 
     return true;
-  }
-
-  replace_volume_command(text){
-    return text.replace(VOL_REGEXP, "");
-  }
-
-  // volume or null
-  get_command_volume(command){
-    let volume_order = null;
-    let vol_command = command.match(VOL_REGEXP);
-
-    if(vol_command && vol_command[0]){
-      let volume = parseInt(zenint2hanint(vol_command[0].match(/[0-9０-９]+/)[0]));
-      if(!isNaN(volume)){
-        if(volume > 100) volume = 100;
-
-        volume_order = volume;
-      }
-    }
-
-    return volume_order;
-  }
-
-  replace_voice_spell(text){
-    return text.replace(VOICE_REGEXP, "");
-  }
-
-  get_spell_voice(spell){
-    let voice_override = null;
-    let voice_command = spell.match(VOICE_REGEXP);
-    if(voice_command && voice_command[0]){
-      let voice = null;
-      try{
-        voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
-        if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
-      }catch(e){
-        logger.debug(e);
-        voice = null;
-      }
-
-      if(voice) voice_override = voice;
-    }
-
-    return voice_override;
   }
 
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
@@ -470,15 +293,15 @@ module.exports = class App{
     text = this.replace_at_dict(text, guild_id);
     this.logger.debug(`text(replace dict): ${text}`);
 
-    let volume_order = this.get_command_volume(text);
-    if(volume_order !== null) text = this.replace_volume_command(text);
+    let volume_order = this.bot_utils.get_command_volume(text);
+    if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-    let voice_override = this.get_spell_voice(text);
-    if(voice_override !== null) text = this.replace_voice_spell(text);
+    let voice_override = this.bot_utils.get_spell_voice(text, this.voice_list);
+    if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
 
     text = Utils.clean_message(text);
 
-    const q = { str: text, id: voice_ref_id, volume_order: volume_order }
+    const q = { str: text, id: voice_ref_id, volume_order: volume_order };
 
     if(voice_override) q.voice_override = voice_override;
 
@@ -510,11 +333,11 @@ module.exports = class App{
     this.logger.debug(`content(replace dict): ${content}`);
 
     // 2
-    let volume_order = this.get_command_volume(content);
-    if(volume_order !== null) content = this.replace_volume_command(content);
+    let volume_order = this.bot_utils.get_command_volume(content);
+    if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
 
-    let voice_override = this.get_spell_voice(content);
-    if(voice_override !== null) content = this.replace_voice_spell(content);
+    let voice_override = this.bot_utils.get_spell_voice(content, this.voice_list);
+    if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
 
     // 3
     content = Utils.clean_message(content);
@@ -523,7 +346,7 @@ module.exports = class App{
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
 
-    const q = { str: content, id: msg.member.id, volume_order: volume_order }
+    const q = { str: content, id: msg.member.id, volume_order: volume_order };
 
     const connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
@@ -540,9 +363,7 @@ module.exports = class App{
   async play(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection) return;
-
-    if(connection.is_play || connection.queue.length === 0) return;
+    if(!connection || connection.is_play || connection.queue.length === 0) return;
 
     connection.is_play = true;
     this.logger.debug(`play start`);
@@ -570,35 +391,38 @@ module.exports = class App{
       pitch: Utils.map_voice_setting(voice.pitch, -0.15, 0.15),
       intonation: Utils.map_voice_setting(voice.intonation, 0, 2),
       volume: Utils.map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
-    }
+    };
 
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voicebox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      const voice_path = await this.voicevox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
 
       let opus_voice_path;
 
       if(this.config.opus_convert.enable){
         // Opusへの変換は失敗してもいいので入れ子にする
         try{
-          opus_voice_path = await this.convert_audio(voice_path, `${TMP_DIR}/${connection.opus_filename}`);
+          opus_voice_path = await convert_audio(
+            voice_path, `${TMP_DIR}/${connection.opus_filename}`,
+            this.config.opus_convert.bitrate, this.config.opus_convert.threads
+          );
         }catch(e){
           this.logger.info(e);
+          opus_voice_path = null;
         }
       }
 
       let audio_res;
-      if(opus_voice_path){
+      if(this.config.opus_convert.enable && opus_voice_path){
         audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
-          inputType: StreamType.OggOpus,
-          inlineVolume: false
+          inputType: StreamType.OggOpus, inlineVolume: false
         });
-        this.logger.debug(`play opus voice path: ${opus_voice_path}`);
       }else{
         audio_res = createAudioResource(voice_path, { inlineVolume: false });
-        this.logger.debug(`play voice path: ${voice_path}`);
       }
+
+      this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
 
       connection.audio_player.play(audio_res);
     }catch(e){
@@ -611,40 +435,15 @@ module.exports = class App{
     }
   }
 
-  convert_audio(path, output_path){
-    return new Promise((resolve, reject) => {
-        const options = [
-          '-vn', // Video disable
-          '-ar', '24000', // 24000 Hz
-          '-ac', '1', // mono
-          '-acodec', 'libopus', // Opus Codec
-          '-ab', this.config.opus_convert.bitrate, // Bitrate
-          '-vbr', 'on', // Variable bitrate
-          '-threads', this.config.opus_convert.threads, // encode threads
-          '-y', // Overwrite
-          '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
-        ];
-
-        ffmpeg()
-          .input(path)
-          .outputOptions(options)
-          .saveToFile(output_path)
-          .on('end', () => { resolve(output_path) })
-          .on('error', (err) => { reject(e) });
-    });
-  }
-
   replace_at_dict(text, guild_id){
     // 何故か接続ない場合はなにもしないで戻す
     const connection = this.connections_map.get(guild_id);
     if(!connection) return text;
 
-    const dict = connection.dict;
-
     let result = text;
 
     for(let p = 0; p < 5; p++){
-      const tmp_dict = dict.filter(word => word[2] === p);
+      const tmp_dict = connection.dict.filter(word => word[2] === p);
 
       for(let d of tmp_dict) result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
     }
@@ -688,22 +487,6 @@ module.exports = class App{
     return result.join("");
   }
 
-  get_server_file(guild_id){
-    let result = DEFAULT_SETTING;
-
-    if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
-      try{
-        result = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
-        this.logger.debug(`loaded server conf: ${result}`);
-      }catch(e){
-        this.logger.info(e);
-        result = DEFAULT_SETTING;
-      }
-    }
-
-    return result;
-  }
-
   async connect_vc(interaction){
     const guild = interaction.guild;
     const member = await guild.members.fetch(interaction.member.id);
@@ -723,7 +506,6 @@ module.exports = class App{
     }
 
     const voice_channel_id = member_vc.id;
-    const text_channel_id = interaction.channel.id;
     const guild_id = guild.id;
 
     const current_connection = this.connections_map.get(guild_id);
@@ -734,7 +516,7 @@ module.exports = class App{
     }
 
     const connectinfo = {
-      text: text_channel_id,
+      text: interaction.channel.id,
       voice: voice_channel_id,
       audio_player: null,
       queue: [],
@@ -743,18 +525,12 @@ module.exports = class App{
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
-        DEFAULT: {
-          voice: 1,
-          speed: 100,
-          pitch: 100,
-          intonation: 100,
-          volume: 100
-        }
+        DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
       dict: [["Discord", "でぃすこーど", 2]]
     };
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
@@ -763,11 +539,10 @@ module.exports = class App{
       guildId: guild_id,
       channelId: voice_channel_id,
       adapterCreator: guild.voiceAdapterCreator,
-      selfMute: false,
-      selfDeaf: true,
+      selfMute: false, selfDeaf: true,
     });
 
-    connection.on(VoiceConnectionStatus.Disconnected, async(oldState, newState)=>{
+    connection.on(VoiceConnectionStatus.Disconnected, async(_, __)=>{
       try{
         await Promise.race([
           entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
@@ -805,7 +580,7 @@ module.exports = class App{
 
     this.connections_map.set(guild_id, connectinfo);
 
-    if(process.env.NODE_ENV === "production"){
+    if(!this.status.debug){
       await interaction.reply({ content: '接続しました。' });
       this.add_system_message("接続しました！", guild_id);
     }
@@ -862,15 +637,13 @@ module.exports = class App{
   skip_current_text(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection) return;
-
-    if(!connection.is_play) return;
+    if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
   }
 
   async get_voicelist(){
-    const list = await this.voicebox.speakers();
+    const list = await this.voicevox.speakers();
 
     const speaker_list = [];
     const lib_list = [];
@@ -879,24 +652,13 @@ module.exports = class App{
       lib_list.push(sp.name);
 
       for(let v of sp.styles){
-        let speaker = {
-          name: `${sp.name}(${v.name})`,
-          value: parseInt(v.id, 10)
-        };
+        let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
 
         speaker_list.push(speaker);
       }
     }
 
     return { speaker_list: speaker_list, voice_liblary_list: lib_list };
-  }
-
-  write_serverinfo(guild_id, data){
-    try{
-      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(data));
-    }catch(e){
-      this.logger.info(e);
-    }
   }
 
   async setvoice(interaction, type){
@@ -908,24 +670,19 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     voices = server_file.user_voices;
     dict = server_file.dict;
 
-    let voice = {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
+    let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+
     voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 
     voice[type] = interaction.options.get(type).value;
     voices[member_id] = voice;
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.user_voices = voices;
 
@@ -958,7 +715,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
 
     voices = server_file.user_voices;
     dict = server_file.dict;
@@ -971,6 +728,7 @@ module.exports = class App{
     }catch(e){
       this.logger.debug(e);
       await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
+      return;
     }
 
     if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
@@ -980,7 +738,7 @@ module.exports = class App{
 
     voices[member_id] = voice;
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.user_voices = voices;
 
@@ -1001,22 +759,16 @@ module.exports = class App{
   }
 
   async currentvoice(interaction, override_id = null){
-    const guild_id = interaction.guild.id;
     const member_id = override_id ?? interaction.member.id;
 
     let voices = {};
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
 
     voices = server_file.user_voices;
 
-    let sample_voice_info = {
-      voice: 1,
-      speed: 100,
-      pitch: 100,
-      intonation: 100,
-      volume: 100
-    }
+    let sample_voice_info = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+
     let is_default = false;
     let is_not_exist_server_settings = false;
 
@@ -1046,13 +798,11 @@ module.exports = class App{
         { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
       );
 
-    if(member_id !== "DEFAULT"){
-      if(is_default){
-        if(is_not_exist_server_settings){
-          em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。")
-        }else{
-          em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。");
-        }
+    if(member_id !== "DEFAULT" && is_default){
+      if(is_not_exist_server_settings){
+        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。")
+      }else{
+        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。");
       }
     }
 
@@ -1083,7 +833,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1099,7 +849,7 @@ module.exports = class App{
 
     dict.push([word_from, word_to, 2]);
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1122,7 +872,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1144,7 +894,7 @@ module.exports = class App{
 
     dict = dict.filter(word => word[0] !== target);
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1160,7 +910,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1188,7 +938,7 @@ module.exports = class App{
       return result;
     });
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1211,7 +961,7 @@ module.exports = class App{
     let voices = {};
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
     dict = server_file.dict;
 
@@ -1239,7 +989,7 @@ module.exports = class App{
       return result;
     });
 
-    this.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1255,13 +1005,9 @@ module.exports = class App{
   }
 
   async diclist(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
     let dict = [];
 
-    const server_file = this.get_server_file(guild_id);
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
     dict = server_file.dict;
 
     let list = "";
@@ -1294,17 +1040,13 @@ module.exports = class App{
         { name: "一覧", value: `${list}`},
       );
 
-    if(is_limit){
-      em.setDescription("表示上限を超えているため省略されています。");
-    }
+    if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
 
     await interaction.reply({ embeds: [em] });
     return;
   }
 
   async credit_list(interaction){
-    const guild_id = interaction.guild.id;
-
     const voice_list_tmp = Array.from(this.voice_liblary_list).map((val) => `VOICEVOX:${val}`);
 
     const em = new EmbedBuilder()
@@ -1319,8 +1061,7 @@ module.exports = class App{
   }
 
   async systemvoicemute(interaction){
-    const guild_id = interaction.guild.id;
-    const connection = this.connections_map.get(guild_id);
+    const connection = this.connections_map.get(interaction.guild.id);
 
     if(!connection){
       await interaction.reply("接続がないよ！");
