@@ -120,7 +120,7 @@ module.exports = class App{
       const opus_voice_path = await this.convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
-      this.logger.info(`Opus convert init err.`)
+      this.logger.info(`Opus convert init err.`);
       this.status.opus_convert_available = false;
     }
   }
@@ -136,7 +136,7 @@ module.exports = class App{
 
   setup_discord(){
     // コマンド取得
-    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'))
+    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
       const command = require(`../commands/${file}`);
       this.commands[command.data.name] = command;
@@ -160,14 +160,14 @@ module.exports = class App{
             choices: this.voice_list.slice(start, end)
           }
         ]
-      }
+      };
 
       setvoice_commands.push(setvoice_command);
     }
 
     this.client.on('ready', async () => {
       // コマンド登録
-      let data = []
+      let data = [];
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
 
       data = data.concat(setvoice_commands);
@@ -355,9 +355,7 @@ module.exports = class App{
   is_target(msg){
     const connection = this.connections_map.get(msg.guild.id);
 
-    if(!connection) return false;
-    if(connection.text !== msg.channelId) return false;
-    if(msg.cleanContent.indexOf(PREFIX) === 0) return false;
+    if(!connection || connection.text !== msg.channelId || msg.cleanContent.indexOf(PREFIX) === 0) return false;
 
     return true;
   }
@@ -422,7 +420,7 @@ module.exports = class App{
 
     text = Utils.clean_message(text);
 
-    const q = { str: text, id: voice_ref_id, volume_order: volume_order }
+    const q = { str: text, id: voice_ref_id, volume_order: volume_order };
 
     if(voice_override) q.voice_override = voice_override;
 
@@ -581,12 +579,10 @@ module.exports = class App{
     const connection = this.connections_map.get(guild_id);
     if(!connection) return text;
 
-    const dict = connection.dict;
-
     let result = text;
 
     for(let p = 0; p < 5; p++){
-      const tmp_dict = dict.filter(word => word[2] === p);
+      const tmp_dict = connection.dict.filter(word => word[2] === p);
 
       for(let d of tmp_dict) result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
     }
@@ -665,7 +661,6 @@ module.exports = class App{
     }
 
     const voice_channel_id = member_vc.id;
-    const text_channel_id = interaction.channel.id;
     const guild_id = guild.id;
 
     const current_connection = this.connections_map.get(guild_id);
@@ -676,7 +671,7 @@ module.exports = class App{
     }
 
     const connectinfo = {
-      text: text_channel_id,
+      text: interaction.channel.id,
       voice: voice_channel_id,
       audio_player: null,
       queue: [],
@@ -797,9 +792,7 @@ module.exports = class App{
   skip_current_text(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection) return;
-
-    if(!connection.is_play) return;
+    if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
   }
