@@ -9,5 +9,6 @@
     "enable": false,
     "bitrate": "96k",
     "threads": 2
-  }
+  },
+  "DICT_DIR": "./dictionaries"
 }

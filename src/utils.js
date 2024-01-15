@@ -42,4 +42,9 @@ module.exports = class Utils{
 
     return result;
   }
+
+  static slice_by_num(arr, num){
+    const len = Math.ceil(arr.length / num);
+    return new Array(len).fill().map((_, i) => arr.slice(i * num, (i + 1) * num));
+  }
 }

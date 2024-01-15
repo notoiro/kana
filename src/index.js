@@ -31,10 +31,13 @@ const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ]
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
+const DICT_SEP_COUNT = 1000;
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR
 } = require('../config.json');
+
+
 
 module.exports = class App{
   constructor(){
@@ -54,6 +57,7 @@ module.exports = class App{
     this.connections_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
+    this.dictionaries = [];
     this.commands = {};
     this.config = {
       opus_convert: { enable: false, bitrate: '96k', threads: 2 }
@@ -68,6 +72,7 @@ module.exports = class App{
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
+
   }
 
   async start(){
@@ -78,6 +83,8 @@ module.exports = class App{
     await this.test_remote_replace();
     this.setup_discord();
     this.setup_process();
+
+    this.setup_dictionaries();
 
     this.client.login(TOKEN);
   }
@@ -223,6 +230,40 @@ module.exports = class App{
     });
   }
 
+  setup_dictionaries(){
+    let json_tmp;
+
+    let map_tmp = [] //new Map();
+
+    if(!fs.existsSync(`${DICT_DIR}`)){
+      this.logger.info("Global dictionary file does not exist!");
+      return;
+    }
+    for(const dir of fs.readdirSync(`${DICT_DIR}`)){
+      try {
+        if(fs.existsSync(`${DICT_DIR}/${dir}`)){
+          json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
+          json_tmp.dict.forEach( (dict) => {
+            if(!map_tmp.some((dic) => dic[0] === dict[0] )){
+              map_tmp.push(dict);
+            }
+          });
+        }
+      } catch (e) {
+        this.logger.info(e);
+      }
+    }
+
+    map_tmp = map_tmp.toSorted((a, b) => b[0].length - a[0].length);
+    map_tmp = map_tmp.map((val) => {
+      val[0] = new RegExp(escape_regexp(val[0]), 'gi');
+      return val;
+    });
+
+    this.dictionaries = Utils.slice_by_num(map_tmp, DICT_SEP_COUNT);
+    this.logger.info("Global dictionary files are loaded!");
+  }
+
   async onInteraction(interaction){
     if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
 
@@ -339,6 +380,7 @@ module.exports = class App{
     // 3. 問題のある文字列の処理
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
+    console.time("youjo")
     // 0
     if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
@@ -364,6 +406,7 @@ module.exports = class App{
     // 4
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
+    console.timeEnd("youjo");
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order };
 
@@ -470,6 +513,7 @@ module.exports = class App{
     return result;
   }
 
+
   async fix_reading(text){
     let tmp_text = await this.kagome_tokenize(text);
     tmp_text = await this.replace_http(tmp_text);
@@ -480,8 +524,36 @@ module.exports = class App{
   async kagome_tokenize(text){
     let tokens;
 
+    console.time("global dict");
+    let text_tmp = text;
+
+    let promises = [];
+
+    for(let dics of this.dictionaries){
+      const tmp_promice = new Promise((resolve, reject) => {
+        let result = [];
+
+        for(let dic of dics){
+          if(dic[0].test(text)) result.push(dic);
+        }
+        resolve(result);
+      });
+
+      promises.push(tmp_promice);
+    }
+
+    promises = await Promise.all(promises);
+    promises = Array.prototype.concat(...promises);
+
+    for(let dic of promises){
+      text_tmp = text_tmp.replace(dic[0], dic[1]);
+    }
+
+    console.timeEnd("global dict");
+
+    console.time("kagome")
     try{
-      tokens = await this.kagome.tokenize(text);
+      tokens = await this.kagome.tokenize(text_tmp);
     }catch(e){
       this.logger.info(e);
       return tmp_text;
