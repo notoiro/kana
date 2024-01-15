@@ -31,13 +31,10 @@ const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ]
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
-const DICT_SEP_COUNT = 1000;
 
 const {
   TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR
 } = require('../config.json');
-
-
 
 module.exports = class App{
   constructor(){
@@ -58,6 +55,7 @@ module.exports = class App{
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.dictionaries = [];
+    this.dict_regexp = null;
     this.commands = {};
     this.config = {
       opus_convert: { enable: false, bitrate: '96k', threads: 2 }
@@ -80,11 +78,10 @@ module.exports = class App{
     await this.setup_voicevox();
     await this.test_opus_convert();
     await this.setup_kagome();
+    this.setup_dictionaries();
     await this.test_remote_replace();
     this.setup_discord();
     this.setup_process();
-
-    this.setup_dictionaries();
 
     this.client.login(TOKEN);
   }
@@ -235,6 +232,7 @@ module.exports = class App{
 
     let map_tmp = [] //new Map();
 
+    // ないなら無視する
     if(!fs.existsSync(`${DICT_DIR}`)){
       this.logger.info("Global dictionary file does not exist!");
       return;
@@ -254,14 +252,11 @@ module.exports = class App{
       }
     }
 
-    map_tmp = map_tmp.toSorted((a, b) => b[0].length - a[0].length);
-    map_tmp = map_tmp.map((val) => {
-      val[0] = new RegExp(escape_regexp(val[0]), 'gi');
-      return val;
-    });
+    this.dictionaries = map_tmp;
 
-    this.dictionaries = Utils.slice_by_num(map_tmp, DICT_SEP_COUNT);
-    this.logger.info("Global dictionary files are loaded!");
+    if(this.dictionaries.length){
+      this.dict_regexp = new RegExp(`^${this.dictionaries.map(d => escape_regexp(d[0])).join("|")}$`, 'g');
+    }
   }
 
   async onInteraction(interaction){
@@ -380,6 +375,7 @@ module.exports = class App{
     // 3. 問題のある文字列の処理
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
+    // TODO
     console.time("youjo")
     // 0
     if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
@@ -406,6 +402,7 @@ module.exports = class App{
     // 4
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
+    /// TODO
     console.timeEnd("youjo");
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order };
@@ -524,44 +521,30 @@ module.exports = class App{
   async kagome_tokenize(text){
     let tokens;
 
-    console.time("global dict");
-    let text_tmp = text;
-
-    let promises = [];
-
-    for(let dics of this.dictionaries){
-      const tmp_promice = new Promise((resolve, reject) => {
-        let result = [];
-
-        for(let dic of dics){
-          if(dic[0].test(text)) result.push(dic);
-        }
-        resolve(result);
-      });
-
-      promises.push(tmp_promice);
-    }
-
-    promises = await Promise.all(promises);
-    promises = Array.prototype.concat(...promises);
-
-    for(let dic of promises){
-      text_tmp = text_tmp.replace(dic[0], dic[1]);
-    }
-
-    console.timeEnd("global dict");
-
     console.time("kagome")
     try{
-      tokens = await this.kagome.tokenize(text_tmp);
+      tokens = await this.kagome.tokenize(text);
     }catch(e){
       this.logger.info(e);
-      return tmp_text;
+      return text;
     }
 
     let result = [];
 
     for(let token of tokens){
+      let t = token.surface;
+
+      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
+        for(let d of this.dictionaries){
+          t = t.replace(d[0], d[1]);
+          if(t !== token.surface) break;
+        }
+        result.push(t);
+        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
+
+        continue;
+      }
+
       if(token.class === "KNOWN"){
         if(
           token.pronunciation &&
