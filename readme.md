@@ -43,7 +43,7 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
     1. `git clone https://github.com/notoiro/voicevox-tts-discord.git; cd voicevox-tts-discord`
     2. `cp sample.json config.json`
     3. config.jsonを編集する
-        - `VOICEBOX_ENGINE`は2970を自分の指定したポートに合わせる
+        - `VOICEVOX_ENGINE`は2970を自分の指定したポートに合わせる
         - `TMP_DIR`は音声のキャッシュディレクトリ、頻繁に書き換わるのでメモリ上のほうが良いかも
         - `TOKEN`は上でメモったBotトークン
         - `PREFIX`はそれで始まる文章は読まないやつ
