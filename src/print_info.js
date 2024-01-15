@@ -1,7 +1,7 @@
 const os = require('os');
 
 const {
-  SERVER_DIR, TMP_DIR, VOICEVOX_ENGINE
+  SERVER_DIR, TMP_DIR, VOICEVOX_ENGINE, REMOTE_REPLACE_HOST
 } = require('../config.json');
 
 const indent = "          ";
@@ -46,6 +46,7 @@ module.exports = (app) => {
       console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${app.config.opus_convert.bitrate}`);
       console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
     }
+    console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
 
     console.log("");
 
@@ -53,6 +54,7 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${app.status.connected_servers} servers`);
     console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${app.voice_list.length} voices`);
     console.log(`${indent}${fg_blue}pre opus convert:${fg_default}  ${ans(app.status.opus_convert_available, "available", "unavailable")}`);
+    console.log(`${indent}${fg_blue}remote replace:  ${fg_default}  ${ans(app.status.remote_replace_available, "available", "unavailable")}`);
     console.log(`\n`);
 
     console.log(`${indent}Ready in as ${fg_green}${app.status.discord_username}${reset}!`);

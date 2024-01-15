@@ -63,7 +63,8 @@ module.exports = class App{
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
       discord_username: "NAME",
-      opus_convert_available: false
+      opus_convert_available: false,
+      remote_replace_available: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
@@ -74,7 +75,7 @@ module.exports = class App{
     await this.setup_voicevox();
     await this.test_opus_convert();
     await this.setup_kagome();
-    this.logger.info(`Remote replace enabled: ${this.remote_repalce.enabled}`);
+    await this.test_remote_replace();
     this.setup_discord();
     this.setup_process();
 
@@ -117,6 +118,21 @@ module.exports = class App{
     }catch(e){
       this.logger.info(`Opus convert init err.`);
       this.status.opus_convert_available = false;
+    }
+  }
+
+  // 利用可能かテストする
+  async test_remote_replace(){
+    if(!this.remote_repalce.enabled){
+      this.status.remote_replace_available = false;
+      return;
+    }
+    try{
+      await this.remote_repalce.replace_http('A person who destroys a submarine telegraph line in order to protect his own life or ship, or in order to lay or repair a submarine telegraph line, shall notify the telegraph office or the Imperial Consulate immediately by wireless telegraphy, and if wireless telegraphy is not possible, shall notify the local telegraph office or the Imperial Consulate within 24 hours of the first landing of the ship. Any person who violates the provisions of the preceding paragraph shall be fined not more than 200 yen.');
+      this.status.remote_replace_available = true;
+    }catch(e){
+      this.logger.info(e);
+      this.status.remote_replace_available = false;
     }
   }
 
@@ -523,6 +539,22 @@ module.exports = class App{
     this.logger.debug(`kagome replace: ${result.join('')}`);
 
     return result.join("");
+  }
+  async replace_http(text){
+    if(!this.status.remote_replace_available) return text;
+
+    let tmp_text = text;
+
+    try{
+      tmp_text = await this.remote_repalce.replace_http(text);
+    }catch(e){
+      this.logger.info(e);
+      tmp_text = text;
+    }
+
+    //this.logger.debug(`remote replace: ${tmp_text}`);
+
+    return tmp_text;
   }
 
   async connect_vc(interaction){
