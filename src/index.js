@@ -474,10 +474,6 @@ module.exports = class App{
     let tmp_text = await this.kagome_tokenize(text);
     tmp_text = await this.replace_http(tmp_text);
 
-//    this.logger.debug(`\n\nkagome replace: ${this.kagome_tokenize(text)}`);
-//    this.logger.debug(`remote replace: ${await this.replace_http(text)}\n`);
-//    this.logger.debug(`remote replace(kagome): ${tmp_text}`);
-
     return tmp_text;
   }
 
@@ -504,35 +500,26 @@ module.exports = class App{
           // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
-          // this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
           this.logger.debug(`KNOWN(固有名詞): ${JSON.stringify(token, "\n")}`)
           result.push(token.pronunciation);
         }else if(
           token.pronunciation &&
           token.pos[0] === "名詞" &&
           token.pos[1] == "固有名詞" &&
-          // 辞書上の表現とテキストが一致しない場合は無視する。これは英字の無駄ヒットを回避する目的がある
-          //token.base_form == token.surface &&
-          // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
+          // 辞書上の表現とテキストが一致しない場合のケース。読みのデバッグに利用する。
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
-          // this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
-          this.logger.debug(`KNOWN(固有名詞)(重複あり): ${JSON.stringify(token, "\n")}`)
+          this.logger.debug(`KNOWN(固有名詞)(不一致): ${JSON.stringify(token, "\n")}`)
           result.push(token.surface);
         }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
-          // this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
+          this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
           result.push(token.pronunciation);
         }else{
-          // this.logger.debug(token);
+          this.logger.debug(token);
           result.push(token.surface);
         }
       }else{
-        // if(isRomaji(token.surface)){
-        if(false){
-          result.push(toKana(token.surface));
-        }else{
-          result.push(token.surface);
-        }
+        result.push(token.surface);
       }
     }
 
@@ -552,7 +539,7 @@ module.exports = class App{
       tmp_text = text;
     }
 
-    //this.logger.debug(`remote replace: ${tmp_text}`);
+    this.logger.debug(`remote replace: ${tmp_text}`);
 
     return tmp_text;
   }
