@@ -446,6 +446,12 @@ module.exports = class App{
     const text_data = Utils.get_text_and_speed(q.str);
     this.logger.debug(`play text speed: ${text_data.speed}`);
 
+    // デバッグ時は省略せず全文読ませる
+    if(this.status.debug){
+      text_data.speed = voice.speed;
+      text_data.text = q.str;
+    }
+
     const voice_data = {
       // 加速はユーザー設定と加速設定のうち速い方を利用する。
       speed: Utils.map_voice_setting(((voice.speed > text_data.speed) ? voice.speed : text_data.speed), 0.5, 1.5),
@@ -575,11 +581,12 @@ module.exports = class App{
           this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
           result.push(token.pronunciation);
         }else{
-          this.logger.debug(token);
+          this.logger.debug(`KNOWN(surface利用)${JSON.stringify(token)}`);
           result.push(token.surface);
         }
       }else{
         result.push(token.surface);
+        this.logger.debug(`UNKNOWN: ${token.surface}`);
       }
     }
 
