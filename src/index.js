@@ -376,7 +376,7 @@ module.exports = class App{
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
     // TODO
-    console.time("youjo")
+    console.time("text_optimize_time")
     // 0
     if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
@@ -400,10 +400,12 @@ module.exports = class App{
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
     // 4
+    console.time("fix_reading_time");
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
+    console.timeEnd("fix_reading_time");
     /// TODO
-    console.timeEnd("youjo");
+    console.timeEnd("text_optimize_time");
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order };
 
@@ -512,8 +514,12 @@ module.exports = class App{
 
 
   async fix_reading(text){
+    console.time("kagome_time");
     let tmp_text = await this.kagome_tokenize(text);
+    console.timeEnd("kagome_time");
+    console.time("remote_replace_time");
     tmp_text = await this.replace_http(tmp_text);
+    console.timeEnd("remote_replace_time");
 
     return tmp_text;
   }
@@ -521,7 +527,6 @@ module.exports = class App{
   async kagome_tokenize(text){
     let tokens;
 
-    console.time("kagome")
     try{
       tokens = await this.kagome.tokenize(text);
     }catch(e){
