@@ -227,6 +227,7 @@ module.exports = class App{
         case "diclist":
         case "credit":
         case "systemvoicemute":
+        case "copyvoicesay":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
@@ -310,8 +311,11 @@ module.exports = class App{
     return;
   }
 
-  async add_text_queue(msg){
+  async add_text_queue(msg, skip_discord_features = false){
     let content = msg.cleanContent;
+
+    this.logger.debug(`content(from): `);
+    this.logger.debug(msg);
 
     // テキストの処理順
     // 0. テキスト追加系
@@ -321,11 +325,14 @@ module.exports = class App{
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
     // 0
-    if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
+    if(!skip_discord_features){
+      if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
-    if(msg.stickers.size !== 0){
-      for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+      if(msg.stickers.size !== 0){
+        for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+      }
     }
+
     content = Utils.replace_url(content);
 
     // 1
@@ -1071,6 +1078,32 @@ module.exports = class App{
     connection.system_mute_counter++;
 
     await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
+    return;
+  }
+
+  async copyvoicesay(interaction){
+    const guild_id = interaction.guild.id;
+
+    const connection = this.connections_map.get(guild_id);
+
+    if(!connection){
+      await interaction.reply({ content: "接続ないよ" });
+      return;
+    }
+
+    let voice_target = interaction.options.get('user').value;
+    let text = interaction.options.get('text').value;
+
+    // add_text_queue が利用している部分だけ満たすObjectを作る
+    let msg_obj = {
+      cleanContent: text,
+      guild:{ id: guild_id },
+      member: { id: voice_target }
+    }
+
+    this.add_text_queue(msg_obj, true);
+
+    await interaction.reply({ content: "まかせて！" });
     return;
   }
 }
