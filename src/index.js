@@ -28,6 +28,8 @@ const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
+const { credit_replaces } = require('../credit_replaces.json');
+
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
@@ -105,6 +107,9 @@ module.exports = class App{
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
 
     this.logger.debug(this.voice_list);
+    this.logger.debug(this.voice_liblary_list);
+
+    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
 
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
@@ -282,6 +287,7 @@ module.exports = class App{
         case "diclist":
         case "credit":
         case "systemvoicemute":
+        case "copyvoicesay":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
@@ -351,7 +357,7 @@ module.exports = class App{
     let volume_order = this.bot_utils.get_command_volume(text);
     if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-    let voice_override = this.bot_utils.get_spell_voice(text, this.voice_list);
+    let voice_override = this.bot_utils.get_spell_voice(text);
     if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
 
     text = Utils.clean_message(text);
@@ -365,8 +371,11 @@ module.exports = class App{
     return;
   }
 
-  async add_text_queue(msg){
+  async add_text_queue(msg, skip_discord_features = false){
     let content = msg.cleanContent;
+
+    this.logger.debug(`content(from): `);
+    this.logger.debug(msg);
 
     // テキストの処理順
     // 0. テキスト追加系
@@ -376,11 +385,14 @@ module.exports = class App{
     // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
 
     // 0
-    if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
+    if(!skip_discord_features){
+      if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
-    if(msg.stickers.size !== 0){
-      for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+      if(msg.stickers.size !== 0){
+        for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+      }
     }
+
     content = Utils.replace_url(content);
 
     // 1
@@ -391,7 +403,7 @@ module.exports = class App{
     let volume_order = this.bot_utils.get_command_volume(content);
     if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
 
-    let voice_override = this.bot_utils.get_spell_voice(content, this.voice_list);
+    let voice_override = this.bot_utils.get_spell_voice(content);
     if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
 
     // 3
@@ -1161,7 +1173,12 @@ module.exports = class App{
   }
 
   async credit_list(interaction){
-    const voice_list_tmp = Array.from(this.voice_liblary_list).map((val) => `VOICEVOX:${val}`);
+    const voice_list_tmp = Array.from(this.voice_liblary_list)
+      .map(val => {
+        for(let r of credit_replaces) val = val.replace(r[0], r[1]);
+        return val;
+      })
+      .map(val => `VOICEVOX:${val}`);
 
     const em = new EmbedBuilder()
       .setTitle(`利用可能な音声ライブラリのクレジット一覧です。`)
@@ -1185,6 +1202,32 @@ module.exports = class App{
     connection.system_mute_counter++;
 
     await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
+    return;
+  }
+
+  async copyvoicesay(interaction){
+    const guild_id = interaction.guild.id;
+
+    const connection = this.connections_map.get(guild_id);
+
+    if(!connection){
+      await interaction.reply({ content: "接続ないよ" });
+      return;
+    }
+
+    let voice_target = interaction.options.get('user').value;
+    let text = interaction.options.get('text').value;
+
+    // add_text_queue が利用している部分だけ満たすObjectを作る
+    let msg_obj = {
+      cleanContent: text,
+      guild:{ id: guild_id },
+      member: { id: voice_target }
+    }
+
+    this.add_text_queue(msg_obj, true);
+
+    await interaction.reply({ content: "まかせて！" });
     return;
   }
 }

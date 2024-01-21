@@ -1,11 +1,13 @@
 const fs = require('fs');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
+const SafeRegexpUtils = require('./safe_regexp_utils.js');
 
-const { SERVER_DIR} = require('../config.json');
+const { SERVER_DIR } = require('../config.json');
+
+const { shortcut } = require('../shortcuts.json');
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
-const VOICE_REGEXP = new RegExp(`ボイス[\(（][${ResurrectionSpell.spell_chars()}]{7,}[\)）]`, "g");
 const DEFAULT_SETTING = {
   user_voices: {
     DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
@@ -18,6 +20,33 @@ const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharC
 module.exports = class BotUtils{
   constructor(logger){
     this.logger = logger;
+    this.VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
+    this.VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
+  }
+
+  init_voicelist(voice_list, voice_liblary_list){
+    const list = voice_list.toSorted((a, b) => a.value - b.value);
+
+    let add = [];
+
+    for(let l of voice_liblary_list){
+      const r = new RegExp(l, 'g');
+      const f = list.find(el => r.test(el.name));
+      if(f) add.push({ name: l, value: f.value });
+    }
+
+    for(let s of shortcut){
+      const f = list.find(el => el.name === s[1]);
+      if(f) add.push({ name: s[0], value: f.value });
+    }
+
+    this.voice_list = Array.prototype.concat(list, add).map(el => {
+      el.name = el.name.replace("(", "[\(（]").replace(")", "[\)）]");
+      return el;
+    });
+
+    this.VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,}|${this.voice_list.map(val => val.name).join('|')})[\)）]`, "g");
+    this.VOICE_REGEXP_NAME = new RegExp(`^${this.voice_list.map(val => val.name).join('|')}$`, "g")
   }
 
   // volume or null
@@ -37,21 +66,40 @@ module.exports = class BotUtils{
   }
 
   replace_voice_spell(text){
-    return text.replace(VOICE_REGEXP, "");
+    return text.replace(this.VOICE_REGEXP, "");
   }
 
-  get_spell_voice(spell, voice_list){
-    let voice_command = spell.match(VOICE_REGEXP);
+  get_spell_voice(spell){
+    let voice_command = SafeRegexpUtils.exec(this.VOICE_REGEXP, spell);
 
     if(!(voice_command && voice_command[0])) return null;
 
     let voice = null;
-    try{
-      voice = ResurrectionSpell.decode(voice_command[0].match(new RegExp(`[${ResurrectionSpell.spell_chars()}]+`))[0]);
-      if(!(voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
-    }catch(e){
-      this.logger.debug(e);
-      voice = null;
+
+    // ずんだもんが引っかかるので先にボイス一覧から参照する
+    // 仕様上呪文と名前が被ることはない
+    if(SafeRegexpUtils.test(this.VOICE_REGEXP_NAME, voice_command[1])){
+      let result = 1;
+      const val = voice_command[1];
+
+      const f = this.voice_list.find(el => (new RegExp(el.name, 'g')).test(val));
+      if(f) result = f.value;
+
+      voice = {
+        voice: result,
+        speed: 100,
+        pitch: 100,
+        intonation: 100,
+        volume: 100
+      }
+    }else if(SafeRegexpUtils.test(this.VOICE_REGEXP_SPELL, voice_command[1])){
+      try{
+        voice = ResurrectionSpell.decode(voice_command[1]);
+        if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+      }catch(e){
+        this.logger.debug(e);
+        voice = null;
+      }
     }
 
     return voice;
