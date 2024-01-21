@@ -27,6 +27,8 @@ const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
+const { credit_replaces } = require('../credit_replaces.json');
+
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
@@ -97,6 +99,9 @@ module.exports = class App{
     this.voice_liblary_list = voiceinfos.voice_liblary_list;
 
     this.logger.debug(this.voice_list);
+    this.logger.debug(this.voice_liblary_list);
+
+    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
 
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
@@ -297,7 +302,7 @@ module.exports = class App{
     let volume_order = this.bot_utils.get_command_volume(text);
     if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-    let voice_override = this.bot_utils.get_spell_voice(text, this.voice_list);
+    let voice_override = this.bot_utils.get_spell_voice(text);
     if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
 
     text = Utils.clean_message(text);
@@ -343,7 +348,7 @@ module.exports = class App{
     let volume_order = this.bot_utils.get_command_volume(content);
     if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
 
-    let voice_override = this.bot_utils.get_spell_voice(content, this.voice_list);
+    let voice_override = this.bot_utils.get_spell_voice(content);
     if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
 
     // 3
@@ -1054,7 +1059,12 @@ module.exports = class App{
   }
 
   async credit_list(interaction){
-    const voice_list_tmp = Array.from(this.voice_liblary_list).map((val) => `VOICEVOX:${val}`);
+    const voice_list_tmp = Array.from(this.voice_liblary_list)
+      .map(val => {
+        for(let r of credit_replaces) val = val.replace(r[0], r[1]);
+        return val;
+      })
+      .map(val => `VOICEVOX:${val}`);
 
     const em = new EmbedBuilder()
       .setTitle(`利用可能な音声ライブラリのクレジット一覧です。`)
