@@ -40,7 +40,7 @@ module.exports = class BotUtils{
       if(f) add.push({ name: s[0], value: f.value });
     }
 
-    this.voice_list = Array.prototype.concat(list, add).map(el => {
+    this.voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
       el.name = el.name.replace("(", "[\(（]").replace(")", "[\)）]");
       return el;
     });
