@@ -41,7 +41,5 @@ module.exports = {
         { name: "ソースコード", value: pkgjson.homepage }
       );
     await interaction.reply({ embeds: [em] });
-
-    return;
   },
 }

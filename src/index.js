@@ -192,7 +192,6 @@ module.exports = class App{
 
       if(this.is_target(msg)){
         this.add_text_queue(msg);
-        return;
       }
     });
 
@@ -200,7 +199,7 @@ module.exports = class App{
   }
 
   setup_process(){
-    process.on('uncaughtExceptionMonitor', (err) => {
+    process.on('uncaughtExceptionMonitor', (_) => {
       if(process.env.NODE_ENV === "production") this.client.destroy();
     });
     process.on("exit", _ => {
@@ -279,9 +278,7 @@ module.exports = class App{
   is_target(msg){
     const connection = this.connections_map.get(msg.guild.id);
 
-    if(!connection || connection.text !== msg.channelId || msg.cleanContent.indexOf(PREFIX) === 0) return false;
-
-    return true;
+    return !(!connection || connection.text !== msg.channelId || msg.cleanContent.indexOf(PREFIX) === 0);
   }
 
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
@@ -313,7 +310,6 @@ module.exports = class App{
 
     connection.queue.push(q);
     this.play(guild_id);
-    return;
   }
 
   async add_text_queue(msg, skip_discord_features = false){
@@ -369,7 +365,6 @@ module.exports = class App{
     connection.queue.push(q);
 
     this.play(msg.guild.id);
-    return;
   }
 
   async play(guild_id){
@@ -477,7 +472,7 @@ module.exports = class App{
 
     for(let token of tokens){
       if(token.class === "KNOWN"){
-        if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] == "固有名詞"){
+        if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "固有名詞"){
           this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
           result.push(token.pronunciation);
         }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
@@ -598,8 +593,6 @@ module.exports = class App{
     }
 
     this.update_status_text();
-
-    return;
   }
 
   check_join_and_leave(old_s, new_s){
@@ -679,13 +672,10 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
 
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
@@ -715,7 +705,6 @@ module.exports = class App{
     }
 
     await interaction.reply({ content: text });
-    return;
   }
 
   async setvoiceall(interaction, override_id = null){
@@ -724,13 +713,10 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
 
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     let voice = interaction.options.get("voiceall").value;
     try{
@@ -767,17 +753,14 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async currentvoice(interaction, override_id = null){
     const member_id = override_id ?? interaction.member.id;
 
-    let voices = {};
-
     const server_file = this.bot_utils.get_server_file(interaction.guild.id);
 
-    voices = server_file.user_voices;
+    let voices = server_file.user_voices;
 
     let sample_voice_info = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
@@ -819,7 +802,6 @@ module.exports = class App{
     }
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async resetconnection(interaction){
@@ -842,12 +824,9 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
     const word_to = interaction.options.get("to").value;
@@ -873,7 +852,6 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async dicdel(interaction){
@@ -881,12 +859,9 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
 
@@ -911,7 +886,6 @@ module.exports = class App{
     if(connection) connection.dict = dict;
 
     await interaction.reply({ content: "削除しました。" });
-    return;
   }
 
   async dicedit(interaction){
@@ -919,12 +893,9 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
     const word_to = interaction.options.get("to").value;
@@ -962,7 +933,6 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async dicpriority(interaction){
@@ -970,12 +940,9 @@ module.exports = class App{
 
     const connection = this.connections_map.get(guild_id);
 
-    let voices = {};
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(guild_id);
-    voices = server_file.user_voices;
-    dict = server_file.dict;
+    let voices = server_file.user_voices;
+    let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
     const priority = interaction.options.get("priority").value;
@@ -1013,14 +980,11 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async diclist(interaction){
-    let dict = [];
-
     const server_file = this.bot_utils.get_server_file(interaction.guild.id);
-    dict = server_file.dict;
+    let dict = server_file.dict;
 
     let list = "";
     let is_limit = false;
@@ -1055,7 +1019,6 @@ module.exports = class App{
     if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async credit_list(interaction){
@@ -1074,7 +1037,6 @@ module.exports = class App{
       );
 
     await interaction.reply({ embeds: [em] });
-    return;
   }
 
   async systemvoicemute(interaction){
@@ -1088,7 +1050,6 @@ module.exports = class App{
     connection.system_mute_counter++;
 
     await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
-    return;
   }
 
   async copyvoicesay(interaction){
@@ -1114,6 +1075,5 @@ module.exports = class App{
     this.add_text_queue(msg_obj, true);
 
     await interaction.reply({ content: "まかせて！" });
-    return;
   }
 }
