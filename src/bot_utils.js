@@ -1,13 +1,15 @@
 const fs = require('fs');
+const crypto = require('crypto');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
 const SafeRegexpUtils = require('./safe_regexp_utils.js');
 
-const { SERVER_DIR } = require('../config.json');
+const { SERVER_DIR, EXTEND_PASS } = require('../config.json');
 
 const { shortcut } = require('../shortcuts.json');
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
+const EXTEND_REGEXP = /エクステンド[\(（]([A-Za-z0-9]+)[\)）]/g;
 const DEFAULT_SETTING = {
   user_voices: {
     DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
@@ -22,6 +24,8 @@ module.exports = class BotUtils{
     this.logger = logger;
     this.VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
     this.VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
+
+    this.EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
   }
 
   init_voicelist(voice_list, voice_liblary_list){
@@ -69,6 +73,10 @@ module.exports = class BotUtils{
     return text.replace(this.VOICE_REGEXP, "");
   }
 
+  replace_extend_command(text){
+    return text.replace(EXTEND_REGEXP, "");
+  }
+
   get_spell_voice(spell){
     let voice_command = SafeRegexpUtils.exec(this.VOICE_REGEXP, spell);
 
@@ -103,6 +111,24 @@ module.exports = class BotUtils{
     }
 
     return voice;
+  }
+
+  get_extend_flag(text){
+    if(!this.EXTEND_ENABLE) return null;
+
+    let extend_command = SafeRegexpUtils.exec(EXTEND_REGEXP, text);
+
+    if(!(extend_command && extend_command[0])) return null;
+
+    const now = new Date();
+    const pass_base = `${EXTEND_PASS}${now.getMonth() + 1}${now.getDate()}${now.getHours()}${now.getMinutes()}`;
+    const pass = crypto.createHash('sha3-224').update(pass_base).digest('hex');
+
+    this.logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
+
+    console.log(pass_base);
+
+    return extend_command[1] === pass;
   }
 
   get_server_file(guild_id){

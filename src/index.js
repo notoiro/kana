@@ -63,7 +63,8 @@ module.exports = class App{
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
       discord_username: "NAME",
-      opus_convert_available: false
+      opus_convert_available: false,
+      extend_enabled: this.bot_utils.EXTEND_ENABLE
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
@@ -347,6 +348,9 @@ module.exports = class App{
     let voice_override = this.bot_utils.get_spell_voice(content);
     if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
 
+    let is_extend = this.bot_utils.get_extend_flag(content);
+    if(is_extend !== null) content = this.bot_utils.replace_extend_command(content);
+
     // 3
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
@@ -354,7 +358,7 @@ module.exports = class App{
     content = await this.fix_reading(content);
     this.logger.debug(`content(fix reading): ${content}`);
 
-    const q = { str: content, id: msg.member.id, volume_order: volume_order };
+    const q = { str: content, id: msg.member.id, volume_order: volume_order, is_extend };
 
     const connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
@@ -391,6 +395,11 @@ module.exports = class App{
 
     const text_data = Utils.get_text_and_speed(q.str);
     this.logger.debug(`play text speed: ${text_data.speed}`);
+
+    this.logger.debug(`Extend: ${q.is_extend}`);
+    if(q.is_extend){
+      text_data.text = q.str;
+    }
 
     const voice_data = {
       // 加速はユーザー設定と加速設定のうち速い方を利用する。
