@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, TMP_DIR, VOICEVOX_ENGINE, REMOTE_REPLACE_HOST, DICT_DIR
+  SERVER_DIR, TMP_DIR, VOICEVOX_ENGINE, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU
 } = require('../config.json');
 
 const indent = "          ";
@@ -91,6 +91,7 @@ module.exports = (app) => {
   }
   console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
   console.log(`${indent}${fg_blue}extend:          ${fg_default}  ${ans(app.status.extend_enabled, 'enabled', 'disabled')}`);
+  console.log(`${indent}${fg_blue}ponkotsu         ${fg_default}  ${ans(IS_PONKOTSU, "default", "option")}`);
 
   console.log("");
 

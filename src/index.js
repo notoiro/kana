@@ -35,7 +35,7 @@ const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU
 } = require('../config.json');
 
 module.exports = class App{
@@ -527,11 +527,16 @@ module.exports = class App{
   }
 
 
-  async fix_reading(text){
-    let tmp_text = await this.kagome_tokenize(text);
-    tmp_text = await this.replace_http(tmp_text);
+  async fix_reading(text, is_ponkotsu = IS_PONKOTSU){
+    let result = text;
+    if(!is_ponkotsu){
+      result = await this.kagome_tokenize(result);
+      result = await this.replace_http(result);
+    }else{
+      result = await this.old_kagome_tokenize(result);
+    }
 
-    return tmp_text;
+    return result;
   }
 
   async kagome_tokenize(text){
@@ -613,6 +618,55 @@ module.exports = class App{
     this.logger.debug(`remote replace: ${tmp_text}`);
 
     return tmp_text;
+  }
+
+  async old_kagome_tokenize(text){
+    let tokens;
+
+    try{
+      tokens = await this.kagome.tokenize(text);
+    }catch(e){
+      this.logger.info(e);
+      return text;
+    }
+
+    let result = [];
+
+    for(let token of tokens){
+      let t = token.surface;
+
+      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
+        for(let d of this.dictionaries){
+          t = t.replace(d[0], d[1]);
+          if(t !== token.surface) break;
+        }
+        result.push(t);
+        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
+
+        continue;
+      }
+
+      if(token.class === "KNOWN"){
+        if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "固有名詞"){
+          this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
+          result.push(token.pronunciation);
+        }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
+          this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
+          result.push(token.pronunciation);
+        }else{
+          this.logger.debug(token);
+          result.push(token.surface);
+        }
+      }else{
+        if(isRomaji(token.surface)){
+          result.push(toKana(token.surface));
+        }else{
+          result.push(token.surface);
+        }
+      }
+    }
+
+    return result.join("");
   }
 
   async connect_vc(interaction){
