@@ -88,6 +88,7 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${app.config.opus_convert.bitrate}`);
     console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
   }
+  console.log(`${indent}${fg_blue}extend:          ${fg_default}  ${ans(app.status.extend_enabled, 'enabled', 'disabled')}`);
 
   console.log("");
 

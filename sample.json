@@ -8,5 +8,6 @@
     "enable": false,
     "bitrate": "96k",
     "threads": 2
-  }
+  },
+  "EXTEND_PASS": "notoiro"
 }

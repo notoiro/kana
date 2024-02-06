@@ -15,7 +15,7 @@ function migration(f_path){
   try{
     json = JSON.parse(fs.readFileSync(f_path));
   }catch(e){
-    console.error(`failed to migration(${f}):`)
+    console.error(`failed to migration(${f_path}):`)
     console.error(e);
 
     return;
@@ -39,10 +39,8 @@ function migration(f_path){
   try{
     fs.writeFileSync(f_path + '.new', JSON.stringify(new_json, undefined, " "));
   }catch(e){
-    console.error(`failed to migration(${f}):`)
+    console.error(`failed to migration(${f_path}):`)
     console.error(e);
-
-    return;
   }
 }
 

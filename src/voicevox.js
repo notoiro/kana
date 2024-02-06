@@ -19,8 +19,6 @@ module.exports = class Voicevox{
     }catch(e){
       throw e;
     }
-
-    return;
   }
 
   async speakers(){
