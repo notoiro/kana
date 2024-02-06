@@ -59,12 +59,14 @@ Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボ�
 ## 使い方
 /help
 
-## dictionaries/fix_neologd.json
+## dictionaries以下のファイルについて
 Kagome frontで利用されている形態素解析辞書、Neologd辞書はネット辞書であるというその性質上、間違った読み、自動化のミスによる異常な読み、極端に特定の界隈に偏った略語、一般的ではあるが問題のある略語などを含みます。
 
 このボットでは対策として置換時に辞書上の表現と完全一致でマッチさせ、英字の場合は更に3文字以上の場合のみマッチにする対策を取っていますが、それでもおかしい読みがある場合の対策にKagomeの分かち書き単位で置換する辞書を用意しています。
 
 `dictionaries/fix_neologd.json`はボット運用時に判明した怪しい読みを比較的普通の読みに置換する目的でリポジトリに含まれています。
+
+`dictionaries/lite_neologd.json`は面白くないやつだけ直す目的で利用できます。
 
 このファイルは[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.ja ) または [NYSL 0.9982](https://www.kmonos.net/nysl/ )で利用できます。
 
