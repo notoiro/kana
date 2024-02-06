@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const SafeRegexpUtils = require('./safe_regexp_utils.js');
 
-const { SERVER_DIR, EXTEND_PASS } = require('../config.json');
+const { SERVER_DIR, EXTEND_PASS, IS_PONKOTSU } = require('../config.json');
 
 const { shortcut } = require('../shortcuts.json');
 
@@ -14,8 +14,10 @@ const DEFAULT_SETTING = {
   user_voices: {
     DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
   },
-  dict: [["Discord", "でぃすこーど", 2]]
+  dict: [["Discord", "でぃすこーど", 2]],
+  is_ponkotsu: !!IS_PONKOTSU
 }
+const SETTING_LISTS = Object.keys(DEFAULT_SETTING);
 
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 
@@ -134,20 +136,37 @@ module.exports = class BotUtils{
 
     if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
       try{
-        result = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
-        this.logger.debug(`loaded server conf: ${result}`);
+        let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
+
+        for(let l of SETTING_LISTS){
+          if(json[l] === undefined){
+            json[l] = DEFAULT_SETTING[l];
+            continue;
+          }
+        }
+
+        result = json;
+
+        this.logger.debug(`loaded server conf: ${JSON.stringify(result, null, "  ")}`);
       }catch(e){
         this.logger.info(e);
         result = DEFAULT_SETTING;
       }
     }
 
-    return result;
+    return JSON.parse(JSON.stringify(result));
   }
 
-  write_serverinfo(guild_id, data){
+  write_serverinfo(guild_id, from, update){
+    let result = {};
+    for(let l of SETTING_LISTS){
+      if(l in update) result[l] = update[l];
+      else if(l in from) result[l] = from[l];
+      else result[l] = DEFAULT_SETTING[l];
+    }
+
     try{
-      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(data));
+      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(result, null, "  "));
     }catch(e){
       this.logger.info(e);
     }
