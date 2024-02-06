@@ -15,6 +15,6 @@ module.exports = (path, output_path, bitrate = '96k', threads = '2') =>{
         .outputOptions(options)
         .saveToFile(output_path)
         .on('end', () => { resolve(output_path) })
-        .on('error', (err) => { reject(e) });
+        .on('error', (err) => { reject(err) });
   });
 }

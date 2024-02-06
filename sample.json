@@ -10,5 +10,6 @@
     "bitrate": "96k",
     "threads": 2
   },
-  "DICT_DIR": "./dictionaries"
+  "DICT_DIR": "./dictionaries",
+  "EXTEND_PASS": "notoiro"
 }

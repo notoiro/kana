@@ -22,10 +22,10 @@ function migration(f_path){
 
   try{
     const json = JSON.parse(fs.readFileSync(f_path));
-    voices = json.user_voices ?? vocies;
+    voices = json.user_voices ?? voices;
     dict = json.dict ?? dict;
   }catch(e){
-    console.error(`failed to migration(${f}):`)
+    console.error(`failed to migration(${f_path}):`)
     console.error(e);
 
     return;
@@ -41,10 +41,8 @@ function migration(f_path){
   try{
     fs.writeFileSync(f_path, JSON.stringify({ user_voices: voices, dict: dict }));
   }catch(e){
-    console.error(`failed to migration(${f}):`)
+    console.error(`failed to migration(${f_path}):`)
     console.error(e);
-
-    return;
   }
 }
 
