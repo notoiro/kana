@@ -126,8 +126,6 @@ module.exports = class BotUtils{
 
     this.logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
 
-    console.log(pass_base);
-
     return extend_command[1] === pass;
   }
 
