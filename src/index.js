@@ -10,6 +10,7 @@ const {
   EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
+const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
@@ -25,6 +26,9 @@ const print_info = require('./print_info.js');
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+const ans = (flag, true_text, false_text) => {
+  return flag ? true_text:false_text;
+};
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
@@ -288,6 +292,7 @@ module.exports = class App{
         case "credit":
         case "systemvoicemute":
         case "copyvoicesay":
+        case "info":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
@@ -1249,5 +1254,57 @@ module.exports = class App{
     this.add_text_queue(msg_obj, true);
 
     await interaction.reply({ content: "まかせて！" });
+  }
+
+  async info(interaction){
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
+
+    const ram = Math.round(process.memoryUsage.rss() / 1024 / 1024 * 100) / 100;
+    const total_ram = Math.round(os.totalmem() / (1024 * 1024));
+
+    const cyan = "\x1b[1;36m";
+    const gray = "\x1b[1;30m";
+    const reset = "\x1b[1;0m";
+
+    const em = new EmbedBuilder()
+      .setTitle(`Infomations`)
+      .setDescription(`
+\`\`\`ansi
+${cyan}API Ping${gray}:${reset} ${this.client.ws.ping} ms
+${cyan}メモリ${gray}:${reset} ${ram} MB / ${total_ram} MB
+${cyan}現在接続数${gray}:${reset} ${this.connections_map.size}
+
+${cyan}サーバー数${gray}:${reset} ${this.status.connected_servers}
+${cyan}利用可能なボイス数${gray}:${reset} ${this.voice_list.length}
+\`\`\`
+      `)
+      .addFields(
+        {
+          name: "Bot設定",
+          value: `
+\`\`\`ansi
+${cyan}Opus変換${gray}:${reset} ${ans(this.status.opus_convert_available && this.config.opus_convert.enable, "有効", "無効")}
+${cyan}英語辞書変換${gray}:${reset} ${ans(this.status.remote_replace_available, "有効", "無効")}
+${cyan}ポンコツ${gray}:${reset} ${ans(!!IS_PONKOTSU, "何もしなければ", "設定次第")}
+${cyan}サーバー辞書単語数${gray}:${reset} ${this.dictionaries.length}
+\`\`\`
+          `,
+          inline: true
+        },
+      ).addFields(
+        {
+          name: "サーバー設定",
+          value: `
+\`\`\`ansi
+${cyan}辞書単語数${gray}:${reset} ${server_file.dict.length}
+${cyan}ボイス登録数${gray}:${reset} ${Object.keys(server_file.user_voices).length}
+${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "いいえ")}
+\`\`\`
+          `,
+          inline: true
+        }
+      )
+
+    await interaction.reply({ embeds: [em] });
   }
 }
