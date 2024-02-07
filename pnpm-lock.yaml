@@ -11,12 +11,18 @@ dependencies:
   '@discordjs/voice':
     specifier: ^0.16.1
     version: 0.16.1(@discordjs/opus@0.9.0)
+  '@djs-button-pages/presets':
+    specifier: ^1.0.0
+    version: 1.0.0
   axios:
     specifier: ^1.6.3
     version: 1.6.3
   discord.js:
     specifier: ^14.14.1
     version: 14.14.1
+  djs-button-pages:
+    specifier: ^4.0.1
+    version: 4.0.1(@djs-button-pages/presets@1.0.0)
   emoji-regex:
     specifier: ^10.3.0
     version: 10.3.0
@@ -146,6 +152,17 @@ packages:
       discord-api-types: 0.37.61
       tslib: 2.6.2
       ws: 8.14.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /@djs-button-pages/presets@1.0.0:
+    resolution: {integrity: sha512-6hUjtxV+GqQrpZ8Cu5X7DbQj+YB7jRv6CJJ4alHgiUg39zeNHVbni2LDlP4xPqwMgYEn+b+bBHuLUAWLj19ikA==}
+    engines: {node: '>=16.9.0'}
+    dependencies:
+      discord.js: 14.14.1
+      djs-button-pages: 4.0.1(@djs-button-pages/presets@1.0.0)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -334,6 +351,19 @@ packages:
       tslib: 2.6.2
       undici: 5.27.2
       ws: 8.14.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /djs-button-pages@4.0.1(@djs-button-pages/presets@1.0.0):
+    resolution: {integrity: sha512-T057Cy3EL9nz3Y8sNhBquc43WjfcbrYB47YWpD8QduIvAJOobfq1KqomNcBbyvELEZKMOMMpWdgjPC1EwoCphw==}
+    engines: {node: '>=16.9.0'}
+    peerDependencies:
+      '@djs-button-pages/presets': 1.x
+    dependencies:
+      '@djs-button-pages/presets': 1.0.0
+      discord.js: 14.14.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
