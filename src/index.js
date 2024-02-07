@@ -39,7 +39,7 @@ const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU, TMP_PREFIX
 } = require('../config.json');
 
 module.exports = class App{
@@ -119,7 +119,7 @@ module.exports = class App{
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
-      await this.voicevox.synthesis("てすと", "test.wav", 0, tmp_voice);
+      await this.voicevox.synthesis("てすと", `test${TMP_PREFIX}.wav`, 0, tmp_voice);
     }catch(e){
       this.logger.info(e);
     }
@@ -127,10 +127,11 @@ module.exports = class App{
 
   async test_opus_convert(){
     try{
-      const opus_voice_path = await convert_audio(`${TMP_DIR}/test.wav`, `${TMP_DIR}/test.ogg`);
+      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
       this.logger.info(`Opus convert init err.`);
+      console.log(e);
       this.status.opus_convert_available = false;
     }
   }
@@ -711,8 +712,8 @@ module.exports = class App{
       voice: voice_channel_id,
       audio_player: null,
       queue: [],
-      filename: `${guild_id}.wav`,
-      opus_filename: `${guild_id}.ogg`,
+      filename: `${guild_id}${TMP_PREFIX}.wav`,
+      opus_filename: `${guild_id}${TMP_PREFIX}.ogg`,
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
