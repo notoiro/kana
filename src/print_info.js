@@ -74,7 +74,7 @@ module.exports = (app) => {
 
   console.log(`${indent}${fg_blue}os:              ${fg_default}  ${os.type()} ${os.release()} ${os.arch()}`);
   console.log(`${indent}${fg_blue}node.js:         ${fg_default}  ${process.version}`);
-  console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${app.voicevox.version}`);
+  // console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${app.voicevox.version}`);
 
   console.log("");
 

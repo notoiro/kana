@@ -14,7 +14,8 @@ const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
-const Voicevox = require('./voicevox.js');
+// const Voicevox = require('./voicevox.js');
+const VoiceEngines = require('./voice_engines.js');
 const Kagome = require('./kagome.js');
 const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
@@ -44,7 +45,7 @@ const {
 
 module.exports = class App{
   constructor(){
-    this.voicevox = new Voicevox();
+    // this.voicevox = new Voicevox();
     this.kagome = new Kagome();
     this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
@@ -54,6 +55,8 @@ module.exports = class App{
         GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
       ]
     });
+
+    this.voice_engines = new VoiceEngines(this.logger);
 
     this.bot_utils = new BotUtils(this.logger);
 
@@ -82,7 +85,11 @@ module.exports = class App{
 
   async start(){
     this.setup_config();
-    await this.setup_voicevox();
+    // await this.setup_voicevox();
+    await this.voice_engines.init_engines();
+
+    this.voice_list = this.voice_engines.safe_speakers;
+    this.voice_liblary_list = this.voice_engines.safe_liblarys;
     await this.test_opus_convert();
     await this.setup_kagome();
     this.setup_dictionaries();
@@ -105,35 +112,35 @@ module.exports = class App{
     this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
   }
 
-  async setup_voicevox(){
-    await this.voicevox.check_version();
-    const voiceinfos = await this.get_voicelist();
-    this.voice_list = voiceinfos.speaker_list;
-    this.voice_liblary_list = voiceinfos.voice_liblary_list;
-
-    this.logger.debug(this.voice_list);
-    this.logger.debug(this.voice_liblary_list);
-
-    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
-
-    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-
-    try{
-      await this.voicevox.synthesis("てすと", `test${TMP_PREFIX}.wav`, 0, tmp_voice);
-    }catch(e){
-      this.logger.info(e);
-    }
-  }
+//  async setup_voicevox(){
+//    await this.voicevox.check_version();
+//    const voiceinfos = await this.get_voicelist();
+//    this.voice_list = voiceinfos.speaker_list;
+//    this.voice_liblary_list = voiceinfos.voice_liblary_list;
+//
+//    this.logger.debug(this.voice_list);
+//    this.logger.debug(this.voice_liblary_list);
+//
+//    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+//
+//    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+//
+//    try{
+//      await this.voicevox.synthesis("てすと", `test${TMP_PREFIX}.wav`, 0, tmp_voice);
+//    }catch(e){
+//      this.logger.info(e);
+//    }
+//  }
 
   async test_opus_convert(){
-    try{
-      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
-      this.status.opus_convert_available = !!opus_voice_path;
-    }catch(e){
-      this.logger.info(`Opus convert init err.`);
-      console.log(e);
-      this.status.opus_convert_available = false;
-    }
+ //   try{
+ //     const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
+ //     this.status.opus_convert_available = !!opus_voice_path;
+ //   }catch(e){
+ //     this.logger.info(`Opus convert init err.`);
+ //     console.log(e);
+ //     this.status.opus_convert_available = false;
+ //   }
   }
 
   // 利用可能かテストする
@@ -481,7 +488,7 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voicevox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
 
       let opus_voice_path;
 
@@ -834,24 +841,24 @@ module.exports = class App{
     connection.audio_player.stop(true);
   }
 
-  async get_voicelist(){
-    const list = await this.voicevox.speakers();
+  // async get_voicelist(){
+  //   const list = await this.voicevox.speakers();
 
-    const speaker_list = [];
-    const lib_list = [];
+  //   const speaker_list = [];
+  //   const lib_list = [];
 
-    for(let sp of list){
-      lib_list.push(sp.name);
+  //   for(let sp of list){
+  //     lib_list.push(sp.name);
 
-      for(let v of sp.styles){
-        let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
+  //     for(let v of sp.styles){
+  //       let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
 
-        speaker_list.push(speaker);
-      }
-    }
+  //       speaker_list.push(speaker);
+  //     }
+  //   }
 
-    return { speaker_list: speaker_list, voice_liblary_list: lib_list };
-  }
+  //   return { speaker_list: speaker_list, voice_liblary_list: lib_list };
+  // }
 
   async setvoice(interaction, type){
     const guild_id = interaction.guild.id;
