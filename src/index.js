@@ -10,11 +10,13 @@ const {
   EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
+const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
 const Voicevox = require('./voicevox.js');
 const Kagome = require('./kagome.js');
+const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
@@ -24,6 +26,9 @@ const print_info = require('./print_info.js');
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+const ans = (flag, true_text, false_text) => {
+  return flag ? true_text:false_text;
+};
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
@@ -34,13 +39,14 @@ const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU
 } = require('../config.json');
 
 module.exports = class App{
   constructor(){
     this.voicevox = new Voicevox();
     this.kagome = new Kagome();
+    this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
     this.client = new Client({
       intents: [
@@ -54,6 +60,8 @@ module.exports = class App{
     this.connections_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
+    this.dictionaries = [];
+    this.dict_regexp = null;
     this.commands = {};
     this.config = {
       opus_convert: { enable: false, bitrate: '96k', threads: 2 }
@@ -64,10 +72,12 @@ module.exports = class App{
       connected_servers: 0,
       discord_username: "NAME",
       opus_convert_available: false,
+      remote_replace_available: false,
       extend_enabled: this.bot_utils.EXTEND_ENABLE
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
+
   }
 
   async start(){
@@ -75,6 +85,8 @@ module.exports = class App{
     await this.setup_voicevox();
     await this.test_opus_convert();
     await this.setup_kagome();
+    this.setup_dictionaries();
+    await this.test_remote_replace();
     this.setup_discord();
     this.setup_process();
 
@@ -120,6 +132,21 @@ module.exports = class App{
     }catch(e){
       this.logger.info(`Opus convert init err.`);
       this.status.opus_convert_available = false;
+    }
+  }
+
+  // 利用可能かテストする
+  async test_remote_replace(){
+    if(!this.remote_repalce.enabled){
+      this.status.remote_replace_available = false;
+      return;
+    }
+    try{
+      await this.remote_repalce.replace_http('A person who destroys a submarine telegraph line in order to protect his own life or ship, or in order to lay or repair a submarine telegraph line, shall notify the telegraph office or the Imperial Consulate immediately by wireless telegraphy, and if wireless telegraphy is not possible, shall notify the local telegraph office or the Imperial Consulate within 24 hours of the first landing of the ship. Any person who violates the provisions of the preceding paragraph shall be fined not more than 200 yen.');
+      this.status.remote_replace_available = true;
+    }catch(e){
+      this.logger.info(e);
+      this.status.remote_replace_available = false;
     }
   }
 
@@ -209,6 +236,38 @@ module.exports = class App{
     });
   }
 
+  setup_dictionaries(){
+    let json_tmp;
+
+    let map_tmp = [] //new Map();
+
+    // ないなら無視する
+    if(!fs.existsSync(`${DICT_DIR}`)){
+      this.logger.info("Global dictionary file does not exist!");
+      return;
+    }
+    for(const dir of fs.readdirSync(`${DICT_DIR}`)){
+      try {
+        if(fs.existsSync(`${DICT_DIR}/${dir}`)){
+          json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
+          json_tmp.dict.forEach( (dict) => {
+            if(!map_tmp.some((dic) => dic[0] === dict[0] )){
+              map_tmp.push(dict);
+            }
+          });
+        }
+      } catch (e) {
+        this.logger.info(e);
+      }
+    }
+
+    this.dictionaries = map_tmp;
+
+    if(this.dictionaries.length){
+      this.dict_regexp = new RegExp(`^${this.dictionaries.map(d => escape_regexp(d[0])).join("|")}$`, 'g');
+    }
+  }
+
   async onInteraction(interaction){
     if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
 
@@ -233,6 +292,8 @@ module.exports = class App{
         case "credit":
         case "systemvoicemute":
         case "copyvoicesay":
+        case "info":
+        case "ponkotsu":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
@@ -316,6 +377,9 @@ module.exports = class App{
   async add_text_queue(msg, skip_discord_features = false){
     let content = msg.cleanContent;
 
+    let connection = this.connections_map.get(msg.guild.id);
+    if(!connection) return;
+
     this.logger.debug(`content(from): `);
     this.logger.debug(msg);
 
@@ -355,12 +419,12 @@ module.exports = class App{
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
     // 4
-    content = await this.fix_reading(content);
+    content = await this.fix_reading(content, connection.is_ponkotsu);
     this.logger.debug(`content(fix reading): ${content}`);
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order, is_extend };
 
-    const connection = this.connections_map.get(msg.guild.id);
+    connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
     if(!connection) return;
 
@@ -396,8 +460,12 @@ module.exports = class App{
     const text_data = Utils.get_text_and_speed(q.str);
     this.logger.debug(`play text speed: ${text_data.speed}`);
 
+    // デバッグ時は省略せず全文読ませる
+    if(this.status.debug){
+      text_data.speed = voice.speed;
+    }
     this.logger.debug(`Extend: ${q.is_extend}`);
-    if(q.is_extend){
+    if(q.is_extend || this.status.debug){
       text_data.text = q.str;
     }
 
@@ -467,7 +535,20 @@ module.exports = class App{
     return result;
   }
 
-  async fix_reading(text){
+
+  async fix_reading(text, is_ponkotsu = !!IS_PONKOTSU){
+    let result = text;
+    if(!is_ponkotsu){
+      result = await this.kagome_tokenize(result);
+      result = await this.replace_http(result);
+    }else{
+      result = await this.old_kagome_tokenize(result);
+    }
+
+    return result;
+  }
+
+  async kagome_tokenize(text){
     let tokens;
 
     try{
@@ -480,6 +561,100 @@ module.exports = class App{
     let result = [];
 
     for(let token of tokens){
+      let t = token.surface;
+
+      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
+        for(let d of this.dictionaries){
+          t = t.replace(d[0], d[1]);
+          if(t !== token.surface) break;
+        }
+        result.push(t);
+        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
+
+        continue;
+      }
+
+      if(token.class === "KNOWN"){
+        if(
+          token.pronunciation &&
+          token.pos[0] === "名詞" &&
+          token.pos[1] == "固有名詞" &&
+          // 辞書上の表現とテキストが一致しない場合は無視する。これは英字の無駄ヒットを回避する目的がある
+          token.base_form == token.surface &&
+          // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
+          (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
+        ){
+          this.logger.debug(`KNOWN(固有名詞): ${JSON.stringify(token, "\n")}`)
+          result.push(token.pronunciation);
+        }else if(
+          token.pronunciation &&
+          token.pos[0] === "名詞" &&
+          token.pos[1] == "固有名詞" &&
+          // 辞書上の表現とテキストが一致しない場合のケース。読みのデバッグに利用する。
+          (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
+        ){
+          this.logger.debug(`KNOWN(固有名詞)(不一致): ${JSON.stringify(token, "\n")}`)
+          result.push(token.surface);
+        }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
+          this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
+          result.push(token.pronunciation);
+        }else{
+          this.logger.debug(`KNOWN(surface利用)${JSON.stringify(token)}`);
+          result.push(token.surface);
+        }
+      }else{
+        result.push(token.surface);
+        this.logger.debug(`UNKNOWN: ${token.surface}`);
+      }
+    }
+
+    this.logger.debug(`kagome replace: ${result.join('')}`);
+
+    return result.join("");
+  }
+  async replace_http(text){
+    if(!this.status.remote_replace_available) return text;
+
+    let tmp_text = text;
+
+    try{
+      tmp_text = await this.remote_repalce.replace_http(text);
+    }catch(e){
+      this.logger.info(e);
+      tmp_text = text;
+    }
+
+    this.logger.debug(`remote replace: ${tmp_text}`);
+
+    return tmp_text;
+  }
+
+  async old_kagome_tokenize(text){
+    let tokens;
+
+    try{
+      tokens = await this.kagome.tokenize(text);
+    }catch(e){
+      this.logger.info(e);
+      return text;
+    }
+
+    let result = [];
+
+    for(let token of tokens){
+      let t = token.surface;
+
+      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
+        for(let d of this.dictionaries){
+          t = t.replace(d[0], d[1]);
+          if(t !== token.surface) break;
+        }
+        result.push(t);
+        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
+
+        continue;
+      }
+
       if(token.class === "KNOWN"){
         if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "固有名詞"){
           this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
@@ -543,13 +718,15 @@ module.exports = class App{
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
-      dict: [["Discord", "でぃすこーど", 2]]
+      dict: [["Discord", "でぃすこーど", 2]],
+      is_ponkotsu: !!IS_PONKOTSU
     };
 
     const server_file = this.bot_utils.get_server_file(guild_id);
 
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
+    connectinfo.is_ponkotsu = server_file.is_ponkotsu;
 
     const connection = joinVoiceChannel({
       guildId: guild_id,
@@ -684,7 +861,6 @@ module.exports = class App{
     const server_file = this.bot_utils.get_server_file(guild_id);
 
     let voices = server_file.user_voices;
-    let dict = server_file.dict;
 
     let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
@@ -693,7 +869,7 @@ module.exports = class App{
     voice[type] = interaction.options.get(type).value;
     voices[member_id] = voice;
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
     if(connection) connection.user_voices = voices;
 
@@ -725,7 +901,6 @@ module.exports = class App{
     const server_file = this.bot_utils.get_server_file(guild_id);
 
     let voices = server_file.user_voices;
-    let dict = server_file.dict;
 
     let voice = interaction.options.get("voiceall").value;
     try{
@@ -745,7 +920,7 @@ module.exports = class App{
 
     voices[member_id] = voice;
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
     if(connection) connection.user_voices = voices;
 
@@ -834,7 +1009,6 @@ module.exports = class App{
     const connection = this.connections_map.get(guild_id);
 
     const server_file = this.bot_utils.get_server_file(guild_id);
-    let voices = server_file.user_voices;
     let dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
@@ -849,7 +1023,7 @@ module.exports = class App{
 
     dict.push([word_from, word_to, 2]);
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -869,7 +1043,6 @@ module.exports = class App{
     const connection = this.connections_map.get(guild_id);
 
     const server_file = this.bot_utils.get_server_file(guild_id);
-    let voices = server_file.user_voices;
     let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
@@ -890,7 +1063,7 @@ module.exports = class App{
 
     dict = dict.filter(word => word[0] !== target);
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -903,7 +1076,6 @@ module.exports = class App{
     const connection = this.connections_map.get(guild_id);
 
     const server_file = this.bot_utils.get_server_file(guild_id);
-    let voices = server_file.user_voices;
     let dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
@@ -930,7 +1102,7 @@ module.exports = class App{
       return result;
     });
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -950,7 +1122,6 @@ module.exports = class App{
     const connection = this.connections_map.get(guild_id);
 
     const server_file = this.bot_utils.get_server_file(guild_id);
-    let voices = server_file.user_voices;
     let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
@@ -977,7 +1148,7 @@ module.exports = class App{
       return result;
     });
 
-    this.bot_utils.write_serverinfo(guild_id, { user_voices: voices, dict: dict });
+    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 
@@ -1084,5 +1255,74 @@ module.exports = class App{
     this.add_text_queue(msg_obj, true);
 
     await interaction.reply({ content: "まかせて！" });
+  }
+
+  async info(interaction){
+    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
+
+    const ram = Math.round(process.memoryUsage.rss() / 1024 / 1024 * 100) / 100;
+    const total_ram = Math.round(os.totalmem() / (1024 * 1024));
+
+    const cyan = "\x1b[1;36m";
+    const gray = "\x1b[1;30m";
+    const reset = "\x1b[1;0m";
+
+    const em = new EmbedBuilder()
+      .setTitle(`Infomations`)
+      .setDescription(`
+\`\`\`ansi
+${cyan}API Ping${gray}:${reset} ${this.client.ws.ping} ms
+${cyan}メモリ${gray}:${reset} ${ram} MB / ${total_ram} MB
+${cyan}現在接続数${gray}:${reset} ${this.connections_map.size}
+
+${cyan}サーバー数${gray}:${reset} ${this.status.connected_servers}
+${cyan}利用可能なボイス数${gray}:${reset} ${this.voice_list.length}
+\`\`\`
+      `)
+      .addFields(
+        {
+          name: "Bot設定",
+          value: `
+\`\`\`ansi
+${cyan}Opus変換${gray}:${reset} ${ans(this.status.opus_convert_available && this.config.opus_convert.enable, "有効", "無効")}
+${cyan}英語辞書変換${gray}:${reset} ${ans(this.status.remote_replace_available, "有効", "無効")}
+${cyan}ポンコツ${gray}:${reset} ${ans(!!IS_PONKOTSU, "何もしなければ", "設定次第")}
+${cyan}サーバー辞書単語数${gray}:${reset} ${this.dictionaries.length}
+\`\`\`
+          `,
+          inline: true
+        },
+      ).addFields(
+        {
+          name: "サーバー設定",
+          value: `
+\`\`\`ansi
+${cyan}辞書単語数${gray}:${reset} ${server_file.dict.length}
+${cyan}ボイス登録数${gray}:${reset} ${Object.keys(server_file.user_voices).length}
+${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "いいえ")}
+\`\`\`
+          `,
+          inline: true
+        }
+      )
+
+    await interaction.reply({ embeds: [em] });
+  }
+
+  async ponkotsu(interaction){
+    const guild_id = interaction.guild.id;
+
+    const connection = this.connections_map.get(guild_id);
+
+    const server_file = this.bot_utils.get_server_file(guild_id);
+    let is_ponkotsu = !server_file.is_ponkotsu;
+
+    this.bot_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
+
+    if(connection) connection.is_ponkotsu = is_ponkotsu;
+
+    const message = is_ponkotsu ? "ポンコツになりました。" : "頭が良くなりました。";
+
+    await interaction.reply({ content: message });
   }
 }

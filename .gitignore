@@ -1,3 +1,6 @@
-node_modules/
-servers/
+/node_modules/
+/servers/
+/dictionaries/*
+!/dictionaries/fix_neologd.json
+!/dictionaries/lite_neologd.json
 /config.json
