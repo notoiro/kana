@@ -293,6 +293,7 @@ module.exports = class App{
         case "systemvoicemute":
         case "copyvoicesay":
         case "info":
+        case "ponkotsu":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
@@ -1306,5 +1307,22 @@ ${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "�
       )
 
     await interaction.reply({ embeds: [em] });
+  }
+
+  async ponkotsu(interaction){
+    const guild_id = interaction.guild.id;
+
+    const connection = this.connections_map.get(guild_id);
+
+    const server_file = this.bot_utils.get_server_file(guild_id);
+    let is_ponkotsu = !server_file.is_ponkotsu;
+
+    this.bot_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
+
+    if(connection) connection.is_ponkotsu = is_ponkotsu;
+
+    const message = is_ponkotsu ? "ポンコツになりました。" : "頭が良くなりました。";
+
+    await interaction.reply({ content: message });
   }
 }
