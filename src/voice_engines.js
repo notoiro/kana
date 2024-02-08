@@ -3,6 +3,7 @@ const {
 } = require('../config.json');
 
 const Voicevox = require('./voicevox.js');
+const COEIROINKV2 = require('./coeiroink_v2.js');
 
 module.exports = class VoiceEngines{
   constructor(logger){
@@ -33,6 +34,9 @@ module.exports = class VoiceEngines{
         case "VOICEVOX":
           engine_obj.api = new Voicevox(e.url);
           break;
+        case "COEIROINK_V2":
+          engine_obj.api = new COEIROINKV2(e.url);
+          engine_obj.voice_list_orig = [];
       }
 
       this.logger.debug(JSON.stringify(engine_obj, null, "  "));
@@ -50,7 +54,10 @@ module.exports = class VoiceEngines{
 
       const list = await e.api.speakers();
 
+      console.log(JSON.stringify(list, null, "  "))
+
       for(let sp of list){
+
         e.voice_liblary_list.push(sp.name);
 
         for(let v of sp.styles){
@@ -62,7 +69,7 @@ module.exports = class VoiceEngines{
       const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
       try{
-        await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, 0, tmp_voice);
+        await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, e.voice_list[0].value - e.id_offset, tmp_voice);
 
         this.logger.debug(`${e.name} loaded.`);
       }catch(e){
