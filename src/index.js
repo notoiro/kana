@@ -827,25 +827,6 @@ module.exports = class App{
     connection.audio_player.stop(true);
   }
 
-  // async get_voicelist(){
-  //   const list = await this.voicevox.speakers();
-
-  //   const speaker_list = [];
-  //   const lib_list = [];
-
-  //   for(let sp of list){
-  //     lib_list.push(sp.name);
-
-  //     for(let v of sp.styles){
-  //       let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
-
-  //       speaker_list.push(speaker);
-  //     }
-  //   }
-
-  //   return { speaker_list: speaker_list, voice_liblary_list: lib_list };
-  // }
-
   async setvoice(interaction, type){
     const guild_id = interaction.guild.id;
     const member_id = interaction.member.id;
