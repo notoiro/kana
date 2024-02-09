@@ -20,6 +20,7 @@ const DEFAULT_SETTING = {
 const SETTING_LISTS = Object.keys(DEFAULT_SETTING);
 
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+const escape_regexp_non_safe = (str) => str.replace(/[.*+\-?^${}|[\]\\]/g, '\\$&');
 
 module.exports = class BotUtils{
   constructor(logger){
@@ -36,7 +37,7 @@ module.exports = class BotUtils{
     let add = [];
 
     for(let l of voice_liblary_list){
-      const r = new RegExp(l, 'g');
+      const r = new RegExp(escape_regexp_non_safe(l), 'g');
       const f = list.find(el => r.test(el.name));
       if(f) add.push({ name: l, value: f.value });
     }
@@ -47,6 +48,7 @@ module.exports = class BotUtils{
     }
 
     this.voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
+      el.name = escape_regexp_non_safe(el.name);
       el.name = el.name.replace("(", "[\(（]").replace(")", "[\)）]");
       return el;
     });

@@ -14,7 +14,6 @@ const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
-// const Voicevox = require('./voicevox.js');
 const VoiceEngines = require('./voice_engines.js');
 const Kagome = require('./kagome.js');
 const RemoteReplace = require('./remote_replace.js');
@@ -88,8 +87,13 @@ module.exports = class App{
     // await this.setup_voicevox();
     await this.voice_engines.init_engines();
 
-    this.voice_list = this.voice_engines.safe_speakers;
-    this.voice_liblary_list = this.voice_engines.safe_liblarys;
+    this.voice_list = this.voice_engines.speakers;
+    this.voice_liblary_list = this.voice_engines.liblarys;
+
+    for(let v of this.voice_liblary_list) console.log(v);
+
+    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+
     await this.test_opus_convert();
     await this.setup_kagome();
     this.setup_dictionaries();
@@ -112,35 +116,17 @@ module.exports = class App{
     this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
   }
 
-//  async setup_voicevox(){
-//    await this.voicevox.check_version();
-//    const voiceinfos = await this.get_voicelist();
-//    this.voice_list = voiceinfos.speaker_list;
-//    this.voice_liblary_list = voiceinfos.voice_liblary_list;
-//
-//    this.logger.debug(this.voice_list);
-//    this.logger.debug(this.voice_liblary_list);
-//
-//    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
-//
-//    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-//
-//    try{
-//      await this.voicevox.synthesis("てすと", `test${TMP_PREFIX}.wav`, 0, tmp_voice);
-//    }catch(e){
-//      this.logger.info(e);
-//    }
-//  }
-
   async test_opus_convert(){
- //   try{
- //     const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
- //     this.status.opus_convert_available = !!opus_voice_path;
- //   }catch(e){
- //     this.logger.info(`Opus convert init err.`);
- //     console.log(e);
- //     this.status.opus_convert_available = false;
- //   }
+    try{
+      const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+      await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}.wav`, this.voice_list[0].value, tmp_voice);
+      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
+      this.status.opus_convert_available = !!opus_voice_path;
+    }catch(e){
+      this.logger.info(`Opus convert init err.`);
+      console.log(e);
+      this.status.opus_convert_available = false;
+    }
   }
 
   // 利用可能かテストする

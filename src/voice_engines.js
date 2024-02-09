@@ -54,8 +54,6 @@ module.exports = class VoiceEngines{
 
       const list = await e.api.speakers();
 
-      console.log(JSON.stringify(list, null, "  "))
-
       for(let sp of list){
 
         e.voice_liblary_list.push(sp.name);
@@ -71,7 +69,7 @@ module.exports = class VoiceEngines{
       try{
         await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, e.voice_list[0].value - e.id_offset, tmp_voice);
 
-        this.logger.debug(`${e.name} loaded.`);
+        this.logger.debug(`${e.name} OK`);
       }catch(e){
         this.logger.info(e);
       }
@@ -88,7 +86,15 @@ module.exports = class VoiceEngines{
   _speakers(){
     let result = [];
     for(let e of this.engines){
-      result = result.concat(e.voice_list);
+      let list = JSON.parse(JSON.stringify(e.voice_list));
+      for(let v of list){
+        if(!result.some(vv => vv.name === v.name)){
+          result.push(v);
+        }else{
+          v.name = `${e.name}:${v.name}`;
+          result.push(v);
+        }
+      }
     }
 
     return JSON.parse(JSON.stringify(result));
@@ -104,13 +110,21 @@ module.exports = class VoiceEngines{
       result = result.concat(fix_lists);
     }
 
-    return result;
+    return JSON.parse(JSON.stringify(result));
   }
 
   _liblarys(){
     let result = [];
     for(let e of this.engines){
-      result = result.concat(e.voice_liblary_list);
+      let list = JSON.parse(JSON.stringify(e.voice_liblary_list));
+      for(let v of list){
+        if(!result.some(vv => vv === v)){
+          result.push(v);
+        }else{
+          v = `${e.name}:${v}`;
+          result.push(v);
+        }
+      }
     }
 
     return JSON.parse(JSON.stringify(result));
@@ -123,7 +137,7 @@ module.exports = class VoiceEngines{
       result = result.concat(fix_lists);
     }
 
-    return result;
+    return JSON.parse(JSON.stringify(result));
   }
 
   _setup_voice_map(){
