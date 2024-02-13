@@ -14,7 +14,7 @@ const DEFAULT_SETTING = {
   user_voices: {
     DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
   },
-  dict: [["Discord", "でぃすこーど", 2]],
+  dict: [["Discord", "でぃすこーど", 2], ["さんが退出しました", "さんが射出されました", 2]],
   is_ponkotsu: !!IS_PONKOTSU
 }
 const SETTING_LISTS = Object.keys(DEFAULT_SETTING);
