@@ -166,6 +166,7 @@ module.exports = class VoicepickController{
             style: setting.style,
           };
           if(id === 'voicepick_engine'){
+            new_setting.page = 0;
             new_setting.engine = c.values[0];
             new_setting.liblary = this.engine.get_engine_liblarys(new_setting.engine)[0].id;
             new_setting.style = this.engine.get_liblary_speakers(new_setting.liblary)[0].id
@@ -179,19 +180,19 @@ module.exports = class VoicepickController{
           this.setting_list.set(c.user.id, new_setting);
 
           const buttons = this.get_buttons({
-            disable_prev: (page === 0),
-            disable_next: (page === this.get_page_length(new_setting.engine) - 1)
+            disable_prev: (new_setting.page === 0),
+            disable_next: (new_setting.page === this.get_page_length(new_setting.engine) - 1)
           });
 
           const selects = [
             this.get_split_selects("engine", null, new_setting.engine),
-            this.get_split_selects("liblary", { engine: new_setting.engine, page: page }, new_setting.liblary),
+            this.get_split_selects("liblary", { engine: new_setting.engine, page: new_setting.page }, new_setting.liblary),
             this.get_split_selects("style", { liblary: new_setting.liblary }, new_setting.style)
           ];
 
           await c.update({
             embeds: [
-              new EmbedBuilder().setTitle(`${TITLE}(${page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
+              new EmbedBuilder().setTitle(`${TITLE}(${new_setting.page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
             ],
             components: [...selects, buttons]
           });
@@ -209,7 +210,7 @@ module.exports = class VoicepickController{
           await setvoice(call_obj, "voice");
         }
       }catch(e){
-        this.logger.info(e);
+        this.logger.info(JSON.stringify(e));
       }
     })
   }
