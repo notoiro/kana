@@ -7,8 +7,10 @@ const {
 } = require("@discordjs/voice");
 const {
   Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType
+  EmbedBuilder, ActivityType, ButtonStyle
 } = require('discord.js');
+const { PaginationWrapper } = require('djs-button-pages');
+const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const fs = require('fs');
 const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
@@ -20,6 +22,7 @@ const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
+const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
@@ -36,11 +39,13 @@ const { credit_replaces } = require('../credit_replaces.json');
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
+const VOICE_SPLIT_COUNT = 30;
 const SKIP_PREFIX = "s";
 
 const {
   TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU, TMP_PREFIX
 } = require('../config.json');
+
 
 module.exports = class App{
   constructor(){
@@ -58,6 +63,7 @@ module.exports = class App{
     this.voice_engines = new VoiceEngines(this.logger);
 
     this.bot_utils = new BotUtils(this.logger);
+    this.voicepick_controller = new VoicepickController(this.logger);
 
     this.connections_map = new Map();
     this.voice_list = [];
@@ -90,9 +96,8 @@ module.exports = class App{
     this.voice_list = this.voice_engines.speakers;
     this.voice_liblary_list = this.voice_engines.liblarys;
 
-    for(let v of this.voice_liblary_list) console.log(v);
-
     this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+    this.voicepick_controller.init(this.voice_engines);
 
     await this.test_opus_convert();
     await this.setup_kagome();
@@ -190,7 +195,6 @@ module.exports = class App{
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
 
       data = data.concat(setvoice_commands);
-      this.logger.debug(data);
 
       await this.client.application.commands.set(data);
 
@@ -288,8 +292,11 @@ module.exports = class App{
         case "copyvoicesay":
         case "info":
         case "ponkotsu":
+        case "voicelist":
+        case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
-          if(command_name === "credit") command_name = "credit_list"
+          if(command_name === "credit") command_name = "credit_list";
+          if(command_name === "voicelist") command_name = "show_voicelist";
           await this[command_name](interaction);
           break;
         case "setspeed":
@@ -1177,21 +1184,72 @@ module.exports = class App{
   }
 
   async credit_list(interaction){
-    const voice_list_tmp = Array.from(this.voice_liblary_list)
+    const ems = [];
+
+    const list = Array.from(this.voice_engines.safe_liblarys)
       .map(val => {
         for(let r of credit_replaces) val = val.replace(r[0], r[1]);
         return val;
-      })
-      .map(val => `VOICEVOX:${val}`);
+    });
 
-    const em = new EmbedBuilder()
-      .setTitle(`利用可能な音声ライブラリのクレジット一覧です。`)
-      .setDescription("詳しくは各音声ライブラリの利用規約をご覧ください。\nhttps://voicevox.hiroshiba.jp")
-      .addFields(
-        { name: "一覧", value: `${voice_list_tmp.join("\n")}`},
-      );
+    const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
 
-    await interaction.reply({ embeds: [em] });
+    for(let i = 0; i < page_count; i++){
+      const start = i * VOICE_SPLIT_COUNT;
+      const end = (i + 1) * VOICE_SPLIT_COUNT;
+
+      const em = new EmbedBuilder()
+        .setTitle(`利用可能な音声ライブラリのクレジット一覧(${i+1}/${page_count})`)
+        .setDescription(`詳しくは各音声ライブラリの利用規約をご覧ください。\n${this.voice_engines.credit_urls.join('\n')}`)
+        .addFields(
+          { name: "一覧", value: list.slice(start, end).join("\n") }
+        )
+
+      ems.push(em);
+    }
+
+    const buttons = [
+      new PreviousPageButton({custom_id: "prev_page", emoji: "👈", style: ButtonStyle.Secondary }),
+      new NextPageButton({ custom_id: "next_page", emoji: "👉", style: ButtonStyle.Secondary })
+    ];
+
+    const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
+
+    await page.interactionReply(interaction);
+  }
+
+  async show_voicelist(interaction){
+    const ems = [];
+
+    const list = Array.from(this.voice_engines.safe_speakers).map(v => v.name);
+
+    const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
+
+    for(let i = 0; i < page_count; i++){
+      const start = i * VOICE_SPLIT_COUNT;
+      const end = (i + 1) * VOICE_SPLIT_COUNT;
+
+      const em = new EmbedBuilder()
+        .setTitle(`利用可能なボイス一覧(${i+1}/${page_count})`)
+        .addFields(
+          { name: "一覧", value: list.slice(start, end).join("\n") }
+        )
+
+      ems.push(em);
+    }
+
+    const buttons = [
+      new PreviousPageButton({custom_id: "prev_page", emoji: "👈", style: ButtonStyle.Secondary }),
+      new NextPageButton({ custom_id: "next_page", emoji: "👉", style: ButtonStyle.Secondary })
+    ];
+
+    const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
+
+    await page.interactionReply(interaction);
+  }
+
+  async voicepick(interaction){
+    return this.voicepick_controller.voicepick(interaction, this.setvoice.bind(this));
   }
 
   async systemvoicemute(interaction){
