@@ -1,5 +1,4 @@
 {
-  "VOICEVOX_ENGINE": "http://127.0.0.1:2970/",
   "TMP_DIR": "/tmp",
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
