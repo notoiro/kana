@@ -35,6 +35,7 @@ module.exports = class VoiceEngines{
         name: e.name,
         api: null,
         version: "none",
+        server: e.server,
         voice_list: [],
         voice_liblary_list: [],
         original_list: [],
@@ -98,6 +99,7 @@ module.exports = class VoiceEngines{
     this.liblarys = this._liblarys();
     this.safe_liblarys = this._safe_liblarys();
     this.credit_urls = this._credit_urls();
+    this.infos = this._engine_infos();
 
     this._setup__maps();
   }
@@ -278,6 +280,21 @@ module.exports = class VoiceEngines{
     }
 
     return JSON.parse(JSON.stringify(result));
+  }
+
+  _engine_infos(){
+    let result = [];
+
+    for(let e of this.#engines.values()){
+      result.push({
+        name: e.name,
+        version: e.version,
+        server: e.server,
+        credit_url: e.credit_url,
+      })
+    }
+
+    return result;
   }
 
   _setup__maps(){
