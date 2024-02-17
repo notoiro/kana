@@ -42,4 +42,16 @@ module.exports = class Utils{
 
     return result;
   }
+
+  static sleep(waitTime){
+    return new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+
+  static xor(a, b){
+    return ((a || b) && !(a && b));
+  }
+
+  static escape_regexp(str){
+    return str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+  }
 }

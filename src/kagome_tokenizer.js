@@ -2,10 +2,9 @@ const { isRomaji, toKana } = require('wanakana');
 const fs = require('fs');
 
 const Kagome = require('./kagome.js');
+const Utils = require('./utils.js');
 
 const { DICT_DIR } = require('../config.json');
-
-const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 module.exports = class KagomeTokenizer{
   #kagome;
@@ -56,7 +55,7 @@ module.exports = class KagomeTokenizer{
     this.#dictionaries = result;
 
     if(this.#dictionaries.length){
-      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => escape_regexp(d[0])).join("|")}$`, 'g');
+      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => Utils.escape_regexp(d[0])).join("|")}$`, 'g');
     }
   }
 

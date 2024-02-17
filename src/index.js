@@ -7,7 +7,7 @@ const {
 } = require("@discordjs/voice");
 const {
   Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType, ButtonStyle
+  EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -21,10 +21,6 @@ const BotUtils = require('./bot_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
-
-const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
-const xor = (a, b) => ((a || b) && !(a && b));
-const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
@@ -460,7 +456,7 @@ module.exports = class App{
     }catch(e){
       this.logger.info(e);
 
-      await sleep(10);
+      await Utils.sleep(10);
       connection.is_play = false;
 
       this.play(guild_id);
@@ -477,7 +473,7 @@ module.exports = class App{
     for(let p = 0; p < 5; p++){
       const tmp_dict = connection.dict.filter(word => word[2] === p);
 
-      for(let d of tmp_dict) result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
+      for(let d of tmp_dict) result = result.replace(new RegExp(Utils.escape_regexp(d[0]), "g"), d[1]);
     }
 
     return result;
@@ -602,7 +598,7 @@ module.exports = class App{
 
     player.on(AudioPlayerStatus.Idle, async () => {
       this.logger.debug(`queue end`);
-      await sleep(20);
+      await Utils.sleep(20);
       connectinfo.is_play = false;
       this.play(guild_id);
     });
@@ -640,7 +636,7 @@ module.exports = class App{
 
     this.logger.debug(`is_join: ${is_join}`);
     this.logger.debug(`is_leave: ${is_leave}`);
-    this.logger.debug(`xor: ${xor(is_join, is_leave)}`);
+    this.logger.debug(`xor: ${Utils.xor(is_join, is_leave)}`);
 
     if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
       const d_connection = getVoiceConnection(guild_id);
@@ -649,7 +645,7 @@ module.exports = class App{
       return;
     }
 
-    if(!xor(is_join, is_leave)) return;
+    if(!Utils.xor(is_join, is_leave)) return;
 
     let text = "にゃーん";
     if(is_join){
