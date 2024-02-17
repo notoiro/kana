@@ -77,13 +77,11 @@ module.exports = class VolumeController{
           // '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
         ];
 
-        console.log(options)
-
         ffmpeg()
           .input(path)
           .output(out_path)
           .outputOption(options)
-          .on('end', (_, r) => { console.log(r); resolve(out_path) })
+          .on('end', (_, r) => { resolve(out_path) })
           .on('error', (err) => { reject(err) })
           .run()
     });
