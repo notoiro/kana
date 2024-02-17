@@ -9,14 +9,18 @@ const DESCRIPTION = "エンジン、話者、スタイルの順で選択しま�
 const TITLE = "ボイスピッカー";
 
 module.exports = class VoicepickController{
-  constructor(logger){
-    this.logger = logger;
+  #logger;
+  #setting_list;
+  #engine;
 
-    this.setting_list = new Map();
+  constructor(logger){
+    this.#logger = logger;
+
+    this.#setting_list = new Map();
   }
 
   init(engine){
-    this.engine = engine;
+    this.#engine = engine;
   }
 
   // page = Number
@@ -32,15 +36,15 @@ module.exports = class VoicepickController{
   get_split_selects(type, hint = {}, select_value = null){
     let list_sliced;
 
-    if(type === "engine") list_sliced = this.engine.engines;
+    if(type === "engine") list_sliced = this.#engine.engines;
 
     if(type === "liblary"){
       const page = hint.page ? hint.page : 0;
       const start = page * VOICE_SPLIT_COUNT;
       const end = (page + 1) * VOICE_SPLIT_COUNT;
-      list_sliced = this.engine.get_engine_liblarys(hint.engine).slice(start, end);
+      list_sliced = this.#engine.get_engine_liblarys(hint.engine).slice(start, end);
     }
-    if(type === "style") list_sliced = this.engine.get_liblary_speakers(hint.liblary);
+    if(type === "style") list_sliced = this.#engine.get_liblary_speakers(hint.liblary);
 
     for(let i = 0; i < list_sliced.length; i++){
       let value, name;
@@ -79,7 +83,7 @@ module.exports = class VoicepickController{
   }
 
   get_page_length(engine_id){
-    const list = this.engine.get_engine_liblarys(engine_id);
+    const list = this.#engine.get_engine_liblarys(engine_id);
 
     return Math.ceil(list.length/VOICE_SPLIT_COUNT);
   }
@@ -87,11 +91,11 @@ module.exports = class VoicepickController{
   async voicepick(interaction, setvoice){
     const default_setting = {
       page: 0,
-      engine: this.engine.engines[0],
-      liblary: this.engine.get_engine_liblarys(this.engine.engines[0])[0].id,
-      style: this.engine.get_liblary_speakers(this.engine.get_engine_liblarys(this.engine.engines[0])[0].id)[0].id,
+      engine: this.#engine.engines[0],
+      liblary: this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id,
+      style: this.#engine.get_liblary_speakers(this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id)[0].id,
     }
-    this.setting_list.set(interaction.member.id, default_setting);
+    this.#setting_list.set(interaction.member.id, default_setting);
 
     const em = new EmbedBuilder()
       .setTitle(`${TITLE}(1/${this.get_page_length(default_setting.engine)})`)
@@ -114,10 +118,10 @@ module.exports = class VoicepickController{
 
     collector.on('collect', async c => {
       try{
-        const setting = this.setting_list.get(c.user.id);
+        const setting = this.#setting_list.get(c.user.id);
         const page = setting.page;
 
-        this.logger.debug(c);
+        this.#logger.debug(c);
 
         if(c.customId === 'prev' || c.customId === 'next'){
           let new_page;
@@ -130,8 +134,8 @@ module.exports = class VoicepickController{
             disable_next: (new_page === this.get_page_length(setting.engine) - 1)
           });
 
-          const new_liblary = this.engine.get_engine_liblarys(setting.engine)[new_page * VOICE_SPLIT_COUNT].id;
-          const new_style = this.engine.get_liblary_speakers(new_liblary)[0].id;
+          const new_liblary = this.#engine.get_engine_liblarys(setting.engine)[new_page * VOICE_SPLIT_COUNT].id;
+          const new_style = this.#engine.get_liblary_speakers(new_liblary)[0].id;
 
           const new_setting = {
             page: new_page,
@@ -153,7 +157,7 @@ module.exports = class VoicepickController{
             components: [...selects, buttons]
           });
 
-          this.setting_list.set(c.user.id, new_setting);
+          this.#setting_list.set(c.user.id, new_setting);
         }else if(c.customId.startsWith('voicepick_')){
           const id = c.customId;
 
@@ -166,16 +170,16 @@ module.exports = class VoicepickController{
           if(id === 'voicepick_engine'){
             new_setting.page = 0;
             new_setting.engine = c.values[0];
-            new_setting.liblary = this.engine.get_engine_liblarys(new_setting.engine)[0].id;
-            new_setting.style = this.engine.get_liblary_speakers(new_setting.liblary)[0].id
+            new_setting.liblary = this.#engine.get_engine_liblarys(new_setting.engine)[0].id;
+            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
           }else if(id === 'voicepick_liblary'){
             new_setting.liblary = c.values[0];
-            new_setting.style = this.engine.get_liblary_speakers(new_setting.liblary)[0].id
+            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
           }else if(id === 'voicepick_style'){
             new_setting.style = c.values[0];
           }
 
-          this.setting_list.set(c.user.id, new_setting);
+          this.#setting_list.set(c.user.id, new_setting);
 
           const buttons = this.get_buttons({
             disable_prev: (new_setting.page === 0),
@@ -208,7 +212,7 @@ module.exports = class VoicepickController{
           await setvoice(call_obj, "voice");
         }
       }catch(e){
-        this.logger.info(JSON.stringify(e));
+        this.#logger.info(JSON.stringify(e));
       }
     })
   }
