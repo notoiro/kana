@@ -62,8 +62,7 @@ module.exports = class App{
       connected_servers: 0,
       discord_username: "NAME",
       opus_convert_available: false,
-      remote_replace_available: false,
-      extend_enabled: this.bot_utils.EXTEND_ENABLE
+      remote_replace_available: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';

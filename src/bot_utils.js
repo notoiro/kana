@@ -23,12 +23,19 @@ const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharC
 const escape_regexp_non_safe = (str) => str.replace(/[.*+\-?^${}|[\]\\]/g, '\\$&');
 
 module.exports = class BotUtils{
-  constructor(logger){
-    this.logger = logger;
-    this.VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
-    this.VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
+  #logger;
+  #VOICE_REGEXP;
+  #VOICE_REGEXP_SPELL;
+  #EXTEND_ENABLE;
+  #VOICE_REGEXP_NAME;
+  #voice_list;
 
-    this.EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
+  constructor(logger){
+    this.#logger = logger;
+    this.#VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
+    this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
+
+    this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
   }
 
   init_voicelist(voice_list, voice_liblary_list){
@@ -47,14 +54,14 @@ module.exports = class BotUtils{
       if(f) add.push({ name: s[0], value: f.value });
     }
 
-    this.voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
+    this.#voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
       el.name = escape_regexp_non_safe(el.name);
       el.name = el.name.replace("(", "[\(（]").replace(")", "[\)）]");
       return el;
     });
 
-    this.VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,}|${this.voice_list.map(val => val.name).join('|')})[\)）]`, "g");
-    this.VOICE_REGEXP_NAME = new RegExp(`^${this.voice_list.map(val => val.name).join('|')}$`, "g")
+    this.#VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,}|${this.#voice_list.map(val => val.name).join('|')})[\)）]`, "g");
+    this.#VOICE_REGEXP_NAME = new RegExp(`^${this.#voice_list.map(val => val.name).join('|')}$`, "g")
   }
 
   // volume or null
@@ -74,7 +81,7 @@ module.exports = class BotUtils{
   }
 
   replace_voice_spell(text){
-    return text.replace(this.VOICE_REGEXP, "");
+    return text.replace(this.#VOICE_REGEXP, "");
   }
 
   replace_extend_command(text){
@@ -82,7 +89,7 @@ module.exports = class BotUtils{
   }
 
   get_spell_voice(spell){
-    let voice_command = SafeRegexpUtils.exec(this.VOICE_REGEXP, spell);
+    let voice_command = SafeRegexpUtils.exec(this.#VOICE_REGEXP, spell);
 
     if(!(voice_command && voice_command[0])) return null;
 
@@ -90,11 +97,11 @@ module.exports = class BotUtils{
 
     // ずんだもんが引っかかるので先にボイス一覧から参照する
     // 仕様上呪文と名前が被ることはない
-    if(SafeRegexpUtils.test(this.VOICE_REGEXP_NAME, voice_command[1])){
+    if(SafeRegexpUtils.test(this.#VOICE_REGEXP_NAME, voice_command[1])){
       let result = 1;
       const val = voice_command[1];
 
-      const f = this.voice_list.find(el => (new RegExp(el.name, 'g')).test(val));
+      const f = this.#voice_list.find(el => (new RegExp(el.name, 'g')).test(val));
       if(f) result = f.value;
 
       voice = {
@@ -104,12 +111,12 @@ module.exports = class BotUtils{
         intonation: 100,
         volume: 100
       }
-    }else if(SafeRegexpUtils.test(this.VOICE_REGEXP_SPELL, voice_command[1])){
+    }else if(SafeRegexpUtils.test(this.#VOICE_REGEXP_SPELL, voice_command[1])){
       try{
         voice = ResurrectionSpell.decode(voice_command[1]);
-        if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+        if(!(this.#voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
       }catch(e){
-        this.logger.debug(e);
+        this.#logger.debug(e);
         voice = null;
       }
     }
@@ -118,7 +125,7 @@ module.exports = class BotUtils{
   }
 
   get_extend_flag(text){
-    if(!this.EXTEND_ENABLE) return null;
+    if(!this.#EXTEND_ENABLE) return null;
 
     let extend_command = SafeRegexpUtils.exec(EXTEND_REGEXP, text);
 
@@ -128,7 +135,7 @@ module.exports = class BotUtils{
     const pass_base = `${EXTEND_PASS}${now.getMonth() + 1}${now.getDate()}${now.getHours()}${now.getMinutes()}`;
     const pass = crypto.createHash('sha3-224').update(pass_base).digest('hex');
 
-    this.logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
+    this.#logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
 
     return extend_command[1] === pass;
   }
@@ -149,9 +156,9 @@ module.exports = class BotUtils{
 
         result = json;
 
-        this.logger.debug(`loaded server conf: ${JSON.stringify(result, null, "  ")}`);
+        this.#logger.debug(`loaded server conf: ${JSON.stringify(result, null, "  ")}`);
       }catch(e){
-        this.logger.info(e);
+        this.#logger.info(e);
         result = DEFAULT_SETTING;
       }
     }
@@ -170,7 +177,7 @@ module.exports = class BotUtils{
     try{
       fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(result, null, "  "));
     }catch(e){
-      this.logger.info(e);
+      this.#logger.info(e);
     }
   }
 }
