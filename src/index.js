@@ -9,8 +9,6 @@ const {
   Client, GatewayIntentBits, ApplicationCommandOptionType,
   EmbedBuilder, ActivityType, ButtonStyle
 } = require('discord.js');
-const { PaginationWrapper } = require('djs-button-pages');
-const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const fs = require('fs');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
@@ -33,7 +31,6 @@ const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ]
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
-const VOICE_SPLIT_COUNT = 30;
 const SKIP_PREFIX = "s";
 
 const {
