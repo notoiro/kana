@@ -31,8 +31,6 @@ const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
-const { credit_replaces } = require('../credit_replaces.json');
-
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const VOICE_SPLIT_COUNT = 30;
@@ -280,14 +278,11 @@ module.exports = class App{
         case "dicdel":
         case "dicpriority":
         case "diclist":
-        case "credit":
         case "systemvoicemute":
         case "copyvoicesay":
         case "ponkotsu":
         case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
-          if(command_name === "credit") command_name = "credit_list";
-          if(command_name === "voicelist") command_name = "show_voicelist";
           await this[command_name](interaction);
           break;
         case "setspeed":
@@ -306,14 +301,19 @@ module.exports = class App{
         case "defaultvoice":
           await this.currentvoice(interaction, "DEFAULT");
           break;
+        case "info":
+          await command.execute(interaction, this);
+          break;
+        case "voicelist":
+          await command.execute(interaction, this.voice_engines.safe_speakers);
+          break;
+        case "credit":
+          await command.execute(interaction, this.voice_engines.safe_liblarys, this.voice_engines.credit_urls);
+          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
             await this.setvoice(interaction, 'voice');
-          }else if(command_name === "info"){
-            await command.execute(interaction, this);
-          }else if(command_name === "voicelist"){
-            await command.execute(interaction, this.voice_engines.safe_speakers);
           }else{
             await command.execute(interaction);
           }
@@ -1177,41 +1177,6 @@ module.exports = class App{
     if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
 
     await interaction.reply({ embeds: [em] });
-  }
-
-  async credit_list(interaction){
-    const ems = [];
-
-    const list = Array.from(this.voice_engines.safe_liblarys)
-      .map(val => {
-        for(let r of credit_replaces) val = val.replace(r[0], r[1]);
-        return val;
-    });
-
-    const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
-
-    for(let i = 0; i < page_count; i++){
-      const start = i * VOICE_SPLIT_COUNT;
-      const end = (i + 1) * VOICE_SPLIT_COUNT;
-
-      const em = new EmbedBuilder()
-        .setTitle(`利用可能な音声ライブラリのクレジット一覧(${i+1}/${page_count})`)
-        .setDescription(`詳しくは各音声ライブラリの利用規約をご覧ください。\n${this.voice_engines.credit_urls.join('\n')}`)
-        .addFields(
-          { name: "一覧", value: list.slice(start, end).join("\n") }
-        )
-
-      ems.push(em);
-    }
-
-    const buttons = [
-      new PreviousPageButton({custom_id: "prev_page", emoji: "👈", style: ButtonStyle.Secondary }),
-      new NextPageButton({ custom_id: "next_page", emoji: "👉", style: ButtonStyle.Secondary })
-    ];
-
-    const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    await page.interactionReply(interaction);
   }
 
   async voicepick(interaction){
