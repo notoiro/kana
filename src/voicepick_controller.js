@@ -99,7 +99,7 @@ module.exports = class VoicepickController{
       .setTitle(`${TITLE}(1/${this.get_page_length(default_setting.engine)})`)
       .setDescription(DESCRIPTION);
 
-    await interaction.deferReply();
+    await interaction.deferReply({ephemeral: true});
 
     const selects = [
       this.get_split_selects("engine", null, default_setting.engine),
