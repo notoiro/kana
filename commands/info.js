@@ -44,7 +44,7 @@ ${cyan}利用可能なボイス数${gray}:${reset} ${app.voice_list.length}
 ${cyan}Opus変換${gray}:${reset} ${ans(app.status.opus_convert_available && app.config.opus_convert.enable, "有効", "無効")}
 ${cyan}英語辞書変換${gray}:${reset} ${ans(app.status.remote_replace_available, "有効", "無効")}
 ${cyan}ポンコツ${gray}:${reset} ${ans(!!IS_PONKOTSU, "何もしなければ", "設定次第")}
-${cyan}サーバー辞書単語数${gray}:${reset} ${app.dictionaries.length}
+${cyan}サーバー辞書単語数${gray}:${reset} ${app.kagome_tokenizer.dictionaries.length}
 \`\`\`
           `,
           inline: true
