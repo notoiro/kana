@@ -15,8 +15,8 @@ dependencies:
     specifier: ^1.0.0
     version: 1.0.0
   axios:
-    specifier: ^1.6.3
-    version: 1.6.3
+    specifier: ^1.6.7
+    version: 1.6.7
   discord.js:
     specifier: ^14.14.1
     version: 14.14.1
@@ -33,8 +33,8 @@ dependencies:
     specifier: ^6.9.1
     version: 6.9.1
   sodium-native:
-    specifier: ^4.0.4
-    version: 4.0.4
+    specifier: ^4.0.9
+    version: 4.0.9
   wanakana:
     specifier: ^5.3.1
     version: 5.3.1
@@ -252,8 +252,8 @@ packages:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
     dev: false
 
-  /axios@1.6.3:
-    resolution: {integrity: sha512-fWyNdeawGam70jXSVlKl+SUNVcL6j6W79CuSIPfi6HnDUmSCH6gyUys/HrqHeA/wU0Az41rRgean494d0Jb+ww==}
+  /axios@1.6.7:
+    resolution: {integrity: sha512-/hDJGff6/c7u0hDkvkGxR/oy6CbCs8ziCsC7SqmhjfozqiJGc8Z11wrv9z9lYfY4K8l+H9TpjcMDX0xOZmx+RA==}
     dependencies:
       follow-redirects: 1.15.4
       form-data: 4.0.0
@@ -712,8 +712,8 @@ packages:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
     dev: false
 
-  /sodium-native@4.0.4:
-    resolution: {integrity: sha512-faqOKw4WQKK7r/ybn6Lqo1F9+L5T6NlBJJYvpxbZPetpWylUVqz449mvlwIBKBqxEHbWakWuOlUt8J3Qpc4sWw==}
+  /sodium-native@4.0.9:
+    resolution: {integrity: sha512-nuEaJkwQMjzZOgD6N/yTJAWuzeOq+HKnBR7Qo+geZGorf/AkyBEtwIEjnd2YSs21w/TuFKCgbo2i6j7Uv+kVDQ==}
     requiresBuild: true
     dependencies:
       node-gyp-build: 4.7.1
