@@ -69,15 +69,13 @@ module.exports = class VoicepickController{
   }
 
   get_buttons(options){
-    const buttons = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('prev').setLabel("<").setStyle(ButtonStyle.Secondary)
-        .setDisabled(!!options.disable_prev),
-      new ButtonBuilder().setCustomId('confirm').setLabel("これにする").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('next').setLabel(">").setStyle(ButtonStyle.Secondary)
-        .setDisabled(!!options.disable_next)
+      return new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('prev').setLabel("<").setStyle(ButtonStyle.Secondary)
+            .setDisabled(!!options.disable_prev),
+        new ButtonBuilder().setCustomId('confirm').setLabel("これにする").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('next').setLabel(">").setStyle(ButtonStyle.Secondary)
+            .setDisabled(!!options.disable_next)
     );
-
-    return buttons;
   }
 
   get_page_length(engine_id){

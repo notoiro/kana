@@ -121,9 +121,7 @@ module.exports = class VoiceEngines{
       for(let r of samples) tests.push(VolumeController.get_loud(r));
 
       const test_result = await Promise.all(tests);
-      const lufs_setting = this.merge_lufs(test_result);
-
-      this.#reference_lufs = lufs_setting;
+        this.#reference_lufs = this.merge_lufs(test_result);
     }catch(e){
       throw e;
     }
@@ -141,7 +139,7 @@ module.exports = class VoiceEngines{
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
-      const sample = await this.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}_${ref.voice_id}${TMP_PREFIX}.wav`, voice_id, tmp_voice, true);
+      const sample = await this.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}_${ref.voice_id}${TMP_PREFIX}`, '.wav', voice_id, tmp_voice, true);
 
       // ラウドネスを取得する
       const loud = await VolumeController.diff_loud(sample, this.#reference_lufs);
@@ -293,14 +291,15 @@ module.exports = class VoiceEngines{
     }
   }
 
-  synthesis(text, filename, voice_id, param, pass_volume_controll = false){
+  synthesis(text, filename_base, ext, voice_id, param, pass_volume_controll = false){
     const engine = this.#speaker_engine_map.get(voice_id);
     if(engine === undefined) throw "Unknown Engine or Voice";
 
     return new Promise((resolve, reject) => {
         const queue = {
           text,
-          filename,
+          filename_base,
+          ext,
           voice_id,
           param,
           pass_volume_controll,
@@ -321,7 +320,7 @@ module.exports = class VoiceEngines{
     const q = engine.queue.shift();
 
     try{
-      const result = await this._synthesis(engine, q.text, q.filename, q.voice_id, q.param, q.pass_volume_controll);
+      const result = await this._synthesis(engine, q.text, q.filename_base, q.ext, q.voice_id, q.param, q.pass_volume_controll);
       q.resolve(result);
     }catch(e){
       q.reject(e);
@@ -331,12 +330,12 @@ module.exports = class VoiceEngines{
     this.queue_start(engine);
   }
 
-  async _synthesis(engine, text, filename, voice_id, param, pass_volume_controll = false){
+  async _synthesis(engine, text, filename_base, ext, voice_id, param, pass_volume_controll = false){
     const id = voice_id - engine.id_offset;
     const volume = this.#speaker_volume_map.get(voice_id);
 
     try{
-      const v = engine.api.synthesis(text, filename, id, param);
+      const v = engine.api.synthesis(text, `${filename_base}_orig${ext}`, id, param);
 
       // 生成中なら無視して返す
       if(pass_volume_controll || volume === 'LOCK'){
@@ -353,8 +352,7 @@ module.exports = class VoiceEngines{
       const filepath = await v;
 
       this.logger.debug('set loud')
-      const result = await VolumeController.set_loud(filepath, filepath.replace('.wav', '.loud.wav'), this.#reference_lufs, volume.input_thresh, volume.target_offset);
-      return result
+        return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
     }catch(e){
       throw e;
     }

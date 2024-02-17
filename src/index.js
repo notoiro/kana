@@ -49,7 +49,6 @@ const {
 
 module.exports = class App{
   constructor(){
-    // this.voicevox = new Voicevox();
     this.kagome = new Kagome();
     this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
@@ -90,7 +89,6 @@ module.exports = class App{
 
   async start(){
     this.setup_config();
-    // await this.setup_voicevox();
     await this.voice_engines.init_engines();
 
     this.voice_list = this.voice_engines.speakers;
@@ -124,7 +122,7 @@ module.exports = class App{
   async test_opus_convert(){
     try{
       const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-      await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}.wav`, this.voice_list[0].value, tmp_voice);
+      await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}`, '.wav', this.voice_list[0].value, tmp_voice);
       const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
@@ -481,7 +479,7 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename_base, connection.ext, voice.voice, voice_data);
 
       let opus_voice_path;
 
@@ -489,7 +487,7 @@ module.exports = class App{
         // Opusへの変換は失敗してもいいので入れ子にする
         try{
           opus_voice_path = await convert_audio(
-            voice_path, `${TMP_DIR}/${connection.opus_filename}`,
+            voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
             this.config.opus_convert.bitrate, this.config.opus_convert.threads
           );
         }catch(e){
@@ -579,9 +577,9 @@ module.exports = class App{
         if(
           token.pronunciation &&
           token.pos[0] === "名詞" &&
-          token.pos[1] == "固有名詞" &&
+          token.pos[1] === "固有名詞" &&
           // 辞書上の表現とテキストが一致しない場合は無視する。これは英字の無駄ヒットを回避する目的がある
-          token.base_form == token.surface &&
+          token.base_form === token.surface &&
           // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
@@ -590,7 +588,7 @@ module.exports = class App{
         }else if(
           token.pronunciation &&
           token.pos[0] === "名詞" &&
-          token.pos[1] == "固有名詞" &&
+          token.pos[1] === "固有名詞" &&
           // 辞書上の表現とテキストが一致しない場合のケース。読みのデバッグに利用する。
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
@@ -712,8 +710,9 @@ module.exports = class App{
       voice: voice_channel_id,
       audio_player: null,
       queue: [],
-      filename: `${guild_id}${TMP_PREFIX}.wav`,
-      opus_filename: `${guild_id}${TMP_PREFIX}.ogg`,
+      filename_base: `${guild_id}${TMP_PREFIX}`,
+      ext: ".wav",
+      opus_ext: ".ogg",
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
