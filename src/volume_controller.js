@@ -66,7 +66,6 @@ module.exports = class VolumeController{
   }
 
   static set_loud(path, out_path, lufs_settings, thresh, offset){
-    console.log(out_path)
     return new Promise(async (resolve, reject) => {
         const options = [
           '-vn',
