@@ -97,7 +97,6 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
   }
   console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
-  console.log(`${indent}${fg_blue}extend:          ${fg_default}  ${ans(app.status.extend_enabled, 'enabled', 'disabled')}`);
   console.log(`${indent}${fg_blue}ponkotsu         ${fg_default}  ${ans(IS_PONKOTSU, "default", "option")}`);
 
   console.log("");
