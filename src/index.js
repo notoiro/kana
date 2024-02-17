@@ -284,7 +284,6 @@ module.exports = class App{
         case "systemvoicemute":
         case "copyvoicesay":
         case "ponkotsu":
-        case "voicelist":
         case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
           if(command_name === "credit") command_name = "credit_list";
@@ -313,6 +312,8 @@ module.exports = class App{
             await this.setvoice(interaction, 'voice');
           }else if(command_name === "info"){
             await command.execute(interaction, this);
+          }else if(command_name === "voicelist"){
+            await command.execute(interaction, this.voice_engines.safe_speakers);
           }else{
             await command.execute(interaction);
           }
@@ -1196,36 +1197,6 @@ module.exports = class App{
       const em = new EmbedBuilder()
         .setTitle(`利用可能な音声ライブラリのクレジット一覧(${i+1}/${page_count})`)
         .setDescription(`詳しくは各音声ライブラリの利用規約をご覧ください。\n${this.voice_engines.credit_urls.join('\n')}`)
-        .addFields(
-          { name: "一覧", value: list.slice(start, end).join("\n") }
-        )
-
-      ems.push(em);
-    }
-
-    const buttons = [
-      new PreviousPageButton({custom_id: "prev_page", emoji: "👈", style: ButtonStyle.Secondary }),
-      new NextPageButton({ custom_id: "next_page", emoji: "👉", style: ButtonStyle.Secondary })
-    ];
-
-    const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    await page.interactionReply(interaction);
-  }
-
-  async show_voicelist(interaction){
-    const ems = [];
-
-    const list = Array.from(this.voice_engines.safe_speakers).map(v => v.name);
-
-    const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
-
-    for(let i = 0; i < page_count; i++){
-      const start = i * VOICE_SPLIT_COUNT;
-      const end = (i + 1) * VOICE_SPLIT_COUNT;
-
-      const em = new EmbedBuilder()
-        .setTitle(`利用可能なボイス一覧(${i+1}/${page_count})`)
         .addFields(
           { name: "一覧", value: list.slice(start, end).join("\n") }
         )
