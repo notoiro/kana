@@ -7,32 +7,27 @@ const {
 } = require("@discordjs/voice");
 const {
   Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType
+  EmbedBuilder, ActivityType, ButtonStyle
 } = require('discord.js');
 const fs = require('fs');
-const os = require('os');
 const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
-const Voicevox = require('./voicevox.js');
+const VoiceEngines = require('./voice_engines.js');
 const Kagome = require('./kagome.js');
 const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
+const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
 const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
 const xor = (a, b) => ((a || b) && !(a && b));
 const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
-const ans = (flag, true_text, false_text) => {
-  return flag ? true_text:false_text;
-};
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
-
-const { credit_replaces } = require('../credit_replaces.json');
 
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
@@ -44,7 +39,6 @@ const {
 
 module.exports = class App{
   constructor(){
-    this.voicevox = new Voicevox();
     this.kagome = new Kagome();
     this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
@@ -55,7 +49,10 @@ module.exports = class App{
       ]
     });
 
+    this.voice_engines = new VoiceEngines(this.logger);
+
     this.bot_utils = new BotUtils(this.logger);
+    this.voicepick_controller = new VoicepickController(this.logger);
 
     this.connections_map = new Map();
     this.voice_list = [];
@@ -82,7 +79,14 @@ module.exports = class App{
 
   async start(){
     this.setup_config();
-    await this.setup_voicevox();
+    await this.voice_engines.init_engines();
+
+    this.voice_list = this.voice_engines.speakers;
+    this.voice_liblary_list = this.voice_engines.liblarys;
+
+    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+    this.voicepick_controller.init(this.voice_engines);
+
     await this.test_opus_convert();
     await this.setup_kagome();
     this.setup_dictionaries();
@@ -105,28 +109,10 @@ module.exports = class App{
     this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
   }
 
-  async setup_voicevox(){
-    await this.voicevox.check_version();
-    const voiceinfos = await this.get_voicelist();
-    this.voice_list = voiceinfos.speaker_list;
-    this.voice_liblary_list = voiceinfos.voice_liblary_list;
-
-    this.logger.debug(this.voice_list);
-    this.logger.debug(this.voice_liblary_list);
-
-    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
-
-    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-
-    try{
-      await this.voicevox.synthesis("てすと", `test${TMP_PREFIX}.wav`, 0, tmp_voice);
-    }catch(e){
-      this.logger.info(e);
-    }
-  }
-
   async test_opus_convert(){
     try{
+      const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+      await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}`, '.wav', this.voice_list[0].value, tmp_voice);
       const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
@@ -197,7 +183,6 @@ module.exports = class App{
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
 
       data = data.concat(setvoice_commands);
-      this.logger.debug(data);
 
       await this.client.application.commands.set(data);
 
@@ -290,13 +275,11 @@ module.exports = class App{
         case "dicdel":
         case "dicpriority":
         case "diclist":
-        case "credit":
         case "systemvoicemute":
         case "copyvoicesay":
-        case "info":
         case "ponkotsu":
+        case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
-          if(command_name === "credit") command_name = "credit_list"
           await this[command_name](interaction);
           break;
         case "setspeed":
@@ -314,6 +297,15 @@ module.exports = class App{
           break;
         case "defaultvoice":
           await this.currentvoice(interaction, "DEFAULT");
+          break;
+        case "info":
+          await command.execute(interaction, this);
+          break;
+        case "voicelist":
+          await command.execute(interaction, this.voice_engines.safe_speakers);
+          break;
+        case "credit":
+          await command.execute(interaction, this.voice_engines.safe_liblarys, this.voice_engines.credit_urls);
           break;
         default:
           // setvoiceは無限に増えるのでここで処理
@@ -481,7 +473,7 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voicevox.synthesis(text_data.text, connection.filename, voice.voice, voice_data);
+      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename_base, connection.ext, voice.voice, voice_data);
 
       let opus_voice_path;
 
@@ -489,7 +481,7 @@ module.exports = class App{
         // Opusへの変換は失敗してもいいので入れ子にする
         try{
           opus_voice_path = await convert_audio(
-            voice_path, `${TMP_DIR}/${connection.opus_filename}`,
+            voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
             this.config.opus_convert.bitrate, this.config.opus_convert.threads
           );
         }catch(e){
@@ -579,9 +571,9 @@ module.exports = class App{
         if(
           token.pronunciation &&
           token.pos[0] === "名詞" &&
-          token.pos[1] == "固有名詞" &&
+          token.pos[1] === "固有名詞" &&
           // 辞書上の表現とテキストが一致しない場合は無視する。これは英字の無駄ヒットを回避する目的がある
-          token.base_form == token.surface &&
+          token.base_form === token.surface &&
           // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
@@ -590,7 +582,7 @@ module.exports = class App{
         }else if(
           token.pronunciation &&
           token.pos[0] === "名詞" &&
-          token.pos[1] == "固有名詞" &&
+          token.pos[1] === "固有名詞" &&
           // 辞書上の表現とテキストが一致しない場合のケース。読みのデバッグに利用する。
           (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
         ){
@@ -712,8 +704,9 @@ module.exports = class App{
       voice: voice_channel_id,
       audio_player: null,
       queue: [],
-      filename: `${guild_id}${TMP_PREFIX}.wav`,
-      opus_filename: `${guild_id}${TMP_PREFIX}.ogg`,
+      filename_base: `${guild_id}${TMP_PREFIX}`,
+      ext: ".wav",
+      opus_ext: ".ogg",
       is_play: false,
       system_mute_counter: 0,
       user_voices: {
@@ -832,25 +825,6 @@ module.exports = class App{
     if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
-  }
-
-  async get_voicelist(){
-    const list = await this.voicevox.speakers();
-
-    const speaker_list = [];
-    const lib_list = [];
-
-    for(let sp of list){
-      lib_list.push(sp.name);
-
-      for(let v of sp.styles){
-        let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) };
-
-        speaker_list.push(speaker);
-      }
-    }
-
-    return { speaker_list: speaker_list, voice_liblary_list: lib_list };
   }
 
   async setvoice(interaction, type){
@@ -1202,22 +1176,8 @@ module.exports = class App{
     await interaction.reply({ embeds: [em] });
   }
 
-  async credit_list(interaction){
-    const voice_list_tmp = Array.from(this.voice_liblary_list)
-      .map(val => {
-        for(let r of credit_replaces) val = val.replace(r[0], r[1]);
-        return val;
-      })
-      .map(val => `VOICEVOX:${val}`);
-
-    const em = new EmbedBuilder()
-      .setTitle(`利用可能な音声ライブラリのクレジット一覧です。`)
-      .setDescription("詳しくは各音声ライブラリの利用規約をご覧ください。\nhttps://voicevox.hiroshiba.jp")
-      .addFields(
-        { name: "一覧", value: `${voice_list_tmp.join("\n")}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
+  async voicepick(interaction){
+    return this.voicepick_controller.voicepick(interaction, this.setvoice.bind(this));
   }
 
   async systemvoicemute(interaction){
@@ -1256,58 +1216,6 @@ module.exports = class App{
     this.add_text_queue(msg_obj, true);
 
     await interaction.reply({ content: "まかせて！" });
-  }
-
-  async info(interaction){
-    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
-
-    const ram = Math.round(process.memoryUsage.rss() / 1024 / 1024 * 100) / 100;
-    const total_ram = Math.round(os.totalmem() / (1024 * 1024));
-
-    const cyan = "\x1b[1;36m";
-    const gray = "\x1b[1;30m";
-    const reset = "\x1b[1;0m";
-
-    const em = new EmbedBuilder()
-      .setTitle(`Infomations`)
-      .setDescription(`
-\`\`\`ansi
-${cyan}API Ping${gray}:${reset} ${this.client.ws.ping} ms
-${cyan}メモリ${gray}:${reset} ${ram} MB / ${total_ram} MB
-${cyan}現在接続数${gray}:${reset} ${this.connections_map.size}
-
-${cyan}サーバー数${gray}:${reset} ${this.status.connected_servers}
-${cyan}利用可能なボイス数${gray}:${reset} ${this.voice_list.length}
-\`\`\`
-      `)
-      .addFields(
-        {
-          name: "Bot設定",
-          value: `
-\`\`\`ansi
-${cyan}Opus変換${gray}:${reset} ${ans(this.status.opus_convert_available && this.config.opus_convert.enable, "有効", "無効")}
-${cyan}英語辞書変換${gray}:${reset} ${ans(this.status.remote_replace_available, "有効", "無効")}
-${cyan}ポンコツ${gray}:${reset} ${ans(!!IS_PONKOTSU, "何もしなければ", "設定次第")}
-${cyan}サーバー辞書単語数${gray}:${reset} ${this.dictionaries.length}
-\`\`\`
-          `,
-          inline: true
-        },
-      ).addFields(
-        {
-          name: "サーバー設定",
-          value: `
-\`\`\`ansi
-${cyan}辞書単語数${gray}:${reset} ${server_file.dict.length}
-${cyan}ボイス登録数${gray}:${reset} ${Object.keys(server_file.user_voices).length}
-${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "いいえ")}
-\`\`\`
-          `,
-          inline: true
-        }
-      )
-
-    await interaction.reply({ embeds: [em] });
   }
 
   async ponkotsu(interaction){

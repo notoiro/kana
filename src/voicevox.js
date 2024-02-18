@@ -2,13 +2,12 @@ const { default: axios } = require('axios');
 const fs = require('fs');
 
 const {
-  VOICEVOX_ENGINE,
   TMP_DIR
 } = require('../config.json');
 
 module.exports = class Voicevox{
-  constructor(){
-    this.rpc = axios.create({baseURL: VOICEVOX_ENGINE, proxy: false});
+  constructor(host){
+    this.rpc = axios.create({baseURL: host, proxy: false});
     this.version = "Unknown";
   }
 

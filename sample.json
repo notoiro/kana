@@ -1,5 +1,4 @@
 {
-  "VOICEVOX_ENGINE": "http://127.0.0.1:2970/",
   "TMP_DIR": "/tmp",
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
@@ -13,5 +12,13 @@
   "DICT_DIR": "./dictionaries",
   "EXTEND_PASS": "notoiro",
   "IS_PONKOTSU": false,
-  "TMP_PREFIX": "_main"
+  "TMP_PREFIX": "_main",
+  "VOICE_ENGINES": [
+    {
+      "name": "VOICEVOX",
+      "type": "VOICEVOX",
+      "server": "http://127.0.0.1:2970",
+      "credit_url": "https://voicevox.hiroshiba.jp"
+    }
+  ]
 }

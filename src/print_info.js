@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, TMP_DIR, VOICEVOX_ENGINE, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU
+  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU
 } = require('../config.json');
 
 const indent = "          ";
@@ -74,11 +74,18 @@ module.exports = (app) => {
 
   console.log(`${indent}${fg_blue}os:              ${fg_default}  ${os.type()} ${os.release()} ${os.arch()}`);
   console.log(`${indent}${fg_blue}node.js:         ${fg_default}  ${process.version}`);
-  console.log(`${indent}${fg_blue}voicevox:        ${fg_default}  ${app.voicevox.version}`);
 
   console.log("");
 
-  console.log(`${indent}${fg_blue}voicevox host:   ${fg_default}  ${VOICEVOX_ENGINE}`);
+  console.log(`${indent}${fg_blue}engines:         ${fg_default}`);
+  for(let e of app.voice_engines.infos){
+    console.log(`${indent}${fg_blue}  ${e.name}:${fg_default}`);
+    console.log(`${indent}${fg_blue}    version:     ${fg_default}  ${e.version}`);
+    console.log(`${indent}${fg_blue}    server:      ${fg_default}  ${e.server}`);
+  }
+
+  console.log("");
+
   console.log(`${indent}${fg_blue}temp directory:  ${fg_default}  ${TMP_DIR}`);
   console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
   console.log(`${indent}${fg_blue}dict directory:  ${fg_default}  ${DICT_DIR}`);
