@@ -73,7 +73,7 @@ module.exports = class VolumeController{
           '-af',
           `loudnorm=I=${lufs_settings.input_i}:TP=${lufs_settings.input_tp}:measured_thresh=${thresh}:offset=${offset}:print_format=json`,
           '-y',
-          // '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
+          '-hide_banner', '-nostats', '-loglevel', 'warning' // optimize
         ];
 
         ffmpeg()
