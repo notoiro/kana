@@ -160,8 +160,8 @@ module.exports = class VoiceEngines{
       // リファレンスの差分データの生成に失敗した場合は何もしない
       // ここで引っかかる例ってほぼないだろうし、あったとしてもその場で処理できるエラーでもない
       // なおかつこの程度で終了かかるべきでもないのでログだけ出す
-      this.logger.info("Reference diff err");
-      this.logger.info(e);
+      this.#logger.info("Reference diff err");
+      this.#logger.info(e);
     }
   }
 
