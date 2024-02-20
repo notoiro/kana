@@ -1,21 +1,28 @@
 const { default: axios } = require('axios');
 
 module.exports = class RemoteReplace{
+  #rpc;
+  #enabled;
+
   constructor(){
     const { REMOTE_REPLACE_HOST } = require('../config.json');
 
     if(REMOTE_REPLACE_HOST !== "none" && REMOTE_REPLACE_HOST !== undefined){
-      this.enabled = true;
-      this.rpc = axios.create({baseURL: REMOTE_REPLACE_HOST, proxy: false});
+      this.#enabled = true;
+      this.#rpc = axios.create({baseURL: REMOTE_REPLACE_HOST, proxy: false});
     }else{
-      this.rpc = {};
-      this.enabled = false;
+      this.#rpc = {};
+      this.#enabled = false;
     }
+  }
+
+  get enabled(){
+    return this.#enabled;
   }
 
   // もし設定がなければ何もしない
   async replace_http(text){
-    if(!(this.enabled)) return text;
+    if(!(this.#enabled)) return text;
 
     let result;
 
@@ -24,7 +31,7 @@ module.exports = class RemoteReplace{
         text: text
       };
 
-      result = await this.rpc.post('replace', JSON.stringify(body), {headers: { "Content-Type": "application/json" }});
+      result = await this.#rpc.post('replace', JSON.stringify(body), {headers: { "Content-Type": "application/json" }});
       result = result.data.text;
     }catch(e){
       throw e;

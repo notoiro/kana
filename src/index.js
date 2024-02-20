@@ -7,14 +7,13 @@ const {
 } = require("@discordjs/voice");
 const {
   Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType, ButtonStyle
+  EmbedBuilder, ActivityType
 } = require('discord.js');
 const fs = require('fs');
-const { isRomaji, toKana } = require('wanakana');
 const log4js = require('log4js');
 
 const VoiceEngines = require('./voice_engines.js');
-const Kagome = require('./kagome.js');
+const KagomeTokenizer = require('./kagome_tokenizer.js');
 const RemoteReplace = require('./remote_replace.js');
 const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
@@ -22,10 +21,6 @@ const BotUtils = require('./bot_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
-
-const sleep = waitTime => new Promise( resolve => setTimeout(resolve, waitTime) );
-const xor = (a, b) => ((a || b) && !(a && b));
-const escape_regexp = (str) => str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
 
@@ -39,9 +34,9 @@ const {
 
 module.exports = class App{
   constructor(){
-    this.kagome = new Kagome();
     this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
+    this.kagome_tokenizer = new KagomeTokenizer(this.logger);
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates,
@@ -57,8 +52,6 @@ module.exports = class App{
     this.connections_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
-    this.dictionaries = [];
-    this.dict_regexp = null;
     this.commands = {};
     this.config = {
       opus_convert: { enable: false, bitrate: '96k', threads: 2 }
@@ -69,8 +62,7 @@ module.exports = class App{
       connected_servers: 0,
       discord_username: "NAME",
       opus_convert_available: false,
-      remote_replace_available: false,
-      extend_enabled: this.bot_utils.EXTEND_ENABLE
+      remote_replace_available: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
@@ -88,8 +80,7 @@ module.exports = class App{
     this.voicepick_controller.init(this.voice_engines);
 
     await this.test_opus_convert();
-    await this.setup_kagome();
-    this.setup_dictionaries();
+    await this.kagome_tokenizer.setup();
     await this.test_remote_replace();
     this.setup_discord();
     this.setup_process();
@@ -134,15 +125,6 @@ module.exports = class App{
     }catch(e){
       this.logger.info(e);
       this.status.remote_replace_available = false;
-    }
-  }
-
-  // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
-  async setup_kagome(){
-    try{
-      await this.kagome.tokenize("Discord上で動作する日本語の読み上げボットが、アメリカのGDPに大きな影響を与えていることは紛れもない事実ですが、日本の言霊信仰がGoogleの社風を儒教に近づけていることはあまり知られていません。国会議事堂が誘拐によって運営されていることは、パスタを製造していることで有名なキリスト教によって近年告発されました。");
-    }catch(e){
-      this.logger.info(e);
     }
   }
 
@@ -220,38 +202,6 @@ module.exports = class App{
       this.logger.info("Exit!");
       if(process.env.NODE_ENV === "production") this.client.destroy();
     });
-  }
-
-  setup_dictionaries(){
-    let json_tmp;
-
-    let map_tmp = [] //new Map();
-
-    // ないなら無視する
-    if(!fs.existsSync(`${DICT_DIR}`)){
-      this.logger.info("Global dictionary file does not exist!");
-      return;
-    }
-    for(const dir of fs.readdirSync(`${DICT_DIR}`)){
-      try {
-        if(fs.existsSync(`${DICT_DIR}/${dir}`)){
-          json_tmp = JSON.parse(fs.readFileSync(`${DICT_DIR}/${dir}`))
-          json_tmp.dict.forEach( (dict) => {
-            if(!map_tmp.some((dic) => dic[0] === dict[0] )){
-              map_tmp.push(dict);
-            }
-          });
-        }
-      } catch (e) {
-        this.logger.info(e);
-      }
-    }
-
-    this.dictionaries = map_tmp;
-
-    if(this.dictionaries.length){
-      this.dict_regexp = new RegExp(`^${this.dictionaries.map(d => escape_regexp(d[0])).join("|")}$`, 'g');
-    }
   }
 
   async onInteraction(interaction){
@@ -505,7 +455,7 @@ module.exports = class App{
     }catch(e){
       this.logger.info(e);
 
-      await sleep(10);
+      await Utils.sleep(10);
       connection.is_play = false;
 
       this.play(guild_id);
@@ -522,7 +472,7 @@ module.exports = class App{
     for(let p = 0; p < 5; p++){
       const tmp_dict = connection.dict.filter(word => word[2] === p);
 
-      for(let d of tmp_dict) result = result.replace(new RegExp(escape_regexp(d[0]), "g"), d[1]);
+      for(let d of tmp_dict) result = result.replace(new RegExp(Utils.escape_regexp(d[0]), "g"), d[1]);
     }
 
     return result;
@@ -532,79 +482,15 @@ module.exports = class App{
   async fix_reading(text, is_ponkotsu = !!IS_PONKOTSU){
     let result = text;
     if(!is_ponkotsu){
-      result = await this.kagome_tokenize(result);
+      result = await this.kagome_tokenizer.tokenize(result);
       result = await this.replace_http(result);
     }else{
-      result = await this.old_kagome_tokenize(result);
+      result = await this.kagome_tokenizer.old_tokenize(result);
     }
 
     return result;
   }
 
-  async kagome_tokenize(text){
-    let tokens;
-
-    try{
-      tokens = await this.kagome.tokenize(text);
-    }catch(e){
-      this.logger.info(e);
-      return text;
-    }
-
-    let result = [];
-
-    for(let token of tokens){
-      let t = token.surface;
-
-      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
-        for(let d of this.dictionaries){
-          t = t.replace(d[0], d[1]);
-          if(t !== token.surface) break;
-        }
-        result.push(t);
-        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
-
-        continue;
-      }
-
-      if(token.class === "KNOWN"){
-        if(
-          token.pronunciation &&
-          token.pos[0] === "名詞" &&
-          token.pos[1] === "固有名詞" &&
-          // 辞書上の表現とテキストが一致しない場合は無視する。これは英字の無駄ヒットを回避する目的がある
-          token.base_form === token.surface &&
-          // 日本語か英語だけど3文字以上の場合のみ通るようにする。2文字は固有名詞である場合はまずないし、2文字マッチの魔界を回避する目的がある
-          (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
-        ){
-          this.logger.debug(`KNOWN(固有名詞): ${JSON.stringify(token, "\n")}`)
-          result.push(token.pronunciation);
-        }else if(
-          token.pronunciation &&
-          token.pos[0] === "名詞" &&
-          token.pos[1] === "固有名詞" &&
-          // 辞書上の表現とテキストが一致しない場合のケース。読みのデバッグに利用する。
-          (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))
-        ){
-          this.logger.debug(`KNOWN(固有名詞)(不一致): ${JSON.stringify(token, "\n")}`)
-          result.push(token.surface);
-        }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
-          this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
-          result.push(token.pronunciation);
-        }else{
-          this.logger.debug(`KNOWN(surface利用)${JSON.stringify(token)}`);
-          result.push(token.surface);
-        }
-      }else{
-        result.push(token.surface);
-        this.logger.debug(`UNKNOWN: ${token.surface}`);
-      }
-    }
-
-    this.logger.debug(`kagome replace: ${result.join('')}`);
-
-    return result.join("");
-  }
   async replace_http(text){
     if(!this.status.remote_replace_available) return text;
 
@@ -620,55 +506,6 @@ module.exports = class App{
     this.logger.debug(`remote replace: ${tmp_text}`);
 
     return tmp_text;
-  }
-
-  async old_kagome_tokenize(text){
-    let tokens;
-
-    try{
-      tokens = await this.kagome.tokenize(text);
-    }catch(e){
-      this.logger.info(e);
-      return text;
-    }
-
-    let result = [];
-
-    for(let token of tokens){
-      let t = token.surface;
-
-      if(this.dict_regexp && this.dict_regexp.test(token.surface)){
-        for(let d of this.dictionaries){
-          t = t.replace(d[0], d[1]);
-          if(t !== token.surface) break;
-        }
-        result.push(t);
-        this.logger.debug(`DICT: ${token.surface} -> ${t}`);
-
-        continue;
-      }
-
-      if(token.class === "KNOWN"){
-        if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "固有名詞"){
-          this.logger.debug(`KNOWN(固有名詞): ${token.surface}:${token.reading}:${token.pronunciation}`);
-          result.push(token.pronunciation);
-        }else if(token.pronunciation && token.pos[0] === "名詞" && token.pos[1] === "一般"){
-          this.logger.debug(`KNOWN(名詞 一般): ${token.surface}:${token.reading}:${token.pronunciation}`);
-          result.push(token.pronunciation);
-        }else{
-          this.logger.debug(token);
-          result.push(token.surface);
-        }
-      }else{
-        if(isRomaji(token.surface)){
-          result.push(toKana(token.surface));
-        }else{
-          result.push(token.surface);
-        }
-      }
-    }
-
-    return result.join("");
   }
 
   async connect_vc(interaction){
@@ -760,7 +597,7 @@ module.exports = class App{
 
     player.on(AudioPlayerStatus.Idle, async () => {
       this.logger.debug(`queue end`);
-      await sleep(20);
+      await Utils.sleep(20);
       connectinfo.is_play = false;
       this.play(guild_id);
     });
@@ -798,7 +635,7 @@ module.exports = class App{
 
     this.logger.debug(`is_join: ${is_join}`);
     this.logger.debug(`is_leave: ${is_leave}`);
-    this.logger.debug(`xor: ${xor(is_join, is_leave)}`);
+    this.logger.debug(`xor: ${Utils.xor(is_join, is_leave)}`);
 
     if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
       const d_connection = getVoiceConnection(guild_id);
@@ -807,7 +644,7 @@ module.exports = class App{
       return;
     }
 
-    if(!xor(is_join, is_leave)) return;
+    if(!Utils.xor(is_join, is_leave)) return;
 
     let text = "にゃーん";
     if(is_join){

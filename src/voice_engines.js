@@ -7,14 +7,23 @@ const COEIROINKV2 = require('./coeiroink_v2.js');
 const VolumeController = require('./volume_controller.js');
 
 module.exports = class VoiceEngines{
+  #logger;
   #engines;
   #liblary_engine_map;
   #speaker_engine_map;
   #speaker_volume_map;
   #reference_lufs;
 
+  #engine_list;
+  #speakers;
+  #safe_speakers;
+  #liblarys;
+  #safe_liblarys;
+  #credit_urls;
+  #infos;
+
   constructor(logger){
-    this.logger = logger;
+    this.#logger = logger;
 
     if(VOICE_ENGINES){
       this.#engines = new Map();
@@ -54,7 +63,7 @@ module.exports = class VoiceEngines{
           break;
       }
 
-      this.logger.debug(JSON.stringify(engine_obj, null, "  "));
+      this.#logger.debug(JSON.stringify(engine_obj, null, "  "));
 
       this.#engines.set(engine_obj.name, engine_obj);
 
@@ -85,21 +94,21 @@ module.exports = class VoiceEngines{
       try{
         await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, e.voice_list[0].value - e.id_offset, tmp_voice);
 
-        this.logger.debug(`${e.name} OK`);
+        this.#logger.debug(`${e.name} OK`);
       }catch(e){
-        this.logger.info(e);
+        this.#logger.info(e);
       }
     }
 
     await this.generate_reference_volume();
 
-    this.engine_list = this._engines();
-    this.speakers = this._speakers();
-    this.safe_speakers = this._safe_speakers();
-    this.liblarys = this._liblarys();
-    this.safe_liblarys = this._safe_liblarys();
-    this.credit_urls = this._credit_urls();
-    this.infos = this._engine_infos();
+    this.#engine_list = this._engines();
+    this.#speakers = this._speakers();
+    this.#safe_speakers = this._safe_speakers();
+    this.#liblarys = this._liblarys();
+    this.#safe_liblarys = this._safe_liblarys();
+    this.#credit_urls = this._credit_urls();
+    this.#infos = this._engine_infos();
 
     this._setup__maps();
   }
@@ -123,7 +132,7 @@ module.exports = class VoiceEngines{
       for(let r of samples) tests.push(VolumeController.get_loud(r));
 
       const test_result = await Promise.all(tests);
-        this.#reference_lufs = this.merge_lufs(test_result);
+      this.#reference_lufs = this.merge_lufs(test_result);
     }catch(e){
       throw e;
     }
@@ -151,8 +160,8 @@ module.exports = class VoiceEngines{
       // リファレンスの差分データの生成に失敗した場合は何もしない
       // ここで引っかかる例ってほぼないだろうし、あったとしてもその場で処理できるエラーでもない
       // なおかつこの程度で終了かかるべきでもないのでログだけ出す
-      this.logger.info("Reference diff err");
-      this.logger.info(e);
+      this.#logger.info("Reference diff err");
+      this.#logger.info(e);
     }
   }
 
@@ -177,6 +186,34 @@ module.exports = class VoiceEngines{
 
   get engines(){
     return JSON.parse(JSON.stringify(this.engine_list));
+  }
+
+  get engine_list(){
+    return JSON.parse(JSON.stringify(this.#engine_list));
+  }
+
+  get speakers(){
+    return JSON.parse(JSON.stringify(this.#speakers));
+  }
+
+  get safe_speakers(){
+    return JSON.parse(JSON.stringify(this.#safe_speakers));
+  }
+
+  get liblarys(){
+    return JSON.parse(JSON.stringify(this.#liblarys));
+  }
+
+  get safe_liblarys(){
+    return JSON.parse(JSON.stringify(this.#safe_liblarys));
+  }
+
+  get credit_urls(){
+    return JSON.parse(JSON.stringify(this.#credit_urls));
+  }
+
+  get infos(){
+    return JSON.parse(JSON.stringify(this.#infos));
   }
 
   get_engine_liblarys(engine_name){
@@ -360,20 +397,20 @@ module.exports = class VoiceEngines{
 
       // 生成中なら無視して返す
       if(pass_volume_controll || volume === 'LOCK'){
-        this.logger.debug('pass volume controll');
+        this.#logger.debug('pass volume controll');
         return await v;
       }
       // 未生成なら生成叩いて返す
       if(!volume){
-        this.logger.debug('generate volume controll')
+        this.#logger.debug('generate volume controll')
         this.generate_reference_diff(voice_id);
         return await v;
       }
 
       const filepath = await v;
 
-      this.logger.debug('set loud')
-        return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
+      this.#logger.debug('set loud')
+      return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
     }catch(e){
       throw e;
     }
