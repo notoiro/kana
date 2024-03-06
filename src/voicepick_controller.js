@@ -44,7 +44,7 @@ module.exports = class VoicepickController{
       const end = (page + 1) * VOICE_SPLIT_COUNT;
       list_sliced = this.#engine.get_engine_liblarys(hint.engine).slice(start, end);
     }
-    if(type === "style") list_sliced = this.#engine.get_liblary_speakers(hint.liblary);
+    if(type === "style") list_sliced = this.#engine.get_liblary_speakers(hint.engine, hint.liblary);
 
     for(let i = 0; i < list_sliced.length; i++){
       let value, name;
@@ -93,7 +93,7 @@ module.exports = class VoicepickController{
       page: 0,
       engine: this.#engine.engines[0],
       liblary: this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id,
-      style: this.#engine.get_liblary_speakers(this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id)[0].id,
+      style: this.#engine.get_liblary_speakers(this.#engine.engines[0], this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id)[0].id,
     }
     this.#setting_list.set(interaction.member.id, default_setting);
 
@@ -106,7 +106,7 @@ module.exports = class VoicepickController{
     const selects = [
       this.get_split_selects("engine", null, default_setting.engine),
       this.get_split_selects("liblary", { engine: default_setting.engine, page: 0 }, default_setting.liblary),
-      this.get_split_selects("style", { liblary: default_setting.liblary }, default_setting.style)
+      this.get_split_selects("style", { engine: default_setting.engine, liblary: default_setting.liblary }, default_setting.style)
     ];
 
     const res = await interaction.editReply({
@@ -135,7 +135,7 @@ module.exports = class VoicepickController{
           });
 
           const new_liblary = this.#engine.get_engine_liblarys(setting.engine)[new_page * VOICE_SPLIT_COUNT].id;
-          const new_style = this.#engine.get_liblary_speakers(new_liblary)[0].id;
+          const new_style = this.#engine.get_liblary_speakers(setting.engine, new_liblary)[0].id;
 
           const new_setting = {
             page: new_page,
@@ -147,7 +147,7 @@ module.exports = class VoicepickController{
           const selects = [
             this.get_split_selects("engine", null, new_setting.engine),
             this.get_split_selects("liblary", { engine: new_setting.engine, page: new_page }, new_setting.liblary),
-            this.get_split_selects("style", { liblary: new_setting.liblary }, new_style)
+            this.get_split_selects("style", { engine: new_setting.engine, liblary: new_setting.liblary }, new_style)
           ];
 
           await c.update({
@@ -171,10 +171,10 @@ module.exports = class VoicepickController{
             new_setting.page = 0;
             new_setting.engine = c.values[0];
             new_setting.liblary = this.#engine.get_engine_liblarys(new_setting.engine)[0].id;
-            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
+            new_setting.style = this.#engine.get_liblary_speakers(new_setting.engine, new_setting.liblary)[0].id
           }else if(id === 'voicepick_liblary'){
             new_setting.liblary = c.values[0];
-            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
+            new_setting.style = this.#engine.get_liblary_speakers(new_setting.engine, new_setting.liblary)[0].id
           }else if(id === 'voicepick_style'){
             new_setting.style = c.values[0];
           }
@@ -189,7 +189,7 @@ module.exports = class VoicepickController{
           const selects = [
             this.get_split_selects("engine", null, new_setting.engine),
             this.get_split_selects("liblary", { engine: new_setting.engine, page: new_setting.page }, new_setting.liblary),
-            this.get_split_selects("style", { liblary: new_setting.liblary }, new_setting.style)
+            this.get_split_selects("style", { engine: new_setting.engine, liblary: new_setting.liblary }, new_setting.style)
           ];
 
           await c.update({
