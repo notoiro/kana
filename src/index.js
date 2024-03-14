@@ -752,7 +752,17 @@ module.exports = class App{
   }
 
   async currentvoice(interaction, override_id = null){
-    const member_id = override_id ?? interaction.member.id;
+    let member_id = override_id ?? interaction.member.id;
+    let is_self = true;
+    let name = interaction.member.displayName;
+
+    let voice_target = interaction.options.get('user');
+
+    if(voice_target){
+      is_self = false;
+      member_id = voice_target.value;
+      name = voice_target.member.displayName;
+    }
 
     const server_file = this.bot_utils.get_server_file(interaction.guild.id);
 
@@ -774,7 +784,6 @@ module.exports = class App{
       sample_voice_info = voices[member_id];
     }
 
-    let name = interaction.member.displayName;
     if(member_id === "DEFAULT") name = "デフォルト";
 
     const em = new EmbedBuilder()
@@ -790,10 +799,11 @@ module.exports = class App{
       );
 
     if(member_id !== "DEFAULT" && is_default){
+      const n = is_self ? "あなた" : name;
       if(is_not_exist_server_settings){
-        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。")
+        em.setDescription(`注意: ${n}の声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。`)
       }else{
-        em.setDescription("注意: あなたの声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。");
+        em.setDescription(`注意: ${n}の声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。`);
       }
     }
 
