@@ -80,6 +80,11 @@ module.exports = class VoiceEngines{
 
       e.original_list = list;
 
+      // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
+      for(let l of e.original_list){
+        l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
+      }
+
       for(let sp of list){
         e.voice_liblary_list.push(sp.name);
 
@@ -230,9 +235,8 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  get_liblary_speakers(engine_id, liblary_id){
-    // TODO: わざわざエンジンなしで参照できる設計なのにUUID被ってるせいでうまく機能してないのでUUIDをこのエンジン用に持つ設計を作る
-    const e = this.#liblary_engine_map.get(engine_id + liblary_id);
+  get_liblary_speakers(liblary_id){
+    const e = this.#liblary_engine_map.get(liblary_id);
 
     if(!e) throw "Engine not found";
 
@@ -345,7 +349,7 @@ module.exports = class VoiceEngines{
         this.#speaker_engine_map.set(v.value, e);
       }
       for(let l of e.original_list){
-        this.#liblary_engine_map.set(e.name + l.speaker_uuid, e);
+        this.#liblary_engine_map.set(l.speaker_uuid, e);
       }
     }
   }
