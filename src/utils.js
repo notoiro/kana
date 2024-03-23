@@ -36,7 +36,7 @@ module.exports = class Utils{
     // 絵文字
     result = result.replace(emoji_regex(), "");
     // 記号
-    result = result.replace(/["#'^\;:,|`{}<>]/, "");
+    result = result.replace(/["#'^\;:,|`{}<>]/g, "");
     // 改行
     result = result.replace(/\r?\n/g, "。")
 
