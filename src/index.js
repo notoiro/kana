@@ -104,7 +104,7 @@ module.exports = class App{
     try{
       const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
       await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}`, '.wav', this.voice_list[0].value, tmp_voice);
-      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
+      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}_orig.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
       this.status.opus_convert_available = !!opus_voice_path;
     }catch(e){
       this.logger.info(`Opus convert init err.`);
