@@ -50,6 +50,7 @@ module.exports = class App{
     this.voicepick_controller = new VoicepickController(this.logger);
 
     this.connections_map = new Map();
+    this.autojoin_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.commands = {};
@@ -71,6 +72,7 @@ module.exports = class App{
 
   async start(){
     this.setup_config();
+    this.setup_autojoin();
     await this.voice_engines.init_engines();
 
     this.voice_list = this.voice_engines.speakers;
@@ -98,6 +100,12 @@ module.exports = class App{
     }
 
     this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
+  }
+
+  setup_autojoin(){
+    const list = this.bot_utils.get_autojoin_list();
+
+    for(let l in list) this.autojoin_map.set(l, list[l]);
   }
 
   async test_opus_convert(){
@@ -229,6 +237,8 @@ module.exports = class App{
         case "copyvoicesay":
         case "ponkotsu":
         case "voicepick":
+        case "setautojoin":
+        case "removeautojoin":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
           break;
@@ -526,7 +536,6 @@ module.exports = class App{
       return;
     }
 
-    const voice_channel_id = member_vc.id;
     const guild_id = guild.id;
 
     const current_connection = this.connections_map.get(guild_id);
@@ -536,9 +545,24 @@ module.exports = class App{
       return;
     }
 
+    const data = {
+      voice_id: member_vc.id,
+      text_id: interaction.channel.id,
+    }
+
+    await this._connect_vc(guild_id, data);
+
+    if(!this.status.debug){
+      await interaction.reply({ content: '接続しました。' });
+    }
+  }
+
+  async _connect_vc(guild_id, data){
+    const guild = await this.client.guilds.fetch(guild_id);
+
     const connectinfo = {
-      text: interaction.channel.id,
-      voice: voice_channel_id,
+      text: data.text_id,
+      voice: data.voice_id,
       audio_player: null,
       queue: [],
       filename_base: `${guild_id}${TMP_PREFIX}`,
@@ -561,7 +585,7 @@ module.exports = class App{
 
     const connection = joinVoiceChannel({
       guildId: guild_id,
-      channelId: voice_channel_id,
+      channelId: data.voice_id,
       adapterCreator: guild.voiceAdapterCreator,
       selfMute: false, selfDeaf: true,
     });
@@ -604,15 +628,19 @@ module.exports = class App{
 
     this.connections_map.set(guild_id, connectinfo);
 
+    this.update_status_text();
+
     if(!this.status.debug){
-      await interaction.reply({ content: '接続しました。' });
       this.add_system_message("接続しました！", guild_id);
     }
-
-    this.update_status_text();
   }
 
   check_join_and_leave(old_s, new_s){
+    this.join_or_leave_announc(old_s, new_s);
+    this.autojoin_check(old_s, new_s);
+  }
+
+  join_or_leave_announc(old_s, new_s){
     const guild_id = new_s.guild.id;
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
@@ -654,6 +682,49 @@ module.exports = class App{
     }
 
     this.add_system_message(text, guild_id, member.id);
+  }
+
+  autojoin_check(old_s, new_s){
+    const guild_id = new_s.guild.id;
+
+    // 設定の登録がない場合は抜ける
+    const autojoin_conf = this.autojoin_map.get(guild_id);
+    if(!autojoin_conf) return;
+    // 接続あるなら抜ける
+    const connection = this.connections_map.get(guild_id);
+    if(connection) return;
+
+    const member = new_s.member;
+    if(member.user.bot) return;
+
+    const new_voice_id = new_s.channelId;
+    const old_voice_id = old_s.channelId;
+
+    // 接続先が設定に含まれていなければ抜ける
+    if(!Object.keys(autojoin_conf).find(v => v === new_voice_id)) return;
+
+    // 1人目だったら参加する
+
+    if(new_voice_id === old_voice_id) return;
+
+    if(!(!old_s.channel && new_s.channel && new_s.channel.members && new_s.channel.members.size === 1)){
+      return;
+    }
+
+
+    if(!new_s.channel.joinable) {
+      return;
+    }
+    if(!new_s.channel.speakable) {
+      return;
+    }
+
+    const data = {
+      voice_id: new_voice_id,
+      text_id: autojoin_conf[new_voice_id],
+    }
+
+    this._connect_vc(guild_id, data);
   }
 
   skip_current_text(guild_id){
@@ -1080,5 +1151,55 @@ module.exports = class App{
     const message = is_ponkotsu ? "ポンコツになりました。" : "頭が良くなりました。";
 
     await interaction.reply({ content: message });
+  }
+
+  async setautojoin(interaction){
+    if(!(interaction.member.permissions.has('Administrator'))){
+      interaction.reply("管理者になって出直して");
+      return;
+    }
+
+    let voice_channel_id = interaction.options.get('voice_channel').value;
+    let text_channel_id = interaction.options.get('text_channel').value;
+
+    const guild_id = interaction.guild.id;
+
+    const autojoin_list = this.bot_utils.get_autojoin_list();
+
+    if(!autojoin_list[guild_id]){
+      autojoin_list[guild_id] = {};
+    }
+
+    autojoin_list[guild_id][voice_channel_id] = text_channel_id;
+
+    this.bot_utils.write_autojoin_list(autojoin_list);
+    this.setup_autojoin();
+
+    await interaction.reply({ content: `自動接続を設定しました！` });
+  }
+
+  async removeautojoin(interaction){
+    if(!(interaction.member.permissions.has('Administrator'))){
+      interaction.reply("管理者になって出直して");
+      return;
+    }
+
+    let voice_channel_id = interaction.options.get('voice_channel').value;
+
+    const guild_id = interaction.guild.id;
+
+    const autojoin_list = this.bot_utils.get_autojoin_list();
+
+    if(!autojoin_list[guild_id] || !autojoin_list[guild_id][voice_channel_id]){
+      await interaction.reply('設定がないよ');
+      return;
+    }
+
+    delete autojoin_list[guild_id][voice_channel_id];
+
+    this.bot_utils.write_autojoin_list(autojoin_list);
+    this.setup_autojoin();
+
+    await interaction.reply({ content: `自動接続を設定しました！` });
   }
 }

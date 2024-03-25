@@ -29,6 +29,7 @@ module.exports = class BotUtils{
   #EXTEND_ENABLE;
   #VOICE_REGEXP_NAME;
   #voice_list;
+  #autojoin_cache;
 
   constructor(logger){
     this.#logger = logger;
@@ -36,6 +37,8 @@ module.exports = class BotUtils{
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
 
     this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
+
+    this.#autojoin_cache = {};
   }
 
   init_voicelist(voice_list, voice_liblary_list){
@@ -176,6 +179,33 @@ module.exports = class BotUtils{
 
     try{
       fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(result, null, "  "));
+    }catch(e){
+      this.#logger.info(e);
+    }
+  }
+
+  get_autojoin_list(){
+    if(Object.keys(this.#autojoin_cache).length){
+      return JSON.parse(JSON.stringify(this.#autojoin_cache));
+    }
+
+    let result = {};
+    try{
+      let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/autojoin.json`));
+
+      result = json;
+    }catch(e){
+      this.#logger.info(e);
+      result = {};
+    }
+
+    return result;
+  }
+
+  write_autojoin_list(list){
+    try{
+      fs.writeFileSync(`${SERVER_DIR}/autojoin.json`, JSON.stringify(list, null, "  "));
+      this.#autojoin_cache = JSON.parse(JSON.stringify(list));
     }catch(e){
       this.#logger.info(e);
     }
