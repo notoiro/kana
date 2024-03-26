@@ -15,7 +15,7 @@ module.exports = {
         {
           type: ApplicationCommandOptionType.Channel,
           name: "text_channel",
-          channel_types: [ChannelType.GuildText],
+          channel_types: [ChannelType.GuildText, ChannelType.GuildVoice],
           description: "テキスト",
           required: true
         }
