@@ -18,12 +18,13 @@
     "emoji-regex": "^10.3.0",
     "fluent-ffmpeg": "^2.1.2",
     "log4js": "^6.9.1",
-    "sodium-native": "^4.0.10",
+    "sodium-native": "^4.1.1",
     "wanakana": "^5.3.1"
   },
   "pnpm": {
     "overrides": {
-      "undici@<=5.28.2": ">=5.28.3"
+      "undici@<=5.28.2": ">=5.28.3",
+      "undici@>=6.0.0 <6.11.1": ">=6.11.1"
     }
   }
 }
