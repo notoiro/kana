@@ -237,7 +237,6 @@ module.exports = class App{
         case "copyvoicesay":
         case "ponkotsu":
         case "voicepick":
-        case "setautojoin":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
           break;
@@ -1149,28 +1148,5 @@ module.exports = class App{
     await interaction.reply({ content: message });
   }
 
-  async setautojoin(interaction){
-    if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply("管理者になって出直して");
-      return;
-    }
 
-    let voice_channel_id = interaction.options.get('voice_channel').value;
-    let text_channel_id = interaction.options.get('text_channel').value;
-
-    const guild_id = interaction.guild.id;
-
-    const autojoin_list = this.bot_utils.get_autojoin_list();
-
-    if(!autojoin_list[guild_id]){
-      autojoin_list[guild_id] = {};
-    }
-
-    autojoin_list[guild_id][voice_channel_id] = text_channel_id;
-
-    this.bot_utils.write_autojoin_list(autojoin_list);
-    this.setup_autojoin();
-
-    await interaction.reply({ content: `自動接続を設定しました！` });
-  }
 }
