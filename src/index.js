@@ -235,7 +235,6 @@ module.exports = class App{
         case "diclist":
         case "systemvoicemute":
         case "copyvoicesay":
-        case "ponkotsu":
         case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
@@ -1130,23 +1129,4 @@ module.exports = class App{
 
     await interaction.reply({ content: "まかせて！" });
   }
-
-  async ponkotsu(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let is_ponkotsu = !server_file.is_ponkotsu;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
-
-    if(connection) connection.is_ponkotsu = is_ponkotsu;
-
-    const message = is_ponkotsu ? "ポンコツになりました。" : "頭が良くなりました。";
-
-    await interaction.reply({ content: message });
-  }
-
-
 }
