@@ -264,9 +264,6 @@ module.exports = class App{
         case "voicelist":
           await command.execute(interaction, this.voice_engines.safe_speakers);
           break;
-        case "credit":
-          await command.execute(interaction, this.voice_engines.safe_liblarys, this.voice_engines.credit_urls);
-          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
