@@ -233,7 +233,6 @@ module.exports = class App{
         case "dicdel":
         case "dicpriority":
         case "diclist":
-        case "systemvoicemute":
         case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
@@ -1090,19 +1089,4 @@ module.exports = class App{
   async voicepick(interaction){
     return this.voicepick_controller.voicepick(interaction, this.setvoice.bind(this));
   }
-
-  async systemvoicemute(interaction){
-    const connection = this.connections_map.get(interaction.guild.id);
-
-    if(!connection){
-      await interaction.reply("接続がないよ！");
-      return;
-    }
-
-    connection.system_mute_counter++;
-
-    await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
-  }
-
-
 }
