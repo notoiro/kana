@@ -234,7 +234,6 @@ module.exports = class App{
         case "dicpriority":
         case "diclist":
         case "systemvoicemute":
-        case "copyvoicesay":
         case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
@@ -1105,28 +1104,5 @@ module.exports = class App{
     await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
   }
 
-  async copyvoicesay(interaction){
-    const guild_id = interaction.guild.id;
 
-    const connection = this.connections_map.get(guild_id);
-
-    if(!connection){
-      await interaction.reply({ content: "接続ないよ" });
-      return;
-    }
-
-    let voice_target = interaction.options.get('user').value;
-    let text = interaction.options.get('text').value;
-
-    // add_text_queue が利用している部分だけ満たすObjectを作る
-    let msg_obj = {
-      cleanContent: text,
-      guild:{ id: guild_id },
-      member: { id: voice_target }
-    }
-
-    this.add_text_queue(msg_obj, true);
-
-    await interaction.reply({ content: "まかせて！" });
-  }
 }
