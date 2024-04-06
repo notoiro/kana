@@ -233,7 +233,6 @@ module.exports = class App{
         case "dicdel":
         case "dicpriority":
         case "diclist":
-        case "voicepick":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
           break;
@@ -1084,9 +1083,5 @@ module.exports = class App{
     if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
 
     await interaction.reply({ embeds: [em] });
-  }
-
-  async voicepick(interaction){
-    return this.voicepick_controller.voicepick(interaction, this.setvoice.bind(this));
   }
 }
