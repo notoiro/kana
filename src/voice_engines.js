@@ -2,8 +2,8 @@ const {
   VOICE_ENGINES, TMP_DIR, TMP_PREFIX
 } = require('../config.json');
 
-const Voicevox = require('./voicevox.js');
-const COEIROINKV2 = require('./coeiroink_v2.js');
+const Voicevox = require('./engine_loaders/voicevox.js');
+const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
 const VolumeController = require('./volume_controller.js');
 
 module.exports = class VoiceEngines{
