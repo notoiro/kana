@@ -232,7 +232,6 @@ module.exports = class App{
         case "setvoiceall":
         case "currentvoice":
         case "resetconnection":
-        case "dicadd":
         case "dicdel":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
@@ -886,40 +885,6 @@ module.exports = class App{
     this.update_status_text();
 
     interaction.reply({ content: "どっかーん！" })
-  }
-
-  async dicadd(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const word_from = interaction.options.get("from").value;
-    const word_to = interaction.options.get("to").value;
-
-    for(let d of dict){
-      if(d[0] === word_from){
-        interaction.reply({ content: "既に登録されています！" });
-        return;
-      }
-    }
-
-    dict.push([word_from, word_to, 2]);
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    const em = new EmbedBuilder()
-      .setTitle(`登録しました。`)
-      .addFields(
-        { name: "変換元", value: `${word_from}`},
-        { name: "変換先", value: `${word_to}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
   }
 
   async dicdel(interaction){
