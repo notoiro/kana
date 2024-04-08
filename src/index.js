@@ -232,7 +232,6 @@ module.exports = class App{
         case "setvoiceall":
         case "currentvoice":
         case "resetconnection":
-        case "dicdel":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
           break;
@@ -885,38 +884,5 @@ module.exports = class App{
     this.update_status_text();
 
     interaction.reply({ content: "どっかーん！" })
-  }
-
-  async dicdel(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const target = interaction.options.get("target").value;
-
-    let exist = false;
-
-    for(let d of dict){
-      if(d[0] === target){
-        exist = true;
-        break;
-      }
-    }
-
-    if(!exist){
-      await interaction.reply({ content: "ないよ" });
-      return;
-    }
-
-    dict = dict.filter(word => word[0] !== target);
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    await interaction.reply({ content: "削除しました。" });
   }
 }
