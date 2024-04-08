@@ -22,8 +22,6 @@ const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
-const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
-
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
@@ -235,7 +233,6 @@ module.exports = class App{
         case "currentvoice":
         case "resetconnection":
         case "dicadd":
-        case "dicedit":
         case "dicdel":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
@@ -956,51 +953,5 @@ module.exports = class App{
     if(connection) connection.dict = dict;
 
     await interaction.reply({ content: "削除しました。" });
-  }
-
-  async dicedit(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const word_from = interaction.options.get("from").value;
-    const word_to = interaction.options.get("to").value;
-
-    let exist = false;
-
-    for(let d of dict){
-      if(d[0] === word_from){
-        exist = true;
-        break;
-      }
-    }
-
-    if(!exist){
-      await interaction.reply({ content: "ないよ" });
-      return;
-    }
-
-    dict = dict.map(val => {
-      let result = val;
-      if(val[0] === word_from) result[1] = word_to;
-
-      return result;
-    });
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    const em = new EmbedBuilder()
-      .setTitle(`編集しました。`)
-      .addFields(
-        { name: "変換元", value: `${word_from}`},
-        { name: "変換先", value: `${word_to}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
   }
 }
