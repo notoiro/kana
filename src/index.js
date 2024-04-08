@@ -230,7 +230,6 @@ module.exports = class App{
 
       switch(command_name){
         case "setvoiceall":
-        case "currentvoice":
           await this[command_name](interaction);
           break;
         case "setspeed":
