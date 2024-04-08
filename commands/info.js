@@ -2,6 +2,7 @@ const os = require('os');
 const { EmbedBuilder } = require('discord.js');
 
 const { IS_PONKOTSU } = require('../config.json');
+const app = require('../index.js');
 
 const ans = (flag, true_text, false_text) => {
   return flag ? true_text:false_text;
@@ -12,7 +13,7 @@ module.exports = {
     name: "info",
     description: "このBotの設定とサーバー固有の設定について。"
   },
-  async execute(interaction, app){
+  async execute(interaction){
     const server_file = app.bot_utils.get_server_file(interaction.guild.id);
 
     const ram = Math.round(process.memoryUsage.rss() / 1024 / 1024 * 100) / 100;

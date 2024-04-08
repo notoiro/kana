@@ -248,12 +248,6 @@ module.exports = class App{
         case "defaultvoice":
           await this.currentvoice(interaction, "DEFAULT");
           break;
-        case "info":
-          await command.execute(interaction, this);
-          break;
-        case "voicelist":
-          await command.execute(interaction, this.voice_engines.safe_speakers);
-          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
