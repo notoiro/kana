@@ -245,9 +245,6 @@ module.exports = class App{
           }
           await this.setvoiceall(interaction, "DEFAULT");
           break;
-        case "defaultvoice":
-          await this.currentvoice(interaction, "DEFAULT");
-          break;
         default:
           // setvoiceは無限に増えるのでここで処理
           if(/setvoice[0-9]+/.test(interaction.commandName)){
