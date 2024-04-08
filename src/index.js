@@ -231,7 +231,6 @@ module.exports = class App{
         case "connect":
         case "setvoiceall":
         case "currentvoice":
-        case "resetconnection":
           if(command_name === "connect") command_name = "connect_vc";
           await this[command_name](interaction);
           break;
@@ -869,20 +868,5 @@ module.exports = class App{
     }
 
     await interaction.reply({ embeds: [em] });
-  }
-
-  async resetconnection(interaction){
-    const guild_id = interaction.guild.id;
-
-    const vc_con = getVoiceConnection(guild_id);
-    if(vc_con) vc_con.destroy();
-
-    const connection = this.connections_map.get(guild_id);
-    if(connection) connection.audio_player.stop();
-    this.connections_map.delete(guild_id);
-
-    this.update_status_text();
-
-    interaction.reply({ content: "どっかーん！" })
   }
 }
