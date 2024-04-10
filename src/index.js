@@ -293,7 +293,10 @@ module.exports = class App{
   is_target(msg){
     const connection = this.connections_map.get(msg.guild.id);
 
-    return !(!connection || connection.text !== msg.channelId || connection.voice !== msg.channelId || msg.cleanContent.indexOf(PREFIX) === 0);
+    if(!connection) return false;
+    if(!(connection.text === msg.channelId || connection.voice === msg.channelId)) return false;
+    if(msg.cleanContent.indexOf(PREFIX) === 0) return false;
+    return true;
   }
 
   add_system_message(text, guild_id, voice_ref_id = "DEFAULT"){
