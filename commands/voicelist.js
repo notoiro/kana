@@ -2,6 +2,8 @@ const { PaginationWrapper } = require('djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const { EmbedBuilder, ButtonStyle } = require('discord.js');
 
+const app = require('../index.js');
+
 const VOICE_SPLIT_COUNT = 30;
 
 module.exports = {
@@ -9,10 +11,10 @@ module.exports = {
     name: "voicelist",
     description: "利用可能なボイス一覧。"
   },
-  async execute(interaction, voicelist){
+  async execute(interaction){
     const ems = [];
 
-    const list = Array.from(voicelist).map(v => v.name);
+    const list = Array.from(app.voice_engines.safe_speakers).map(v => v.name);
 
     const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
 

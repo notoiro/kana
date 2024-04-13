@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const {
   TMP_DIR
-} = require('../config.json');
+} = require('../../config.json');
 
 module.exports = class Voicevox{
   #rpc;

@@ -4,6 +4,8 @@ const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/preset
 
 const { credit_replaces } = require('../credit_replaces.json');
 
+const app = require('../index.js');
+
 const VOICE_SPLIT_COUNT = 30;
 
 module.exports = {
@@ -11,7 +13,10 @@ module.exports = {
     name: "credit",
     description: "このBotで利用可能な音声ライブラリのクレジット表記を生成します。"
   },
-  async execute(interaction, lib_list, credit_urls){
+  async execute(interaction){
+    const lib_list = app.voice_engines.safe_liblarys;
+    const credit_urls = app.voice_engines.credit_urls;
+
     const ems = [];
 
     const list = Array.from(lib_list)

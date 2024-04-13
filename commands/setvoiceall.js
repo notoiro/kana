@@ -1,4 +1,5 @@
 const { ApplicationCommandOptionType } = require('discord.js');
+const app = require('../index.js');
 
 module.exports = {
   data: {
@@ -14,4 +15,8 @@ module.exports = {
       }
     ]
   },
+
+  execute(interaction){
+    return app.setvoiceall(interaction);
+  }
 }
