@@ -1,4 +1,5 @@
 const { ApplicationCommandOptionType } = require('discord.js');
+const app = require('../index.js');
 
 module.exports = {
   data: {
@@ -14,4 +15,12 @@ module.exports = {
       }
     ]
   },
+
+  async execute(interaction){
+    if(!(interaction.member.permissions.has('Administrator'))){
+      await interaction.reply({ content: "権限がないよ！" });
+      return;
+    }
+    return app.setvoiceall(interaction, "DEFAULT");
+  }
 }

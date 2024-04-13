@@ -89,6 +89,7 @@ module.exports = class App{
     await this.kagome_tokenizer.setup();
     await this.test_remote_replace();
     this.currentvoice = require('./currentvoice.js');
+    this.setvoiceall = require('./setvoiceall.js');
     this.setup_discord();
     this.setup_process();
 
@@ -229,21 +230,11 @@ module.exports = class App{
       let command_name = interaction.commandName;
 
       switch(command_name){
-        case "setvoiceall":
-          await this[command_name](interaction);
-          break;
         case "setspeed":
         case "setpitch":
         case "setintonation":
           command_name = command_name.replace("set", "");
           await this.setvoice(interaction, command_name);
-          break;
-        case "setdefaultvoice":
-          if(!(interaction.member.permissions.has('Administrator'))){
-            await interaction.reply({ content: "権限がないよ！" });
-            break;
-          }
-          await this.setvoiceall(interaction, "DEFAULT");
           break;
         default:
           // setvoiceは無限に増えるのでここで処理
@@ -712,52 +703,5 @@ module.exports = class App{
     }
 
     await interaction.reply({ content: text });
-  }
-
-  async setvoiceall(interaction, override_id = null){
-    const guild_id = interaction.guild.id;
-    const member_id = override_id ?? interaction.member.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-
-    let voices = server_file.user_voices;
-
-    let voice = interaction.options.get("voiceall").value;
-    try{
-      voice = ResurrectionSpell.decode(voice);
-      // もしボイスなければID0にフォールバック
-      if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice.voice = 0;
-    }catch(e){
-      this.logger.debug(e);
-      await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-      return;
-    }
-
-    if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
-      await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-      return;
-    }
-
-    voices[member_id] = voice;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
-
-    if(connection) connection.user_voices = voices;
-
-    let name = interaction.member.displayName;
-    if(override_id === "DEFAULT") name = "デフォルト";
-
-    const em = new EmbedBuilder()
-      .setTitle(`${name}の声設定を変更しました。`)
-      .addFields(
-        { name: "声の種類(voice)", value: (this.voice_list.find(el => parseInt(el.value, 10) === voice.voice)).name },
-        { name: "声の速度(speed)", value: `${voice.speed}`},
-        { name: "声のピッチ(pitch)", value: `${voice.pitch}`},
-        { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
   }
 }
