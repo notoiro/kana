@@ -6,8 +6,7 @@ const {
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType
+  Client, GatewayIntentBits, ApplicationCommandOptionType, ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -15,24 +14,27 @@ const log4js = require('log4js');
 const VoiceEngines = require('./voice_engines.js');
 const KagomeTokenizer = require('./kagome_tokenizer.js');
 const RemoteReplace = require('./remote_replace.js');
-const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
-const priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
-
 // Discordで選択肢作ると25個が限界
 const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU, TMP_PREFIX
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, IS_PONKOTSU, TMP_PREFIX
 } = require('../config.json');
 
 module.exports = class App{
+  #priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
+
+  get priority_list(){
+    return Array.from(this.#priority_list);
+  }
+
   constructor(){
     this.remote_repalce = new RemoteReplace();
     this.logger = log4js.getLogger();
@@ -67,7 +69,6 @@ module.exports = class App{
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
-
   }
 
   async start(){
@@ -84,6 +85,9 @@ module.exports = class App{
     await this.test_opus_convert();
     await this.kagome_tokenizer.setup();
     await this.test_remote_replace();
+    this.currentvoice = require('./currentvoice.js');
+    this.setvoiceall = require('./setvoiceall.js');
+    this.setvoice = require('./setvoice.js');
     this.setup_discord();
     this.setup_process();
 
@@ -221,60 +225,11 @@ module.exports = class App{
     const command = this.commands[interaction.commandName];
 
     try {
-      let command_name = interaction.commandName;
-
-      switch(command_name){
-        case "connect":
-        case "setvoiceall":
-        case "currentvoice":
-        case "resetconnection":
-        case "dicadd":
-        case "dicedit":
-        case "dicdel":
-        case "dicpriority":
-        case "diclist":
-        case "systemvoicemute":
-        case "copyvoicesay":
-        case "ponkotsu":
-        case "voicepick":
-        case "setautojoin":
-        case "removeautojoin":
-          if(command_name === "connect") command_name = "connect_vc";
-          await this[command_name](interaction);
-          break;
-        case "setspeed":
-        case "setpitch":
-        case "setintonation":
-          command_name = command_name.replace("set", "");
-          await this.setvoice(interaction, command_name);
-          break;
-        case "setdefaultvoice":
-          if(!(interaction.member.permissions.has('Administrator'))){
-            await interaction.reply({ content: "権限がないよ！" });
-            break;
-          }
-          await this.setvoiceall(interaction, "DEFAULT");
-          break;
-        case "defaultvoice":
-          await this.currentvoice(interaction, "DEFAULT");
-          break;
-        case "info":
-          await command.execute(interaction, this);
-          break;
-        case "voicelist":
-          await command.execute(interaction, this.voice_engines.safe_speakers);
-          break;
-        case "credit":
-          await command.execute(interaction, this.voice_engines.safe_liblarys, this.voice_engines.credit_urls);
-          break;
-        default:
-          // setvoiceは無限に増えるのでここで処理
-          if(/setvoice[0-9]+/.test(interaction.commandName)){
-            await this.setvoice(interaction, 'voice');
-          }else{
-            await command.execute(interaction);
-          }
-          break;
+      // setvoiceは無限に増えるのでここで処理
+      if(/setvoice[0-9]+/.test(interaction.commandName)){
+        await this.setvoice(interaction, 'voice');
+      }else{
+        await command.execute(interaction);
       }
     } catch (error) {
       this.logger.info(error);
@@ -521,45 +476,6 @@ module.exports = class App{
     return tmp_text;
   }
 
-  async connect_vc(interaction){
-    const guild = interaction.guild;
-    const member = await guild.members.fetch(interaction.member.id);
-    const member_vc = member.voice.channel;
-
-    if(!member_vc){
-      await interaction.reply({ content: "接続先のVCが見つかりません。" });
-      return;
-    }
-    if(!member_vc.joinable) {
-      await interaction.reply({ content: "VCに接続できません。" });
-      return;
-    }
-    if(!member_vc.speakable) {
-      await interaction.reply({ content: "VCで音声を再生する権限がありません。" });
-      return;
-    }
-
-    const guild_id = guild.id;
-
-    const current_connection = this.connections_map.get(guild_id);
-
-    if(current_connection){
-      await interaction.reply({ content: "接続済みです。" });
-      return;
-    }
-
-    const data = {
-      voice_id: member_vc.id,
-      text_id: interaction.channel.id,
-    }
-
-    await this._connect_vc(guild_id, data);
-
-    if(!this.status.debug){
-      await interaction.reply({ content: '接続しました。' });
-    }
-  }
-
   async _connect_vc(guild_id, data){
     const guild = await this.client.guilds.fetch(guild_id);
 
@@ -715,12 +631,8 @@ module.exports = class App{
     }
 
 
-    if(!new_s.channel.joinable) {
-      return;
-    }
-    if(!new_s.channel.speakable) {
-      return;
-    }
+    if(!new_s.channel.joinable) return;
+    if(!new_s.channel.speakable) return;
 
     const data = {
       voice_id: new_voice_id,
@@ -736,473 +648,5 @@ module.exports = class App{
     if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
-  }
-
-  async setvoice(interaction, type){
-    const guild_id = interaction.guild.id;
-    const member_id = interaction.member.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-
-    let voices = server_file.user_voices;
-
-    let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
-
-    voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
-
-    voice[type] = interaction.options.get(type).value;
-    voices[member_id] = voice;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
-
-    if(connection) connection.user_voices = voices;
-
-    let text = "";
-    switch(type){
-      case "voice":
-        text = `声を${this.voice_list.find(el => parseInt(el.value, 10) === interaction.options.get("voice").value).name}に変更しました。`;
-        break;
-      case "speed":
-        text = `声の速度を${interaction.options.get('speed').value}に変更しました。`;
-        break;
-      case "pitch":
-        text = `声のピッチを${interaction.options.get('pitch').value}に変更しました。`;
-        break;
-      case "intonation":
-        text = `声のイントネーションを${interaction.options.get('intonation').value}に変更しました。`;
-        break;
-    }
-
-    await interaction.reply({ content: text });
-  }
-
-  async setvoiceall(interaction, override_id = null){
-    const guild_id = interaction.guild.id;
-    const member_id = override_id ?? interaction.member.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-
-    let voices = server_file.user_voices;
-
-    let voice = interaction.options.get("voiceall").value;
-    try{
-      voice = ResurrectionSpell.decode(voice);
-      // もしボイスなければID0にフォールバック
-      if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice.voice = 0;
-    }catch(e){
-      this.logger.debug(e);
-      await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-      return;
-    }
-
-    if(!(this.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
-      await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
-      return;
-    }
-
-    voices[member_id] = voice;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
-
-    if(connection) connection.user_voices = voices;
-
-    let name = interaction.member.displayName;
-    if(override_id === "DEFAULT") name = "デフォルト";
-
-    const em = new EmbedBuilder()
-      .setTitle(`${name}の声設定を変更しました。`)
-      .addFields(
-        { name: "声の種類(voice)", value: (this.voice_list.find(el => parseInt(el.value, 10) === voice.voice)).name },
-        { name: "声の速度(speed)", value: `${voice.speed}`},
-        { name: "声のピッチ(pitch)", value: `${voice.pitch}`},
-        { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async currentvoice(interaction, override_id = null){
-    let member_id = override_id ?? interaction.member.id;
-    let is_self = true;
-    let name = interaction.member.displayName;
-
-    let voice_target = interaction.options.get('user');
-
-    if(voice_target){
-      is_self = false;
-      member_id = voice_target.value;
-      name = voice_target.member.displayName;
-    }
-
-    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
-
-    let voices = server_file.user_voices;
-
-    let sample_voice_info = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
-
-    let is_default = false;
-    let is_not_exist_server_settings = false;
-
-    if(!(voices[member_id])){
-      // ないならとりあえずデフォルト判定
-      is_default = true;
-
-      // もしサーバー設定もないなら(=1回もVCに入ってないなら)フラグだけ生やしてシステムの設定を持ってくる
-      if(voices["DEFAULT"]) sample_voice_info = voices["DEFAULT"];
-      else is_not_exist_server_settings = true;
-    }else{
-      sample_voice_info = voices[member_id];
-    }
-
-    if(member_id === "DEFAULT") name = "デフォルト";
-
-    const em = new EmbedBuilder()
-      .setTitle(`${name}の声設定`)
-      .addFields(
-        { name: "声の種類(voice)", value: (this.voice_list.find(el => parseInt(el.value, 10) === sample_voice_info.voice)).name },
-        { name: "声の速度(speed)", value: `${sample_voice_info.speed}`},
-        { name: "声のピッチ(pitch)", value: `${sample_voice_info.pitch}`},
-        { name: "声のイントネーション(intonation)", value: `${sample_voice_info.intonation}`},
-      )
-      .addFields(
-        { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
-      );
-
-    if(member_id !== "DEFAULT" && is_default){
-      const n = is_self ? "あなた" : name;
-      if(is_not_exist_server_settings){
-        em.setDescription(`注意: ${n}の声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。`)
-      }else{
-        em.setDescription(`注意: ${n}の声設定はこのサーバーのデフォルト声設定です。サーバーのデフォルト声設定が変更された場合はそれに追従します。`);
-      }
-    }
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async resetconnection(interaction){
-    const guild_id = interaction.guild.id;
-
-    const vc_con = getVoiceConnection(guild_id);
-    if(vc_con) vc_con.destroy();
-
-    const connection = this.connections_map.get(guild_id);
-    if(connection) connection.audio_player.stop();
-    this.connections_map.delete(guild_id);
-
-    this.update_status_text();
-
-    interaction.reply({ content: "どっかーん！" })
-  }
-
-  async dicadd(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const word_from = interaction.options.get("from").value;
-    const word_to = interaction.options.get("to").value;
-
-    for(let d of dict){
-      if(d[0] === word_from){
-        interaction.reply({ content: "既に登録されています！" });
-        return;
-      }
-    }
-
-    dict.push([word_from, word_to, 2]);
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    const em = new EmbedBuilder()
-      .setTitle(`登録しました。`)
-      .addFields(
-        { name: "変換元", value: `${word_from}`},
-        { name: "変換先", value: `${word_to}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async dicdel(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const target = interaction.options.get("target").value;
-
-    let exist = false;
-
-    for(let d of dict){
-      if(d[0] === target){
-        exist = true;
-        break;
-      }
-    }
-
-    if(!exist){
-      await interaction.reply({ content: "ないよ" });
-      return;
-    }
-
-    dict = dict.filter(word => word[0] !== target);
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    await interaction.reply({ content: "削除しました。" });
-  }
-
-  async dicedit(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const word_from = interaction.options.get("from").value;
-    const word_to = interaction.options.get("to").value;
-
-    let exist = false;
-
-    for(let d of dict){
-      if(d[0] === word_from){
-        exist = true;
-        break;
-      }
-    }
-
-    if(!exist){
-      await interaction.reply({ content: "ないよ" });
-      return;
-    }
-
-    dict = dict.map(val => {
-      let result = val;
-      if(val[0] === word_from) result[1] = word_to;
-
-      return result;
-    });
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    const em = new EmbedBuilder()
-      .setTitle(`編集しました。`)
-      .addFields(
-        { name: "変換元", value: `${word_from}`},
-        { name: "変換先", value: `${word_to}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async dicpriority(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let dict = server_file.dict;
-
-    const target = interaction.options.get("target").value;
-    const priority = interaction.options.get("priority").value;
-
-    let exist = false;
-
-    for(let d of dict){
-      if(d[0] === target){
-        exist = true;
-        break;
-      }
-    }
-
-    if(!exist){
-      await interaction.reply({ content: "ないよ" });
-      return;
-    }
-
-    dict = dict.map(val => {
-      let result = val;
-      if(val[0] === target) result[2] = priority;
-
-      return result;
-    });
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
-
-    if(connection) connection.dict = dict;
-
-    const em = new EmbedBuilder()
-      .setTitle(`設定しました。`)
-      .addFields(
-        { name: "単語", value: `${target}`},
-        { name: "優先度", value: `${priority_list[priority]}`},
-      );
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async diclist(interaction){
-    const server_file = this.bot_utils.get_server_file(interaction.guild.id);
-    let dict = server_file.dict;
-
-    let list = "";
-    let is_limit = false;
-
-    for(let p = 0; p < 5; p++){
-      const tmp_dict = dict.filter(word => word[2] === p);
-
-      if((list.length + `**${priority_list[p]}**\n`.length) > 1024){
-        is_limit = true;
-        break;
-      }else{
-        list += `**${priority_list[p]}**\n`;
-
-        for(let d of tmp_dict){
-          const s = `${d[0]} → ${d[1]}\n`;
-          if((s.length + list.length) > 1024){
-            is_limit = true;
-            break;
-          }else{
-            list += s;
-          }
-        }
-      }
-    }
-
-    const em = new EmbedBuilder()
-      .setTitle(`登録されている辞書の一覧です。`)
-      .addFields(
-        { name: "一覧", value: `${list}`},
-      );
-
-    if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
-
-    await interaction.reply({ embeds: [em] });
-  }
-
-  async voicepick(interaction){
-    return this.voicepick_controller.voicepick(interaction, this.setvoice.bind(this));
-  }
-
-  async systemvoicemute(interaction){
-    const connection = this.connections_map.get(interaction.guild.id);
-
-    if(!connection){
-      await interaction.reply("接続がないよ！");
-      return;
-    }
-
-    connection.system_mute_counter++;
-
-    await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
-  }
-
-  async copyvoicesay(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    if(!connection){
-      await interaction.reply({ content: "接続ないよ" });
-      return;
-    }
-
-    let voice_target = interaction.options.get('user').value;
-    let text = interaction.options.get('text').value;
-
-    // add_text_queue が利用している部分だけ満たすObjectを作る
-    let msg_obj = {
-      cleanContent: text,
-      guild:{ id: guild_id },
-      member: { id: voice_target }
-    }
-
-    this.add_text_queue(msg_obj, true);
-
-    await interaction.reply({ content: "まかせて！" });
-  }
-
-  async ponkotsu(interaction){
-    const guild_id = interaction.guild.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-    let is_ponkotsu = !server_file.is_ponkotsu;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
-
-    if(connection) connection.is_ponkotsu = is_ponkotsu;
-
-    const message = is_ponkotsu ? "ポンコツになりました。" : "頭が良くなりました。";
-
-    await interaction.reply({ content: message });
-  }
-
-  async setautojoin(interaction){
-    if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply("管理者になって出直して");
-      return;
-    }
-
-    let voice_channel_id = interaction.options.get('voice_channel').value;
-    let text_channel_id = interaction.options.get('text_channel').value;
-
-    const guild_id = interaction.guild.id;
-
-    const autojoin_list = this.bot_utils.get_autojoin_list();
-
-    if(!autojoin_list[guild_id]){
-      autojoin_list[guild_id] = {};
-    }
-
-    autojoin_list[guild_id][voice_channel_id] = text_channel_id;
-
-    this.bot_utils.write_autojoin_list(autojoin_list);
-    this.setup_autojoin();
-
-    await interaction.reply({ content: `自動接続を設定しました！` });
-  }
-
-  async removeautojoin(interaction){
-    if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply("管理者になって出直して");
-      return;
-    }
-
-    let voice_channel_id = interaction.options.get('voice_channel').value;
-
-    const guild_id = interaction.guild.id;
-
-    const autojoin_list = this.bot_utils.get_autojoin_list();
-
-    if(!autojoin_list[guild_id] || !autojoin_list[guild_id][voice_channel_id]){
-      await interaction.reply('設定がないよ');
-      return;
-    }
-
-    delete autojoin_list[guild_id][voice_channel_id];
-
-    this.bot_utils.write_autojoin_list(autojoin_list);
-    this.setup_autojoin();
-
-    await interaction.reply({ content: `自動接続を設定しました！` });
   }
 }
