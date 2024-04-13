@@ -1,4 +1,6 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ButtonStyle } = require('discord.js');
+const { PaginationWrapper } = require('djs-button-pages');
+const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 
 const app = require('../index.js');
 
@@ -12,39 +14,60 @@ module.exports = {
     const server_file = app.bot_utils.get_server_file(interaction.guild.id);
     let dict = server_file.dict;
 
-    let list = "";
-    let is_limit = false;
+    let list = [];
 
+    // 優先度で分割
     for(let p = 0; p < 5; p++){
       const tmp_dict = dict.filter(word => word[2] === p);
 
-      // limit of discord embed text length
-      if((list.length + `**${app.priority_list[p]}**\n`.length) > 1024){
-        is_limit = true;
-        break;
-      }else{
-        list += `**${app.priority_list[p]}**\n`;
+      if(tmp_dict.length > 0) list.push(`**${app.priority_list[p]}**\n`);
 
-        for(let d of tmp_dict){
-          const s = `${d[0]} → ${d[1]}\n`;
-          if((s.length + list.length) > 1024){
-            is_limit = true;
-            break;
-          }else{
-            list += s;
-          }
-        }
+      for(let d of tmp_dict){
+        const s = `${d[0]} → ${d[1]}\n`;
+        list.push(s);
       }
     }
 
-    const em = new EmbedBuilder()
-      .setTitle(`登録されている辞書の一覧です。`)
-      .addFields(
-        { name: "一覧", value: `${list}`},
-      );
+    const list_texts = [];
+    let list_text = "";
+    let skip_join = false;
 
-    if(is_limit) em.setDescription("表示上限を超えているため省略されています。");
+    // 文字数で分割
+    for(let l of list){
+      if((list_text.length + l.length) > 1024){
+        list_texts.push(list_text);
+        list_text = l;
+        skip_join = true;
+      }else{
+        skip_join = false;
+        list_text += l;
+      }
+    }
 
-    await interaction.reply({ embeds: [em] });
+    if(!skip_join) list_texts.push(list_text);
+
+    let ems = [];
+    let counter = 0;
+
+    for(let l of list_texts){
+      const em = new EmbedBuilder()
+        .setTitle(`登録されている辞書の一覧です。(${counter + 1}/${list_texts.length})`)
+        .addFields(
+          { name: "一覧", value: l }
+        );
+
+      ems.push(em);
+
+      counter++;
+    }
+
+    const buttons = [
+      new PreviousPageButton({custom_id: "prev_page", emoji: "👈", style: ButtonStyle.Secondary }),
+      new NextPageButton({ custom_id: "next_page", emoji: "👉", style: ButtonStyle.Secondary })
+    ];
+
+    const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
+
+    await page.interactionReply(interaction);
   }
 }
