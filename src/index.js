@@ -6,8 +6,7 @@ const {
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client, GatewayIntentBits, ApplicationCommandOptionType,
-  EmbedBuilder, ActivityType
+  Client, GatewayIntentBits, ApplicationCommandOptionType, ActivityType
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -15,7 +14,6 @@ const log4js = require('log4js');
 const VoiceEngines = require('./voice_engines.js');
 const KagomeTokenizer = require('./kagome_tokenizer.js');
 const RemoteReplace = require('./remote_replace.js');
-const ResurrectionSpell = require('./resurrection_spell.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
@@ -27,7 +25,7 @@ const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, DICT_DIR, IS_PONKOTSU, TMP_PREFIX
+  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, IS_PONKOTSU, TMP_PREFIX
 } = require('../config.json');
 
 module.exports = class App{
@@ -71,7 +69,6 @@ module.exports = class App{
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
-
   }
 
   async start(){
@@ -90,6 +87,7 @@ module.exports = class App{
     await this.test_remote_replace();
     this.currentvoice = require('./currentvoice.js');
     this.setvoiceall = require('./setvoiceall.js');
+    this.setvoice = require('./setvoice.js');
     this.setup_discord();
     this.setup_process();
 
@@ -227,23 +225,11 @@ module.exports = class App{
     const command = this.commands[interaction.commandName];
 
     try {
-      let command_name = interaction.commandName;
-
-      switch(command_name){
-        case "setspeed":
-        case "setpitch":
-        case "setintonation":
-          command_name = command_name.replace("set", "");
-          await this.setvoice(interaction, command_name);
-          break;
-        default:
-          // setvoiceは無限に増えるのでここで処理
-          if(/setvoice[0-9]+/.test(interaction.commandName)){
-            await this.setvoice(interaction, 'voice');
-          }else{
-            await command.execute(interaction);
-          }
-          break;
+      // setvoiceは無限に増えるのでここで処理
+      if(/setvoice[0-9]+/.test(interaction.commandName)){
+        await this.setvoice(interaction, 'voice');
+      }else{
+        await command.execute(interaction);
       }
     } catch (error) {
       this.logger.info(error);
@@ -642,12 +628,8 @@ module.exports = class App{
     }
 
 
-    if(!new_s.channel.joinable) {
-      return;
-    }
-    if(!new_s.channel.speakable) {
-      return;
-    }
+    if(!new_s.channel.joinable) return;
+    if(!new_s.channel.speakable) return;
 
     const data = {
       voice_id: new_voice_id,
@@ -663,45 +645,5 @@ module.exports = class App{
     if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
-  }
-
-  async setvoice(interaction, type){
-    const guild_id = interaction.guild.id;
-    const member_id = interaction.member.id;
-
-    const connection = this.connections_map.get(guild_id);
-
-    const server_file = this.bot_utils.get_server_file(guild_id);
-
-    let voices = server_file.user_voices;
-
-    let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
-
-    voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
-
-    voice[type] = interaction.options.get(type).value;
-    voices[member_id] = voice;
-
-    this.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
-
-    if(connection) connection.user_voices = voices;
-
-    let text = "";
-    switch(type){
-      case "voice":
-        text = `声を${this.voice_list.find(el => parseInt(el.value, 10) === interaction.options.get("voice").value).name}に変更しました。`;
-        break;
-      case "speed":
-        text = `声の速度を${interaction.options.get('speed').value}に変更しました。`;
-        break;
-      case "pitch":
-        text = `声のピッチを${interaction.options.get('pitch').value}に変更しました。`;
-        break;
-      case "intonation":
-        text = `声のイントネーションを${interaction.options.get('intonation').value}に変更しました。`;
-        break;
-    }
-
-    await interaction.reply({ content: text });
   }
 }
