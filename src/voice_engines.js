@@ -1,3 +1,5 @@
+const shorthash = require('shorthash-jp');
+
 const {
   VOICE_ENGINES, TMP_DIR, TMP_PREFIX
 } = require('../config.json');
@@ -15,6 +17,7 @@ module.exports = class VoiceEngines{
   #reference_lufs;
 
   #engine_list;
+  #voice_short_ids;
   #speakers;
   #safe_speakers;
   #liblarys;
@@ -114,6 +117,9 @@ module.exports = class VoiceEngines{
     this.#safe_liblarys = this._safe_liblarys();
     this.#credit_urls = this._credit_urls();
     this.#infos = this._engine_infos();
+    this.#voice_short_ids = this._voice_short_ids();
+
+    console.log(this.#voice_short_ids);
 
     this._setup__maps();
   }
@@ -352,6 +358,20 @@ module.exports = class VoiceEngines{
         this.#liblary_engine_map.set(l.speaker_uuid, e);
       }
     }
+  }
+
+  _voice_short_ids(){
+    let result = new Map();
+
+    for(let e of this.#engines.values()){
+      for(let l of e.original_list){
+        for(let v of l.styles){
+          result.set(shorthash.unique(`${e.name}+${l.speaker_uuid}+${v.id}`), parseInt(v.id, 10) + e.id_offset);
+        }
+      }
+    }
+
+    return result;
   }
 
   synthesis(text, filename_base, ext, voice_id, param, pass_volume_controll = false){
