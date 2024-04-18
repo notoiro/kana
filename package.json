@@ -18,6 +18,7 @@
     "emoji-regex": "^10.3.0",
     "fluent-ffmpeg": "^2.1.2",
     "log4js": "^6.9.1",
+    "shorthash-jp": "github:notoiro/node-shorthash",
     "sodium-native": "^4.1.1",
     "wanakana": "^5.3.1"
   },

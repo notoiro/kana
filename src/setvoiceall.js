@@ -14,17 +14,21 @@ module.exports = async (interaction, override_id = null) => {
   let voices = server_file.user_voices;
 
   let voice = interaction.options.get("voiceall").value;
+
   try{
     voice = ResurrectionSpell.decode(voice);
     // もしボイスなければID0にフォールバック
-    if(!(app.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice.voice = 0;
+    if(!(app.voice_list.find(el => el.value === voice.voice))){
+      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！" });
+      return;
+    }
   }catch(e){
     app.logger.debug(e);
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
     return;
   }
 
-  if(!(app.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
+  if(!(app.voice_list.find(el => el.value === voice.voice))){
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
     return;
   }
@@ -41,7 +45,7 @@ module.exports = async (interaction, override_id = null) => {
   const em = new EmbedBuilder()
     .setTitle(`${name}の声設定を変更しました。`)
     .addFields(
-      { name: "声の種類(voice)", value: (app.voice_list.find(el => parseInt(el.value, 10) === voice.voice)).name },
+      { name: "声の種類(voice)", value: (app.voice_list.find(el => el.value === voice.voice)).name },
       { name: "声の速度(speed)", value: `${voice.speed}`},
       { name: "声のピッチ(pitch)", value: `${voice.pitch}`},
       { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},
