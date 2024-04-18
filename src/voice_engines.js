@@ -85,6 +85,11 @@ module.exports = class VoiceEngines{
 
       e.original_list = list;
 
+      // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
+      for(let l of e.original_list){
+        l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
+      }
+
       for(let sp of list){
         e.voice_liblary_list.push(sp.name);
 
