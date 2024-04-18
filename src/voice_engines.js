@@ -83,7 +83,7 @@ module.exports = class VoiceEngines{
 
       const list = await e.api.speakers();
 
-      e.original_list = list;
+      e.original_list = JSON.parse(JSON.stringify(list));
 
       // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
       for(let l of e.original_list){
