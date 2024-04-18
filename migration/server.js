@@ -52,7 +52,8 @@ function migration(f_path){
       let shortid = voice_engines.shortid(id);
       if(shortid) result.voice = shortid;
       else {
-        console.error('id not found');
+        console.error('id not found!!!');
+        console.log(`  id: ${k}\n    from: ${id}\n    to: ${result.voice}`);
         process.exit(1);
       }
       console.log(`  id: ${k}\n    from: ${id}\n    to: ${result.voice}`);
