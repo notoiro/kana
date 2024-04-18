@@ -159,7 +159,7 @@ module.exports = class App{
         description: `声を設定します。(${i + 1}ページ目)`,
         options: [
           {
-            type: ApplicationCommandOptionType.Integer,
+            type: ApplicationCommandOptionType.String,
             name: "voice",
             description: "どの声がいいの？",
             required: true,

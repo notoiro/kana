@@ -1,3 +1,5 @@
+const shorthash = require('shorthash-jp');
+
 const {
   VOICE_ENGINES, TMP_DIR, TMP_PREFIX
 } = require('../config.json');
@@ -15,6 +17,7 @@ module.exports = class VoiceEngines{
   #reference_lufs;
 
   #engine_list;
+  #short_id_map;
   #speakers;
   #safe_speakers;
   #liblarys;
@@ -47,9 +50,9 @@ module.exports = class VoiceEngines{
         server: e.server,
         voice_list: [],
         voice_liblary_list: [],
+        id_to_shortid_map: new Map(),
         original_list: [],
         credit_url: e.credit_url,
-        id_offset: count * 10000,
         queue: [],
         lock: false
       }
@@ -72,13 +75,15 @@ module.exports = class VoiceEngines{
   }
 
   async init_engines(){
+    let shortid_voice = new Map();
+
     for(let e of this.#engines.values()){
       await e.api.check_version();
       e.version = e.api.version;
 
       const list = await e.api.speakers();
 
-      e.original_list = list;
+      e.original_list = JSON.parse(JSON.stringify(list));
 
       // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
       for(let l of e.original_list){
@@ -89,15 +94,23 @@ module.exports = class VoiceEngines{
         e.voice_liblary_list.push(sp.name);
 
         for(let v of sp.styles){
-          let speaker = { name: `${sp.name}(${v.name})`, value: parseInt(v.id, 10) + e.id_offset };
+          let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
+          let voice = v.id;
+
+          let speaker = { name: `${sp.name}(${v.name})`, value: short };
+
           e.voice_list.push(speaker);
+          e.id_to_shortid_map.set(voice, short);
+          shortid_voice.set(short, { engine: e, id: voice });
         }
       }
+
+      this.#short_id_map = shortid_voice;
 
       const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
       try{
-        await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, e.voice_list[0].value - e.id_offset, tmp_voice);
+        await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
 
         this.#logger.debug(`${e.name} OK`);
       }catch(e){
@@ -120,7 +133,7 @@ module.exports = class VoiceEngines{
 
   async generate_reference_volume(){
     const ref = Array.from(this.#engines.values())[0];
-    const id = ref.voice_list[0].value - ref.id_offset;
+    const id = this.#short_id_map.get(ref.voice_list[0].value).id;
 
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
@@ -221,6 +234,10 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(this.#infos));
   }
 
+  get shortids(){
+    return this.#short_id_map.keys();
+  }
+
   get_engine_liblarys(engine_name){
     const e = this.#engines.get(engine_name);
 
@@ -244,7 +261,7 @@ module.exports = class VoiceEngines{
 
     let result = [];
     for(let v of l.styles){
-      let speaker = { name: `${l.name}(${v.name})`, id: `${parseInt(v.id, 10) + e.id_offset}` };
+      let speaker = { name: `${l.name}(${v.name})`, id: e.id_to_shortid_map.get(v.id) };
       result.push(speaker);
     }
 
@@ -354,6 +371,7 @@ module.exports = class VoiceEngines{
     }
   }
 
+  // voice_idはshortidである
   synthesis(text, filename_base, ext, voice_id, param, pass_volume_controll = false){
     const engine = this.#speaker_engine_map.get(voice_id);
     if(engine === undefined) throw "Unknown Engine or Voice";
@@ -393,8 +411,9 @@ module.exports = class VoiceEngines{
     this.queue_start(engine);
   }
 
+  // voice_idはshortidである
   async _synthesis(engine, text, filename_base, ext, voice_id, param, pass_volume_controll = false){
-    const id = voice_id - engine.id_offset;
+    const id = this.#short_id_map.get(voice_id).id;
     const volume = this.#speaker_volume_map.get(voice_id);
 
     try{
