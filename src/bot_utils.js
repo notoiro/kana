@@ -10,14 +10,6 @@ const { shortcut } = require('../shortcuts.json');
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
 const EXTEND_REGEXP = /エクステンド[\(（]([A-Za-z0-9]+)[\)）]/g;
-const DEFAULT_SETTING = {
-  user_voices: {
-    DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
-  },
-  dict: [["Discord", "でぃすこーど", 2], ["さんが退出しました", "さんが射出されました", 2]],
-  is_ponkotsu: !!IS_PONKOTSU
-}
-const SETTING_LISTS = Object.keys(DEFAULT_SETTING);
 
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 const escape_regexp_non_safe = (str) => str.replace(/[.*+\-?^${}|[\]\\]/g, '\\$&');
@@ -31,6 +23,15 @@ module.exports = class BotUtils{
   #voice_list;
   #autojoin_cache;
 
+  #DEFAULT_SETTING = {
+    user_voices: {
+      DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
+    },
+    dict: [["Discord", "でぃすこーど", 2], ["さんが退出しました", "さんが射出されました", 2]],
+    is_ponkotsu: !!IS_PONKOTSU
+  }
+  #SETTING_LISTS;
+
   constructor(logger){
     this.#logger = logger;
     this.#VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
@@ -42,6 +43,11 @@ module.exports = class BotUtils{
   }
 
   init_voicelist(voice_list, voice_liblary_list){
+    // デフォルトのボイスIDはエンジンラッパー提供のボイスリストの0番目
+    // つまりエンジン0のボイス0ってこと
+    this.#DEFAULT_SETTING.user_voices.DEFAULT.voice = voice_list[0].value;
+    this.#SETTING_LISTS = Object.keys(this.#DEFAULT_SETTING);
+
     const list = voice_list.toSorted((a, b) => a.value - b.value);
 
     let add = [];
@@ -100,6 +106,8 @@ module.exports = class BotUtils{
 
     // ずんだもんが引っかかるので先にボイス一覧から参照する
     // 仕様上呪文と名前が被ることはない
+    // 追記: 仕様変更によっていろは48音+濁音が~ぜ+濁音ば~ぼのテーブルで7文字の話者名が今後出た場合は衝突する可能性が出た。
+    // もし衝突した時はケーキ買ってきて盛大にお祝いすることをここに誓う。
     if(SafeRegexpUtils.test(this.#VOICE_REGEXP_NAME, voice_command[1])){
       let result = 1;
       const val = voice_command[1];
@@ -144,15 +152,15 @@ module.exports = class BotUtils{
   }
 
   get_server_file(guild_id){
-    let result = DEFAULT_SETTING;
+    let result = this.#DEFAULT_SETTING;
 
     if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
       try{
         let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
 
-        for(let l of SETTING_LISTS){
+        for(let l of this.#SETTING_LISTS){
           if(json[l] === undefined){
-            json[l] = DEFAULT_SETTING[l];
+            json[l] = this.#DEFAULT_SETTING[l];
             continue;
           }
         }
@@ -162,7 +170,7 @@ module.exports = class BotUtils{
         this.#logger.debug(`loaded server conf: ${JSON.stringify(result, null, "  ")}`);
       }catch(e){
         this.#logger.info(e);
-        result = DEFAULT_SETTING;
+        result = this.#DEFAULT_SETTING;
       }
     }
 
@@ -171,10 +179,10 @@ module.exports = class BotUtils{
 
   write_serverinfo(guild_id, from, update){
     let result = {};
-    for(let l of SETTING_LISTS){
+    for(let l of this.#SETTING_LISTS){
       if(l in update) result[l] = update[l];
       else if(l in from) result[l] = from[l];
-      else result[l] = DEFAULT_SETTING[l];
+      else result[l] = this.#DEFAULT_SETTING[l];
     }
 
     try{

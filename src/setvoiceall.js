@@ -17,7 +17,7 @@ module.exports = async (interaction, override_id = null) => {
   try{
     voice = ResurrectionSpell.decode(voice);
     // もしボイスなければID0にフォールバック
-    if(!(app.voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice.voice = 0;
+    if(!(app.voice_list.find(el => el.value === voice.voice))) voice.voice = app.voice_list[0].value;
   }catch(e){
     app.logger.debug(e);
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
@@ -41,7 +41,7 @@ module.exports = async (interaction, override_id = null) => {
   const em = new EmbedBuilder()
     .setTitle(`${name}の声設定を変更しました。`)
     .addFields(
-      { name: "声の種類(voice)", value: (app.voice_list.find(el => parseInt(el.value, 10) === voice.voice)).name },
+      { name: "声の種類(voice)", value: (app.voice_list.find(el => el.value === voice.voice)).name },
       { name: "声の速度(speed)", value: `${voice.speed}`},
       { name: "声のピッチ(pitch)", value: `${voice.pitch}`},
       { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},

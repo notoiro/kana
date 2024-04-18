@@ -20,7 +20,7 @@ module.exports = async (interaction, override_id = null) => {
 
   let voices = server_file.user_voices;
 
-  let sample_voice_info = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+  let sample_voice_info = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
   let is_default = false;
   let is_not_exist_server_settings = false;
@@ -41,7 +41,7 @@ module.exports = async (interaction, override_id = null) => {
   const em = new EmbedBuilder()
     .setTitle(`${name}の声設定`)
     .addFields(
-      { name: "声の種類(voice)", value: (app.voice_list.find(el => parseInt(el.value, 10) === sample_voice_info.voice)).name },
+      { name: "声の種類(voice)", value: (app.voice_list.find(el => el.value === sample_voice_info.voice)).name },
       { name: "声の速度(speed)", value: `${sample_voice_info.speed}`},
       { name: "声のピッチ(pitch)", value: `${sample_voice_info.pitch}`},
       { name: "声のイントネーション(intonation)", value: `${sample_voice_info.intonation}`},

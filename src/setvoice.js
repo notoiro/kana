@@ -10,7 +10,7 @@ module.exports = async (interaction, type) => {
 
   let voices = server_file.user_voices;
 
-  let voice = { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
   voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 
@@ -24,7 +24,7 @@ module.exports = async (interaction, type) => {
   let text = "";
   switch(type){
     case "voice":
-      text = `声を${app.voice_list.find(el => parseInt(el.value, 10) === interaction.options.get("voice").value).name}に変更しました。`;
+      text = `声を${app.voice_list.find(el => el.value === interaction.options.get("voice").value).name}に変更しました。`;
       break;
     case "speed":
       text = `声の速度を${interaction.options.get('speed').value}に変更しました。`;
