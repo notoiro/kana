@@ -34,7 +34,7 @@ module.exports = class BotUtils{
 
   constructor(logger){
     this.#logger = logger;
-    this.#VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,})[\)）]`, "g");
+    this.#VOICE_REGEXP = new RegExp(`ボイス[\\(（]([${ResurrectionSpell.spell_chars()}]{12,})[\\)）]`, "g");
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
 
     this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
@@ -65,11 +65,11 @@ module.exports = class BotUtils{
 
     this.#voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
       el.name = escape_regexp_non_safe(el.name);
-      el.name = el.name.replace("(", "[\(（]").replace(")", "[\)）]");
+      el.name = el.name.replace("(", "[\\(（]").replace(")", "[\\)）]");
       return el;
     });
 
-    this.#VOICE_REGEXP = new RegExp(`ボイス[\(（]([${ResurrectionSpell.spell_chars()}]{7,}|${this.#voice_list.map(val => val.name).join('|')})[\)）]`, "g");
+    this.#VOICE_REGEXP = new RegExp(`ボイス[\\(（]([${ResurrectionSpell.spell_chars()}]{12,}|${this.#voice_list.map(val => val.name).join('|')})[\\)）]`, "g");
     this.#VOICE_REGEXP_NAME = new RegExp(`^${this.#voice_list.map(val => val.name).join('|')}$`, "g")
   }
 
@@ -108,6 +108,7 @@ module.exports = class BotUtils{
     // 仕様上呪文と名前が被ることはない
     // 追記: 仕様変更によっていろは48音+濁音が~ぜ+濁音ば~ぼのテーブルで7文字の話者名が今後出た場合は衝突する可能性が出た。
     // もし衝突した時はケーキ買ってきて盛大にお祝いすることをここに誓う。
+    // ちなみにずんだもんはだが引っかからないので衝突しない。
     if(SafeRegexpUtils.test(this.#VOICE_REGEXP_NAME, voice_command[1])){
       let result = 1;
       const val = voice_command[1];
@@ -125,7 +126,7 @@ module.exports = class BotUtils{
     }else if(SafeRegexpUtils.test(this.#VOICE_REGEXP_SPELL, voice_command[1])){
       try{
         voice = ResurrectionSpell.decode(voice_command[1]);
-        if(!(this.#voice_list.find(el => parseInt(el.value, 10) === voice.voice))) voice = null;
+        if(!(this.#voice_list.find(el => el.value === voice.voice))) voice = null;
       }catch(e){
         this.#logger.debug(e);
         voice = null;

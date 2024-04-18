@@ -207,7 +207,7 @@ module.exports = class VoicepickController{
               await c.update({ content: body.content, components: [], embeds: [] });
             }
           }
-          call_obj.options.set("voice", { value: parseInt(setting.style, 10) });
+          call_obj.options.set("voice", { value: setting.style });
 
           await setvoice(call_obj, "voice");
         }

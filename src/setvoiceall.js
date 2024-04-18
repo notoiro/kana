@@ -14,17 +14,21 @@ module.exports = async (interaction, override_id = null) => {
   let voices = server_file.user_voices;
 
   let voice = interaction.options.get("voiceall").value;
+
   try{
     voice = ResurrectionSpell.decode(voice);
     // もしボイスなければID0にフォールバック
-    if(!(app.voice_list.find(el => el.value === voice.voice))) voice.voice = app.voice_list[0].value;
+    if(!(app.voice_list.find(el => el.value === voice.voice))){
+      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！" });
+      return;
+    }
   }catch(e){
     app.logger.debug(e);
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
     return;
   }
 
-  if(!(app.voice_list.find(el => parseInt(el.value, 10) === voice.voice))){
+  if(!(app.voice_list.find(el => el.value === voice.voice))){
     await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
     return;
   }

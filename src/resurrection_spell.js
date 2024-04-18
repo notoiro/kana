@@ -1,8 +1,11 @@
 /*
 * 復活の呪文の仕様
-* 元々のふっかつのじゅもんから生成する
+* 復活の呪文は元々カンマ区切りの数値3つだった
+* ボイスIDの破壊的変更によりボイスIDの形式が数値からひらがなになった
+* ボイスID以外は元の仕様通り0-200の数字である
 * 基本的に0−200の値と区切りしか存在しない、下1桁は0の場合が多いことを利用する
-* ボイステーブルは現状50しかないのでそこまでは作る
+* 区切り文字を避けてボイスIDを生成するようにしているので分割は今まで通りの仕様で大丈夫である
+* ちなみにあまりにテーブルが雑なので200以上でやると破綻する（した）
 */
 
 const table = {
@@ -20,7 +23,8 @@ const table = {
   "ざ": 60,    "じ": 70,    "ず": 80,    "ぜ": 90,    "ぞ": 100,
   "だ": 110,   "ぢ": 120,   "づ": 130,   "で": 140,   "ど": 150,
   "ば": 160,   "び": 170,   "ぶ": 180,   "べ": 190,   "ぼ": 200,
-}
+};
+const voice_spell_table = "いろはにほへとちりぬるをわかよたれそつねならむうゐのおくやまけふこえてあさきゆめみしゑひもせすんばびぶべぼがぎぐげござじずぜ";
 
 const split_str = "ぱ";
 
@@ -31,6 +35,12 @@ module.exports = class ResurrectionSpell{
 
     let encoded_values = [];
     for(let val of values){
+      // 0番目はひらがなで構成される内部ID(shortid)なので処理しないでいい
+      if(encoded_values.length === 0){
+        encoded_values.push(val);
+        continue;
+      }
+
       let result_str = "";
       let val_num = parseInt(val, 10);
 
@@ -52,14 +62,20 @@ module.exports = class ResurrectionSpell{
   // こっちは値のバリデーションする
   // ボイスあるかは別でやるけど
   static decode(str){
-    if(str.match(new RegExp(`[^${Object.keys(table).join()}${split_str}]`, "g"))) throw "ふっかつのじゅもんが違います！";
+    if(str.match(new RegExp(`[^${Object.keys(table).join()}${split_str}${voice_spell_table}]`, "g"))) throw "ふっかつのじゅもんが違います！";
 
     let values = str.split(split_str);
 
     if(values.length !== 4) throw "ふっかつのじゅもんが違います！";
+    if(values[0].match(new RegExp(`[^${voice_spell_table}]`, 'g'))) throw "ふっかつのじゅもんが違います！"
 
     let decoded_values = [];
     for(let val of values){
+      if(decoded_values.length === 0){
+        decoded_values.push(val);
+        continue;
+      }
+
       let result = 0;
       let tmp_val = val;
 
@@ -74,21 +90,23 @@ module.exports = class ResurrectionSpell{
       decoded_values.push(result);
     }
 
+    const voice = decoded_values.shift();
+
     for(let val of decoded_values){
       if(val > 200) throw "ふっかつのじゅもんが違います！";
     }
 
     return {
-      voice: decoded_values[0],
-      speed: decoded_values[1],
-      pitch: decoded_values[2],
-      intonation: decoded_values[3],
+      voice,
+      speed: decoded_values[0],
+      pitch: decoded_values[1],
+      intonation: decoded_values[2],
       volume: 100
     }
   }
 
   static spell_chars(){
-    return Object.keys(table).join() + split_str;
+    return Object.keys(table).join() + split_str + voice_spell_table;
   }
 }
 
