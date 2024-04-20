@@ -5,7 +5,9 @@ const {
   SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU
 } = require('../config.json');
 
-const indent = "          ";
+const pkgjson = require("../package.json");
+
+const indent = "      ";
 const fg_default = "\x1b[1;39m";
 const fg_green = "\x1b[38:5:107m";
 const fg_blue = "\x1b[38:5:159m";
@@ -62,12 +64,15 @@ module.exports = (app) => {
 
   console.log(`\n`);
 
-  console.log(`    ${bg_white}  ${fg_green}_  _ ____ _ ____ ____ _  _ ____ _  _    ___ ___ ____  ${reset}`);
-  console.log(`    ${bg_white}  ${fg_green}|  | |  | | |    |___ |  | |  |  \\/      |   |  [__   ${reset}`);
-  console.log(`    ${bg_white}  ${fg_green} \\/  |__| | |___ |___  \\/  |__| _/\\_     |   |  ___]  ${reset}`);
-  console.log(`    ${bg_white}                                                        ${bg_default}`);
+  console.log(`       ${bg_white}  ${fg_green} _  __                   _   _         ${reset}`);
+  console.log(`       ${bg_white}  ${fg_green}| |/ /__ _ _ __   __ _  | |_| |_ ___   ${reset}`);
+  console.log(`       ${bg_white}  ${fg_green}| ' // _\` | '_ \\ / _\` | | __| __/ __|  ${reset}`);
+  console.log(`       ${bg_white}  ${fg_green}| . \\ (_| | | | | (_| | | |_| |_\\__ \\  ${reset}`);
+  console.log(`       ${bg_white}  ${fg_green}|_|\\_\\__,_|_| |_|\\__,_|  \\__|\\__|___/  ${reset}`);
+  console.log(`       ${bg_white}                                         ${bg_default}`);
   console.log("");
 
+  console.log(`${indent}${fg_blue}version:         ${fg_default}  ${pkgjson.version}`);
   branch && console.log(`${indent}${fg_blue}branch:          ${fg_default}  ${branch}`);
   commit && console.log(`${indent}${fg_blue}commit:          ${fg_default}  ${commit}`);
   commit_time && console.log(`${indent}${fg_blue}commit time:     ${fg_default}  ${commit_time}`);

@@ -1,4 +1,4 @@
-# Voicevox TTS Discord
+# Kana-tts
 
 Voicevoxを利用した小規模向けのシンプルなDiscord読み上げボット
 
