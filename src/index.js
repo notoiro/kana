@@ -249,7 +249,7 @@ module.exports = class App{
     const connection = this.connections_map.get(msg.guild.id);
 
     if(!connection) return false;
-    if(!(connection.text === msg.channelId || connection.voice === msg.channelId)) return false;
+    if(!(connection.check_texts.find(val => val === msg.channelId))) return false;
     if(msg.cleanContent.indexOf(PREFIX) === 0) return false;
     return true;
   }
@@ -479,8 +479,11 @@ module.exports = class App{
   async _connect_vc(guild_id, data){
     const guild = await this.client.guilds.fetch(guild_id);
 
+    const texts = data.text_ids;
+    texts.push(data.voice_id);
+
     const connectinfo = {
-      text: data.text_id,
+      check_texts: texts,
       voice: data.voice_id,
       audio_player: null,
       queue: [],
@@ -636,7 +639,7 @@ module.exports = class App{
 
     const data = {
       voice_id: new_voice_id,
-      text_id: autojoin_conf[new_voice_id],
+      text_ids: [autojoin_conf[new_voice_id]],
     }
 
     this._connect_vc(guild_id, data);
