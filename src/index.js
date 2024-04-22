@@ -6,7 +6,7 @@ const {
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client, GatewayIntentBits, ApplicationCommandOptionType, ActivityType
+  Client, GatewayIntentBits, ApplicationCommandOptionType, ActivityType, ChannelType
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -249,7 +249,7 @@ module.exports = class App{
     const connection = this.connections_map.get(msg.guild.id);
 
     if(!connection) return false;
-    if(!(connection.text === msg.channelId || connection.voice === msg.channelId)) return false;
+    if(!(connection.check_texts.find(val => val === msg.channelId))) return false;
     if(msg.cleanContent.indexOf(PREFIX) === 0) return false;
     return true;
   }
@@ -479,8 +479,11 @@ module.exports = class App{
   async _connect_vc(guild_id, data){
     const guild = await this.client.guilds.fetch(guild_id);
 
+    const texts = data.text_ids;
+    texts.push(data.voice_id);
+
     const connectinfo = {
-      text: data.text_id,
+      check_texts: texts,
       voice: data.voice_id,
       audio_player: null,
       queue: [],
@@ -603,7 +606,7 @@ module.exports = class App{
     this.add_system_message(text, guild_id, member.id);
   }
 
-  autojoin_check(old_s, new_s){
+  async autojoin_check(old_s, new_s){
     const guild_id = new_s.guild.id;
 
     // 設定の登録がない場合は抜ける
@@ -630,13 +633,32 @@ module.exports = class App{
       return;
     }
 
-
     if(!new_s.channel.joinable) return;
     if(!new_s.channel.speakable) return;
 
+    const connect_id = autojoin_conf[new_voice_id];
+
+    let connect_channel;
+    try{
+      connect_channel = await new_s.guild.channels.fetch(connect_id);
+    }catch(e){
+      return;
+    }
+
+    let texts = [];
+    if(connect_channel.type === ChannelType.GuildCategory){
+      for(let c of connect_channel.children.valueOf()){
+        let val = c[1];
+
+        if(val.type === ChannelType.GuildText) texts.push(c[0]);
+      }
+    }else{
+      texts.push(connect_id);
+    }
+
     const data = {
       voice_id: new_voice_id,
-      text_id: autojoin_conf[new_voice_id],
+      text_ids: texts,
     }
 
     this._connect_vc(guild_id, data);
