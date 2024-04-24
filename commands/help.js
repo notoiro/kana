@@ -94,8 +94,8 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 :magic_wand:${resolve_command_text(interaction, "dicedit")}
 　 辞書編集。
 
-:magic_wand:${resolve_command_text(interaction, "dicpriority")}
-　 辞書の優先度。
+:magic_wand:${resolve_command_text(interaction, "dicorder")}
+　 辞書の順序。
 
 :magic_wand:${resolve_command_text(interaction, "dicdel")}
 　 辞書から消す。

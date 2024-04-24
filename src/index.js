@@ -29,7 +29,7 @@ const {
 } = require('../config.json');
 
 module.exports = class App{
-  #priority_list = [ "最弱", "よわい", "普通", "つよい", "最強" ];
+  #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
 
   get priority_list(){
     return Array.from(this.#priority_list);
