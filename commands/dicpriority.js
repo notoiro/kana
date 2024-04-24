@@ -16,8 +16,8 @@ module.exports = {
       },
       {
         type: ApplicationCommandOptionType.Integer,
-        name: "priority",
-        description: "優先度",
+        name: "order",
+        description: "順序",
         required: true,
         choices: [
           {
