@@ -4,11 +4,19 @@ module.exports = async (interaction, type) => {
   const guild_id = interaction.guild.id;
   const member_id = interaction.member.id;
 
-  const connection = app.connections_map.get(guild_id);
+  let is_global_uservoice = false;
 
-  const server_file = app.bot_utils.get_server_file(guild_id);
+  const global_voice = app.uservoices_map.get(member_id);
+  if(!!global_voice && global_voice.enabled) is_global_uservoice = true;
 
-  let voices = server_file.user_voices;
+  let server_file, voices;
+
+  if(!is_global_uservoice){
+    server_file = app.bot_utils.get_server_file(guild_id);
+    voices = server_file.user_voices;
+  }else{
+    voices = app.bot_utils.get_uservoices_list();
+  }
 
   let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
 
@@ -17,9 +25,15 @@ module.exports = async (interaction, type) => {
   voice[type] = interaction.options.get(type).value;
   voices[member_id] = voice;
 
-  app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
+  if(!is_global_uservoice){
+    app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
-  if(connection) connection.user_voices = voices;
+    const connection = app.connections_map.get(guild_id);
+    if(connection) connection.user_voices = voices;
+  }else{
+    app.bot_utils.write_uservoices_list(voices);
+    app.setup_uservoice_list();
+  }
 
   let text = "";
   switch(type){
