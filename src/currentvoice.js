@@ -6,6 +6,7 @@ const app = require('../index.js');
 module.exports = async (interaction, override_id = null) => {
   let member_id = override_id ?? interaction.member.id;
   let is_self = true;
+  let is_global_voice = false;
   let name = interaction.member.displayName;
 
   let voice_target = interaction.options.get('user');
@@ -16,6 +17,9 @@ module.exports = async (interaction, override_id = null) => {
     name = voice_target.member.displayName;
   }
 
+  const global_voice = app.uservoices_map.get(member_id);
+  if(!!global_voice && global_voice.enabled) is_global_voice = true;
+
   const server_file = app.bot_utils.get_server_file(interaction.guild.id);
 
   let voices = server_file.user_voices;
@@ -25,7 +29,9 @@ module.exports = async (interaction, override_id = null) => {
   let is_default = false;
   let is_not_exist_server_settings = false;
 
-  if(!(voices[member_id])){
+  if(is_global_voice){
+    sample_voice_info = global_voice;
+  }else if(!(voices[member_id])){
     // ないならとりあえずデフォルト判定
     is_default = true;
 
@@ -50,7 +56,11 @@ module.exports = async (interaction, override_id = null) => {
       { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
     );
 
-  if(member_id !== "DEFAULT" && is_default){
+  if(is_global_voice){
+    const n = is_self ? "あなた" : name;
+
+    em.setDescription(`${n}の声設定はユーザー紐付けの声設定です。`);
+  }else if(member_id !== "DEFAULT" && is_default){
     const n = is_self ? "あなた" : name;
     if(is_not_exist_server_settings){
       em.setDescription(`注意: ${n}の声設定はこのサーバーのデフォルト声設定ですが、サーバーのデフォルト声設定が生成されていないため正確ではない場合があります。`)

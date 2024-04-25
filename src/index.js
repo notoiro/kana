@@ -53,6 +53,7 @@ module.exports = class App{
 
     this.connections_map = new Map();
     this.autojoin_map = new Map();
+    this.uservoices_map = new Map();
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.commands = {};
@@ -74,6 +75,7 @@ module.exports = class App{
   async start(){
     this.setup_config();
     this.setup_autojoin();
+    this.setup_uservoice_list();
     await this.voice_engines.init_engines();
 
     this.voice_list = this.voice_engines.speakers;
@@ -108,8 +110,12 @@ module.exports = class App{
 
   setup_autojoin(){
     const list = this.bot_utils.get_autojoin_list();
-
     for(let l in list) this.autojoin_map.set(l, list[l]);
+  }
+
+  setup_uservoice_list(){
+    const list = this.bot_utils.get_uservoices_list();
+    for(let l in list) this.uservoices_map.set(l, list[l]);
   }
 
   async test_opus_convert(){
@@ -365,7 +371,12 @@ module.exports = class App{
 
     // connectionあるならデフォルトボイスはある
     // もしvoice_overrideがあるならそれを優先する
-    let voice = q.voice_override ?? (connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"]);
+    let setting_voice;
+    const global_voice = this.uservoices_map.get(q.id);
+    if(!!global_voice && global_voice.enabled) setting_voice = global_voice;
+    else setting_voice = (connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"]);
+
+    let voice = q.voice_override ?? setting_voice;
     this.logger.debug(`play voice: ${JSON.stringify(voice)}`);
 
     const text_data = Utils.get_text_and_speed(q.str);
