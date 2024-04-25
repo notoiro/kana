@@ -4,28 +4,28 @@ const app = require('../index.js');
 
 module.exports = {
   data: {
-    name: "dicpriority",
-    description: "辞書の優先度。",
+    name: "dicorder",
+    description: "辞書の置換順序。",
     options: [
       {
         type: ApplicationCommandOptionType.String,
         name: "target",
-        description: "優先度の設定をする単語",
+        description: "順序の設定をする単語",
         required: true,
         min_length: 1
       },
       {
         type: ApplicationCommandOptionType.Integer,
-        name: "priority",
-        description: "優先度",
+        name: "order",
+        description: "順序",
         required: true,
         choices: [
           {
-            name: "最強(一番上書きする)",
+            name: "最後(どのユーザー辞書にも置換されない)",
             value: 4
           },
           {
-            name: "つよい",
+            name: "普通より後",
             value: 3
           },
           {
@@ -33,11 +33,11 @@ module.exports = {
             value: 2
           },
           {
-            name: "よわい",
+            name: "普通より前",
             value: 1
           },
           {
-            name: "最弱(すべてに上書きされる)",
+            name: "最初（これ以降のユーザー辞書に置換される）",
             value: 0
           }
         ]
@@ -85,7 +85,7 @@ module.exports = {
       .setTitle(`設定しました。`)
       .addFields(
         { name: "単語", value: `${target}`},
-        { name: "優先度", value: `${app.priority_list[priority]}`},
+        { name: "順序", value: `${app.priority_list[priority]}`},
       );
 
     await interaction.reply({ embeds: [em] });
