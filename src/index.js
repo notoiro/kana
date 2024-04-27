@@ -372,9 +372,10 @@ module.exports = class App{
     // connectionあるならデフォルトボイスはある
     // もしvoice_overrideがあるならそれを優先する
     let setting_voice;
+    const user_voice = (connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"]);
     const global_voice = this.uservoices_map.get(q.id);
-    if(!!global_voice && global_voice.enabled) setting_voice = global_voice;
-    else setting_voice = (connection.user_voices[q.id] ?? connection.user_voices["DEFAULT"]);
+    if(!!global_voice && global_voice.enabled && !!!user_voice.is_force_server) setting_voice = global_voice;
+    else setting_voice = user_voice;
 
     let voice = q.voice_override ?? setting_voice;
     this.logger.debug(`play voice: ${JSON.stringify(voice)}`);

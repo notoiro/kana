@@ -4,22 +4,40 @@ module.exports = async (interaction, type) => {
   const guild_id = interaction.guild.id;
   const member_id = interaction.member.id;
 
-  const connection = app.connections_map.get(guild_id);
+  let is_global_uservoice = false;
+
+  const global_voice = app.uservoices_map.get(member_id);
+  if(!!global_voice && global_voice.enabled) is_global_uservoice = true;
 
   const server_file = app.bot_utils.get_server_file(guild_id);
 
-  let voices = server_file.user_voices;
+  if(!!server_file.user_voices[member_id]?.is_force_server) is_global_uservoice = false;
 
-  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+  let voices;
+  if(!is_global_uservoice || type === 'is_force_server'){
+    voices = server_file.user_voices;
+  }else{
+    voices = app.bot_utils.get_uservoices_list();
+  }
+
+  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false };
 
   voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 
-  voice[type] = interaction.options.get(type).value;
+  if(type !== 'is_force_server') voice[type] = interaction.options.get(type).value;
+  else voice[type] = !voice[type];
+
   voices[member_id] = voice;
 
-  app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
+  if(!is_global_uservoice || type === 'is_force_server'){
+    app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
-  if(connection) connection.user_voices = voices;
+    const connection = app.connections_map.get(guild_id);
+    if(connection) connection.user_voices = voices;
+  }else{
+    app.bot_utils.write_uservoices_list(voices);
+    app.setup_uservoice_list();
+  }
 
   let text = "";
   switch(type){
@@ -34,6 +52,9 @@ module.exports = async (interaction, type) => {
       break;
     case "intonation":
       text = `声のイントネーションを${interaction.options.get('intonation').value}に変更しました。`;
+      break;
+    case "is_force_server":
+      text = `声設定は${!!voice[type] ? "サーバー設定を優先します" : "設定によって切り替わります"}。`;
       break;
   }
 
