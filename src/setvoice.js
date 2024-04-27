@@ -9,23 +9,27 @@ module.exports = async (interaction, type) => {
   const global_voice = app.uservoices_map.get(member_id);
   if(!!global_voice && global_voice.enabled) is_global_uservoice = true;
 
-  let server_file, voices;
+  const server_file = app.bot_utils.get_server_file(guild_id);
 
-  if(!is_global_uservoice){
-    server_file = app.bot_utils.get_server_file(guild_id);
+  if(!!server_file.user_voices[member_id]?.is_force_server) is_global_uservoice = false;
+
+  let voices;
+  if(!is_global_uservoice || type === 'is_force_server'){
     voices = server_file.user_voices;
   }else{
     voices = app.bot_utils.get_uservoices_list();
   }
 
-  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false };
 
   voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 
-  voice[type] = interaction.options.get(type).value;
+  if(type !== 'is_force_server') voice[type] = interaction.options.get(type).value;
+  else voice[type] = !voice[type];
+
   voices[member_id] = voice;
 
-  if(!is_global_uservoice){
+  if(!is_global_uservoice || type === 'is_force_server'){
     app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
     const connection = app.connections_map.get(guild_id);
@@ -48,6 +52,9 @@ module.exports = async (interaction, type) => {
       break;
     case "intonation":
       text = `声のイントネーションを${interaction.options.get('intonation').value}に変更しました。`;
+      break;
+    case "is_force_server":
+      text = `声設定は${voice[type] ? "サーバー設定を優先します" : "設定によって切り替わります"}。`;
       break;
   }
 
