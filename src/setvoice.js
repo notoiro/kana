@@ -54,7 +54,7 @@ module.exports = async (interaction, type) => {
       text = `声のイントネーションを${interaction.options.get('intonation').value}に変更しました。`;
       break;
     case "is_force_server":
-      text = `声設定は${voice[type] ? "サーバー設定を優先します" : "設定によって切り替わります"}。`;
+      text = `声設定は${!!voice[type] ? "サーバー設定を優先します" : "設定によって切り替わります"}。`;
       break;
   }
 
