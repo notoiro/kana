@@ -24,7 +24,9 @@ module.exports = async (interaction, override_id = null) => {
 
   let voices = server_file.user_voices;
 
-  let sample_voice_info = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100 };
+  let sample_voice_info = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false };
+
+  if(!!voices[member_id]?.is_force_server) is_global_voice = false;
 
   let is_default = false;
   let is_not_exist_server_settings = false;
@@ -51,10 +53,15 @@ module.exports = async (interaction, override_id = null) => {
       { name: "声の速度(speed)", value: `${sample_voice_info.speed}`},
       { name: "声のピッチ(pitch)", value: `${sample_voice_info.pitch}`},
       { name: "声のイントネーション(intonation)", value: `${sample_voice_info.intonation}`},
-    )
-    .addFields(
-      { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
-    );
+  )
+
+  if(!is_global_voice && !is_default){
+    em.addFields({ name: "サーバー設定を優先", value: !!sample_voice_info.is_force_server ? "有効": "無効"  });
+  }
+
+  em.addFields(
+    { name: "ふっかつのじゅもん", value: ResurrectionSpell.encode(`${sample_voice_info.voice},${sample_voice_info.speed},${sample_voice_info.pitch},${sample_voice_info.intonation}`)},
+  );
 
   if(is_global_voice){
     const n = is_self ? "あなた" : name;
