@@ -54,7 +54,7 @@ module.exports = {
     let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
-    const priority = interaction.options.get("priority").value;
+    const order = interaction.options.get("order").value;
 
     let exist = false;
 
@@ -72,7 +72,7 @@ module.exports = {
 
     dict = dict.map(val => {
       let result = val;
-      if(val[0] === target) result[2] = priority;
+      if(val[0] === target) result[2] = order;
 
       return result;
     });
@@ -85,7 +85,7 @@ module.exports = {
       .setTitle(`設定しました。`)
       .addFields(
         { name: "単語", value: `${target}`},
-        { name: "順序", value: `${app.priority_list[priority]}`},
+        { name: "順序", value: `${app.priority_list[order]}`},
       );
 
     await interaction.reply({ embeds: [em] });
