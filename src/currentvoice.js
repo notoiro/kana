@@ -24,7 +24,7 @@ module.exports = async (interaction, override_id = null) => {
 
   let voices = server_file.user_voices;
 
-  let sample_voice_info = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false };
+  let sample_voice_info = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false, generate_ban: false };
 
   if(!!voices[member_id]?.is_force_server) is_global_voice = false;
 

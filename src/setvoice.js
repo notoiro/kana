@@ -20,7 +20,7 @@ module.exports = async (interaction, type) => {
     voices = app.bot_utils.get_uservoices_list();
   }
 
-  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false };
+  let voice = { voice: app.voice_list[0].value, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false, generate_ban: false };
 
   voice = voices[member_id] ?? ({...(voices["DEFAULT"])} ?? voice);
 

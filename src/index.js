@@ -297,6 +297,9 @@ module.exports = class App{
     let connection = this.connections_map.get(msg.guild.id);
     if(!connection) return;
 
+    const user_voice = connection.user_voices[msg.member.id] ?? connection.user_voices["DEFAULT"];
+    if(!!user_voice.generate_ban) return;
+
     this.logger.debug(`content(from): `);
     this.logger.debug(msg);
 
