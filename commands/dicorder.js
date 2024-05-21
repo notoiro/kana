@@ -1,8 +1,9 @@
 const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
 
 const app = require('../index.js');
+const { silentify, reply } = require('../src/silentify.js');
 
-module.exports = {
+module.exports = silentify({
   data: {
     name: "dicorder",
     description: "辞書の置換順序。",
@@ -66,7 +67,7 @@ module.exports = {
     }
 
     if(!exist){
-      await interaction.reply({ content: "ないよ" });
+      await reply(interaction, { content: "ないよ" });
       return;
     }
 
@@ -88,7 +89,6 @@ module.exports = {
         { name: "順序", value: `${app.priority_list[order]}`},
       );
 
-    await interaction.reply({ embeds: [em] });
+    await reply(interaction, { embeds: [em] });
   }
-}
-
+})

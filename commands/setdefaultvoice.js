@@ -18,7 +18,7 @@ module.exports = {
 
   async execute(interaction){
     if(!(interaction.member.permissions.has('Administrator'))){
-      await interaction.reply({ content: "権限がないよ！" });
+      await interaction.reply({ content: "権限がないよ！", ephemeral: true });
       return;
     }
     return app.setvoiceall(interaction, "DEFAULT");

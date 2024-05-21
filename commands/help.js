@@ -3,6 +3,7 @@ const { PaginationWrapper } = require('djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const pkgjson = require("../package.json");
 const { PREFIX } = require('../config.json');
+const { silentify } = require('../src/silentify.js');
 
 const cyan = "\x1b[1;36m";
 const green = "\x1b[1;32m";
@@ -35,7 +36,7 @@ const resolve_multi_command_text = (interaction, regex, fallback_name) => {
   return result;
 }
 
-module.exports = {
+module.exports = silentify({
   data: {
     name: "help",
     description: "HELP!"
@@ -179,6 +180,8 @@ ${bold}${green}各音声ライブラリの利用規約に従って使ってね�
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
 
-    await page.interactionReply(interaction);
+    let ep = !!interaction.options.get("silent")?.value;
+
+    await page.interactionReply(interaction, { ephemeral: ep });
   },
-}
+})
