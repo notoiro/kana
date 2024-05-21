@@ -3,12 +3,13 @@ const { EmbedBuilder } = require('discord.js');
 
 const { IS_PONKOTSU } = require('../config.json');
 const app = require('../index.js');
+const { silentify, reply } = require('../src/silentify.js');
 
 const ans = (flag, true_text, false_text) => {
   return flag ? true_text:false_text;
 };
 
-module.exports = {
+module.exports = silentify({
   data: {
     name: "info",
     description: "このBotの設定とサーバー固有の設定について。"
@@ -64,6 +65,6 @@ ${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "�
         }
       )
 
-    await interaction.reply({ embeds: [em] });
+    await reply(interaction, { embeds: [em] });
   }
-}
+})

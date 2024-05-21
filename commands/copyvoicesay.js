@@ -29,7 +29,7 @@ module.exports = {
     const connection = app.connections_map.get(guild_id);
 
     if(!connection){
-      await interaction.reply({ content: "接続ないよ" });
+      await interaction.reply({ content: "接続ないよ", ephemeral: true });
       return;
     }
 
@@ -45,6 +45,6 @@ module.exports = {
 
     app.add_text_queue(msg_obj, true);
 
-    await interaction.reply({ content: "まかせて！" });
+    await interaction.reply({ content: "まかせて！", ephemeral: true });
   }
 }

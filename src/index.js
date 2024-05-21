@@ -240,7 +240,7 @@ module.exports = class App{
     } catch (error) {
       this.logger.info(error);
       try{
-        await interaction.reply({ content: 'そんなコマンドないよ。' });
+        await interaction.reply({ content: 'そんなコマンドないよ。', ephemeral: true });
       }catch(e){
         // 元のインタラクションないのは知らない…
       }
