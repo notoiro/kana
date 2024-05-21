@@ -25,7 +25,7 @@ module.exports = {
 
   async execute(interaction){
     if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply("管理者になって出直して");
+      interaction.reply({ content: "管理者になって出直して", ephemeral: true });
       return;
     }
 
@@ -45,6 +45,6 @@ module.exports = {
     app.bot_utils.write_autojoin_list(autojoin_list);
     app.setup_autojoin();
 
-    await interaction.reply({ content: `自動接続を設定しました！` });
+    await interaction.reply({ content: `自動接続を設定しました！`, ephemeral: true });
   }
 }

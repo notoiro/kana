@@ -5,10 +5,11 @@ const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/preset
 const { credit_replaces } = require('../credit_replaces.json');
 
 const app = require('../index.js');
+const { silentify } = require('../src/silentify.js');
 
 const VOICE_SPLIT_COUNT = 30;
 
-module.exports = {
+module.exports = silentify({
   data: {
     name: "credit",
     description: "このBotで利用可能な音声ライブラリのクレジット表記を生成します。"
@@ -48,6 +49,9 @@ module.exports = {
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
 
-    await page.interactionReply(interaction);
+
+    let ep = !!interaction.options.get("silent")?.value;
+
+    await page.interactionReply(interaction, { ephemeral: ep });
   }
-}
+})
