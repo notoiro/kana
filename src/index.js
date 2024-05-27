@@ -610,9 +610,9 @@ module.exports = class App{
 
     let text = "にゃーん";
     if(is_join){
-      text = `${member.displayName}さんが入室しました`;
+      text = `${this.get_username(guild_id, member.id, member)}さんが入室しました`;
     }else if(is_leave){
-      text = `${member.displayName}さんが退出しました`;
+      text = `${this.get_username(guild_id, member.id, member)}さんが退出しました`;
     }
 
     this.add_system_message(text, guild_id, member.id);
@@ -682,5 +682,17 @@ module.exports = class App{
     if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
+  }
+
+  get_username(guild_id, user_id, member){
+    const voice = this.uservoices_map.get(user_id);
+    if(!(!!voice && !!voice.name_dict && !!voice.name_dict[guild_id])) return member.displayName;
+
+    let name = voice.name_dict[guild_id];
+
+    if(name === "NICK") return member.displayName;
+    else if(name === "USERNAME") return member.user.displayName;
+
+    return voice.name_dict[guild_id];
   }
 }
