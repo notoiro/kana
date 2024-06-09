@@ -22,8 +22,20 @@ module.exports = class VolumeController{
   }
 
   static get_loud(path){
+    // NOTE:
+    // 仕様上Promise内でawaitは使うべきでなく、Promise内でthrowされた場合はrejectではなくunhandledRejectionになる。
+    // 修正としてはasyncを使わないことだが、本実装においてはasyncを使わない場合あまりに汚い実装になるため、
+    // 気休めの回避策として手動でcatchしてrejectにいれてやることにする。
+    // おそらく手動でcatchしてrejectした場合にはreject扱いになってくれる気がするので…
+    // See https://tyru.hatenablog.com/entry/2018/08/04/220530
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-        const sample = await VolumeController.get_silenceremove_mp3(path, `${path}.mp3`);
+        let sample;
+        try{
+          sample = await VolumeController.get_silenceremove_mp3(path, `${path}.mp3`);
+        }catch(e){
+          reject(e);
+        }
         const options = [
           '-vn',
           '-threads', '1',
@@ -44,8 +56,16 @@ module.exports = class VolumeController{
   }
 
   static diff_loud(path, lufs_settings){
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
-        const sample = await VolumeController.get_silenceremove_mp3(path, `${path}.mp3`);
+        let sample;
+
+        try{
+          sample = await VolumeController.get_silenceremove_mp3(path, `${path}.mp3`);
+        }catch(e){
+          reject(e);
+        }
+
         const options = [
           '-vn',
           '-threads', '1',
@@ -66,7 +86,7 @@ module.exports = class VolumeController{
   }
 
   static set_loud(path, out_path, lufs_settings, thresh, offset){
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const options = [
           '-vn',
           '-threads', '2',
