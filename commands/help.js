@@ -3,6 +3,7 @@ const { PaginationWrapper } = require('djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const pkgjson = require("../package.json");
 const { PREFIX } = require('../config.json');
+const { silentify } = require('../src/silentify.js');
 
 const cyan = "\x1b[1;36m";
 const green = "\x1b[1;32m";
@@ -20,22 +21,7 @@ const resolve_command_text = (interaction, name) => {
   return result;
 }
 
-const resolve_multi_command_text = (interaction, regex, fallback_name) => {
-  let result = fallback_name;
-
-  const manager = interaction.client.application.commands;
-  const commands = manager.cache.filter((val) => val.name.match(regex));
-
-  if(commands){
-    let result_arr = [];
-    commands.each((c) => result_arr.push(`</${c.name}:${c.id}>`))
-    result = result_arr.join(',');
-  }
-
-  return result;
-}
-
-module.exports = {
+module.exports = silentify({
   data: {
     name: "help",
     description: "HELP!"
@@ -53,6 +39,9 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 :magic_wand:${resolve_command_text(interaction, "connect")}
 　 ボイスチャットに接続。
 
+:magic_wand:${resolve_command_text(interaction, "catconnect")}
+　 カテゴリを指定して接続。
+
 :magic_wand:${resolve_command_text(interaction, "disconnect")}
 　 ボイスチャットから切断。
           `,
@@ -66,8 +55,8 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 :magic_wand:${resolve_command_text(interaction, "currentvoice")}
 　 現在の声の設定を表示。
 
-:magic_wand:${resolve_multi_command_text(interaction, /setvoice[0-9]+/,"setvoice")}
-　 声の種類を設定。Discordの制限で25種類ごとに分裂してる。
+:magic_wand:${resolve_command_text(interaction, "setvoice")}
+　 声の種類を設定。
 
 :magic_wand:${resolve_command_text(interaction, "setspeed")}
 　 声の速度を設定。(0-200)
@@ -78,8 +67,20 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 :magic_wand:${resolve_command_text(interaction, "setintonation")}
 　 声のイントネーションを設定。(0-200)
 
+:magic_wand:${resolve_command_text(interaction, "setforceserver")}
+　 サーバー設定をグローバル設定より優先するかの設定。(トグル)
+
 :magic_wand:${resolve_command_text(interaction, "setvoiceall")}
 　 声の一括設定。
+
+:magic_wand:${resolve_command_text(interaction, "setglobalvoice")}
+　 ユーザー紐づけの声の一括設定。
+
+:magic_wand:${resolve_command_text(interaction, "switchvoice")}
+　 ユーザー紐づけ設定の有効/無効。(トグル)
+
+:magic_wand:${resolve_command_text(interaction, "voicelist")}
+　 利用できる声の種類の一覧を表示。
           `,
         },
       ),
@@ -110,6 +111,9 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           name: "変な機能",
           value: `
 
+:magic_wand:${resolve_command_text(interaction, "setusernamedict")}
+　 自分の名前の読み方を設定。
+
 :magic_wand:${resolve_command_text(interaction, "copyvoicesay")}
 　 人の声をパクって読ませる。
 
@@ -129,6 +133,12 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 
 :magic_wand:${resolve_command_text(interaction, "setdefaultvoice")}
 　 デフォルトの声の一括設定（管理者のみ）
+
+:magic_wand:${resolve_command_text(interaction, "setautojoin")}
+　 自動接続を設定（管理者のみ）
+
+:magic_wand:${resolve_command_text(interaction, "removeautojoin")}
+　 自動接続を解除（管理者のみ）
           `,
         },
       ),
@@ -179,6 +189,8 @@ ${bold}${green}各音声ライブラリの利用規約に従って使ってね�
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
 
-    await page.interactionReply(interaction);
+    let ep = !!interaction.options.get("silent")?.value;
+
+    await page.interactionReply(interaction, { ephemeral: ep });
   },
-}
+})

@@ -10,12 +10,12 @@ module.exports = {
     const connection = app.connections_map.get(interaction.guild.id);
 
     if(!connection){
-      await interaction.reply("接続がないよ！");
+      await interaction.reply({ content: "接続がないよ！", ephemeral: true });
       return;
     }
 
     connection.system_mute_counter++;
 
-    await interaction.reply(`${connection.system_mute_counter}回システムボイスをミュートするよ`);
+    await interaction.reply({ content: `${connection.system_mute_counter}回システムボイスをミュートするよ`, ephemeral: true });
   }
 }

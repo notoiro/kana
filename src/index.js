@@ -6,7 +6,7 @@ const {
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client, GatewayIntentBits, ApplicationCommandOptionType, ActivityType, ChannelType
+  Client, GatewayIntentBits, ActivityType, ChannelType
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -20,8 +20,6 @@ const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
-// Discordで選択肢作ると25個が限界
-const MAXCHOICE = 25;
 const SKIP_PREFIX = "s";
 
 const {
@@ -154,35 +152,10 @@ module.exports = class App{
       this.commands[command.data.name] = command;
     }
 
-    const setvoice_commands = [];
-
-    for(let i = 0; i < Math.ceil(this.voice_list.length/MAXCHOICE); i++){
-      const start = i * MAXCHOICE;
-      const end = (i + 1) * MAXCHOICE;
-
-      const setvoice_command = {
-        name: `setvoice${i + 1}`,
-        description: `声を設定します。(${i + 1}ページ目)`,
-        options: [
-          {
-            type: ApplicationCommandOptionType.String,
-            name: "voice",
-            description: "どの声がいいの？",
-            required: true,
-            choices: this.voice_list.slice(start, end)
-          }
-        ]
-      };
-
-      setvoice_commands.push(setvoice_command);
-    }
-
     this.client.on('ready', async () => {
       // コマンド登録
       let data = [];
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
-
-      data = data.concat(setvoice_commands);
 
       await this.client.application.commands.set(data);
 
@@ -231,16 +204,11 @@ module.exports = class App{
     const command = this.commands[interaction.commandName];
 
     try {
-      // setvoiceは無限に増えるのでここで処理
-      if(/setvoice[0-9]+/.test(interaction.commandName)){
-        await this.setvoice(interaction, 'voice');
-      }else{
-        await command.execute(interaction);
-      }
+      await command.execute(interaction);
     } catch (error) {
       this.logger.info(error);
       try{
-        await interaction.reply({ content: 'そんなコマンドないよ。' });
+        await interaction.reply({ content: 'そんなコマンドないよ。', ephemeral: true });
       }catch(e){
         // 元のインタラクションないのは知らない…
       }
@@ -613,9 +581,9 @@ module.exports = class App{
 
     let text = "にゃーん";
     if(is_join){
-      text = `${member.displayName}さんが入室しました`;
+      text = `${this.get_username(guild_id, member.id, member)}さんが入室しました`;
     }else if(is_leave){
-      text = `${member.displayName}さんが退出しました`;
+      text = `${this.get_username(guild_id, member.id, member)}さんが退出しました`;
     }
 
     this.add_system_message(text, guild_id, member.id);
@@ -685,5 +653,17 @@ module.exports = class App{
     if(!connection || !connection.is_play) return;
 
     connection.audio_player.stop(true);
+  }
+
+  get_username(guild_id, user_id, member){
+    const voice = this.uservoices_map.get(user_id);
+    if(!(!!voice && !!voice.name_dict && !!voice.name_dict[guild_id])) return member.displayName;
+
+    let name = voice.name_dict[guild_id];
+
+    if(name === "NICK") return member.displayName;
+    else if(name === "USERNAME") return member.user.displayName;
+
+    return voice.name_dict[guild_id];
   }
 }

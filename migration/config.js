@@ -24,13 +24,16 @@ function migration(f_path){
   let new_json = {};
 
   for(let l of lists){
-    if(json[l] === "VOICEVOX_ENGINE"){
+    if(l === "VOICE_ENGINES" && json[l] === undefined){
+      if(json["VOICEVOX_ENGINE"] === undefined) console.error("NO VOICEVOX HOST INFO");
+
       new_json["VOICE_ENGINES"] = {
         name: "VOICEVOX",
         type: "VOICEVOX",
-        server: json[l],
+        server: json["VOICEVOX_ENGINE"],
         credit_url: "https://voicevox.hiroshiba.jp"
       };
+
       continue;
     }
     if(json[l] === undefined){

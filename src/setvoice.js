@@ -58,5 +58,5 @@ module.exports = async (interaction, type) => {
       break;
   }
 
-  await interaction.reply({ content: text });
+  await interaction.reply({ content: text, ephemeral: true });
 }

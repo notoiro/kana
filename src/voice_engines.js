@@ -41,7 +41,6 @@ module.exports = class VoiceEngines{
   }
 
   load_engines(){
-    let count = 0;
     for(let e of VOICE_ENGINES){
       const engine_obj = {
         name: e.name,
@@ -69,8 +68,6 @@ module.exports = class VoiceEngines{
       this.#logger.debug(JSON.stringify(engine_obj, null, "  "));
 
       this.#engines.set(engine_obj.name, engine_obj);
-
-      count++;
     }
   }
 

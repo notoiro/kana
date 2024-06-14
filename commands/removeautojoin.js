@@ -19,7 +19,7 @@ module.exports = {
 
   async execute(interaction){
     if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply("管理者になって出直して");
+      interaction.reply({ content: "管理者になって出直して", ephemeral: true });
       return;
     }
 
@@ -30,7 +30,7 @@ module.exports = {
     const autojoin_list = app.bot_utils.get_autojoin_list();
 
     if(!autojoin_list[guild_id] || !autojoin_list[guild_id][voice_channel_id]){
-      await interaction.reply('設定がないよ');
+      await interaction.reply({ content:'設定がないよ', ephemeral: true });
       return;
     }
 
@@ -39,6 +39,6 @@ module.exports = {
     app.bot_utils.write_autojoin_list(autojoin_list);
     app.setup_autojoin();
 
-    await interaction.reply({ content: `自動接続を設定しました！` });
+    await interaction.reply({ content: `自動接続を設定しました！`, ephemeral: true });
   }
 }

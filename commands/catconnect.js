@@ -1,8 +1,9 @@
 const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
 
 const app = require('../index.js');
+const { silentify, reply } = require('../src/silentify.js');
 
-module.exports = {
+module.exports = silentify({
   data: {
     name: "catconnect",
     description: "カテゴリに接続します。",
@@ -23,16 +24,16 @@ module.exports = {
     const member_vc = member.voice.channel;
 
     if(!member_vc){
-      await interaction.reply({ content: "接続先のVCが見つかりません。" });
+      await interaction.reply({ content: "接続先のVCが見つかりません。", ephemeral: true });
       return;
     }
 
     if(!member_vc.joinable) {
-      await interaction.reply({ content: "VCに接続できません。" });
+      await interaction.reply({ content: "VCに接続できません。", ephemeral: true });
       return;
     }
     if(!member_vc.speakable) {
-      await interaction.reply({ content: "VCで音声を再生する権限がありません。" });
+      await interaction.reply({ content: "VCで音声を再生する権限がありません。", ephemeral: true });
       return;
     }
 
@@ -41,7 +42,7 @@ module.exports = {
     const current_connection = app.connections_map.get(guild_id);
 
     if(current_connection){
-      await interaction.reply({ content: "接続済みです。" });
+      await interaction.reply({ content: "接続済みです。", ephemeral: true });
       return;
     }
 
@@ -63,6 +64,6 @@ module.exports = {
 
     await app._connect_vc(guild_id, data);
 
-    await interaction.reply({ content: '接続しました。' });
+    await reply(interaction, { content: '接続しました。' });
   }
-}
+})

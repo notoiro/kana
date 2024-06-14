@@ -7,7 +7,7 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
   const guild_id = interaction.guild.id;
   const member_id = override_id ?? interaction.member.id;
 
-  let server_file, voices, is_enabled;
+  let server_file, voices, is_enabled, name_dict;
   if(!is_global_uservoice){
     server_file = app.bot_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
@@ -16,8 +16,14 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
 
     if(!voices[member_id]){
       is_enabled = false;
+      name_dict = {};
     }else{
       is_enabled = voices[member_id].enabled;
+
+      if(!voices[member_id].name_dict){
+        voices[member_id].name_dict = {};
+      }
+      name_dict = voices[member_id].name_dict;
     }
   }
 
@@ -27,17 +33,17 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
     voice = ResurrectionSpell.decode(voice);
     // もしボイスなければID0にフォールバック
     if(!(app.voice_list.find(el => el.value === voice.voice))){
-      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！" });
+      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！", ephemeral: true });
       return;
     }
   }catch(e){
     app.logger.debug(e);
-    await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
+    await interaction.reply({ content: "ふっかつのじゅもんが違います！", ephemeral: true });
     return;
   }
 
   if(!(app.voice_list.find(el => el.value === voice.voice))){
-    await interaction.reply({ content: "ふっかつのじゅもんが違います！" });
+    await interaction.reply({ content: "ふっかつのじゅもんが違います！", ephemeral: true });
     return;
   }
 
@@ -50,6 +56,7 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
     if(connection) connection.user_voices = voices;
   }else{
     voices[member_id].enabled = is_enabled;
+    voices[member_id].name_dict = name_dict;
 
     app.bot_utils.write_uservoices_list(voices);
     app.setup_uservoice_list();
@@ -67,5 +74,5 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
       { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},
     );
 
-  await interaction.reply({ embeds: [em] });
+  await interaction.reply({ embeds: [em], ephemeral: true });
 }
