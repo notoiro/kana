@@ -41,14 +41,17 @@ sudo npm i -g pnpm
 ### 2.1 アプリを作る
 
 [Discord Developer Portal](https://discord.com/developers/applications )にアクセスして`New Application`を押す。
+
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/1580dddb-b330-49b1-a417-93ba515acd4d)
 
 名前は適当に。チェックボックスは入れる。
+
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/407de9ff-a6c3-417d-875b-ccc5a381dcc0)
 
 `APPLICETION ID`をコピーしてメモ帳にでも貼り付けておく。
 
 ついでにアイコンとか名前とかいい感じに設定する。
+
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/79558e2f-a781-44f5-a87a-45ef7f0ccde4)
 
 左の`Bot`を押してBotのタブを開く。
@@ -92,9 +95,11 @@ VOICEVOX系でAPIに互換性があればこのリストにないエンジンで
 GPUがあるならGPU版、CPUだけならCPU版。
 
 この後の構築の関係で`tar.gz`バージョンを推奨。 
+
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/f8ee50c7-7739-4ef9-9bd2-ff4cdfaa3558)
 
 使うのは`VOICEVOX`フォルダ内の`vv-engine`フォルダの中身だけなのでそれだけ取り出せばOK。
+
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/f2b5d4ed-ac85-4578-9d6f-ca5f8654ca48)
 
 動くかチェック（Ctrl+Cで終了）
@@ -176,11 +181,39 @@ python run.py
 - CPU版は普通に動く。GPU版は頑張ればまともに動きそうな雰囲気はあるもののあんまりまともには動かない。
 - オプションが不明のためポート指定やコア数指定はできません。
 
+## 手順5 (オプション)ReplaceHttpの準備
+英語の読み辞書など巨大な辞書向けにNim製の置換ツールを利用できます。     
+なくても動きます。
 
+### 5.1 Nimをインストールする
+```bash
+paru -S nim
+```
 
+### 5.2 クローンしてくる
+```bash
+git clone git@github.com:notoiro/replace_http.git
+cd replace_http
+```
 
+### 5.3 ビルド
+```bash
+nimble build
+```
 
+### 5.3 辞書を配置する
+`dicts`という名前のフォルダを作る
 
+```bash
+mkdir dicts
+```
+
+その中に辞書を配置すればロードされます。
+
+動くかチェック（Ctrl+Cで終了）
+```bash
+./ReplaceHttp
+```
 
 
 
