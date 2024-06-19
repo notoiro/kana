@@ -10,6 +10,7 @@
   - OS本体に1GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
 - Arm系CPUは未検証なのでx86_64推奨
 - CUDA使うならGPUもあるといい
+- RAM上のキャッシュディレクトリ（Linuxなら`/tmp`で十分）
 
 ### 1.2 必要なもののインストール
 
@@ -91,6 +92,10 @@ VOICEVOX系でAPIに互換性があればこのリストにないエンジンで
 なお1つ選んでやってもいいし全部やってもいいです。
 
 ### 4.1.a [VOICEVOX](https://voicevox.hiroshiba.jp )の場合
+<details>
+
+<summary>Click to Expand.</summary>
+
 [VOICEVOXの公式](https://voicevox.hiroshiba.jp/ )から環境に合ったものをダウンロードする。
 GPUがあるならGPU版、CPUだけならCPU版。
 
@@ -106,8 +111,14 @@ GPUがあるならGPU版、CPUだけならCPU版。
 ```bash
 ./run
 ```
+</details>
+
 
 ### 4.1.b [SHAREVOX](https://www.sharevox.app )の場合
+<details>
+
+<summary>Click to Expand.</summary>
+
 [Githubリポジトリ](https://github.com/SHAREVOX/sharevox_engine/releases/latest )から環境に合ったものをダウンロードする。
 
 GPUがあるなら`nvidia`がついてるものを、CPUだけなら`cpu`って付いてるものを。
@@ -119,8 +130,13 @@ GPUがあるなら`nvidia`がついてるものを、CPUだけなら`cpu`って�
 chmod +x run
 ./run
 ```
+</details>
 
 ### 4.1.c [COEIROINK](https://coeiroink.com )の場合
+<details>
+
+<summary>Click to Expand.</summary>
+
 COEIROINKにはネイティブで動くv1とWine経由で動くv2があります。
 
 構築こそ大変手間がかかりますが、それでもなおMYCOEによるボイス拡張は魅力です。       
@@ -181,7 +197,13 @@ python run.py
 - CPU版は普通に動く。GPU版は頑張ればまともに動きそうな雰囲気はあるもののあんまりまともには動かない。
 - オプションが不明のためポート指定やコア数指定はできません。
 
+</details>
+
 ## 手順5 (オプション)ReplaceHttpの準備
+<details>
+
+<summary>Click to Expand.</summary>
+
 英語の読み辞書など巨大な辞書向けにNim製の置換ツールを利用できます。     
 なくても動きます。
 
@@ -210,14 +232,98 @@ mkdir dicts
 
 その中に辞書を配置すればロードされます。
 
+<!-- 辞書のサンプルは後日添付 -->
+
 動くかチェック（Ctrl+Cで終了）
 ```bash
 ./ReplaceHttp
 ```
 
+</details>
+
+## 手順6 Kana-ttsの準備
+### 6.1 クローンしてくる
+```bash
+git clone git@github.com:notoiro/voicevox-tts-discord.git
+cd voicevox-tts-discord
+```
+
+### 6.2 コンフィグを調整する
+```bash
+cp sample.json config.json
+```
+
+`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
+
+| 項目名 | 意味 |
+| ------------- | ------------- |
+| `TMP_DIR` | 音声のキャッシュディレクトリ。`/tmp`などのRAM上を推奨。 |
+| `TOKEN`  | 2.1で生成したDiscord Botのトークン |
+| `PREFIX` | その文字で始まる文章を読まなくする文字 |
+| `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
+| `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
+| `OPUS_CONVERT` | 音声のOpusへの変換設定。`enable`で有効/無効、`bitlate`と`threads`はそれぞれビットレートと変換に利用するスレッド数。 |
+| `DICT_DIR` | トークン単位の辞書の保存先。 |
+| `IS_PONKOTSU` | ポンコツ設定をデフォルトで有効にするか |
+| `TMP_PREFIX` | キャッシュディレクトリに保存されるファイルのファイル名につける識別子。複数動かす場合に便利 |
 
 
+`VOICE_ENGINES`は音声エンジンの設定。用意したエンジンの数だけ以下の内容のオプジェクトを入れれば良い。
 
+| 項目名 | 内容 |
+| ------ | ---- |
+| `name` | エンジン名。これは内部で利用されるshortidに影響するため、互換性上標準的な名前をつけることが推奨される。（e.g. `VOICEVOX`, `SHAREVOX`, `COEIROINK`など) |
+| `type` | エンジンタイプ。エンジンのAPIがVOICEVOX互換である場合は`VOICEVOX`、COEIROINK v2の場合は`COEIROINK_V2`。 |
+| `server` | エンジンのホスト。ここで指定されたポート通りにエンジンを起動する必要がある。 |
+| `credit_url` | クレジットを表示したときに表示するエンジンの公式ページのURL。 |
+
+### 6.3 依存関係のインストール
+```bash
+pnpm install
+```
+## 手順7 起動
+
+### 7.1 Kagome frontの起動
+```bash
+./main
+```
+### 7.2 エンジンの起動
+VOICEVOX系なら`--port ポート番号`でポート指定、`--cpu_num_threads コア数`でコア数指定、`--use_gpu`でGPU使用等のオプションが利用できます。
+
+Bot側の設定とか見ながらいい感じに起動します。
+```bash
+/run --port 2970 --cpu_num_threads 2
+```
+
+### 7.3 (オプション)ReplaceHttpの起動
+```bash
+./ReplaceHttp
+```
+
+### 7.4 本体の起動
+```bash
+npm run production
+```
+
+### 7.5 招待する
+`https://discord.com/oauth2/authorize?client_id=APPLICATIONID&scope=bot&permissions=2184268864`の`APPLICATIONID`を2.1でコピーしたIDに置き換えてからブラウザで開く。
+
+## 手順8 systemdで起動するようにする
+`services`配下のサービスファイルを自分の環境に合わせて編集する。
+
+サービス用のフォルダを用意
+```bash
+mkdir -p ~/.config/systemd/user
+```
+
+編集したやつを`~/.config/systemd/user`にコピーする。
+
+systemdに認識させる
+```bash
+systemctl --user daemon-reload
+```
+
+有効にして起動する
 
 
 
