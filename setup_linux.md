@@ -4,13 +4,13 @@
 
 ### 1.1 お好きなLinux環境を用意する
 
-- 動作確認済のLinuxはUbuntuまたはArch
+- 動作確認済のLinuxは[Ubuntu](https://ubuntu.com/download/server )または[Arch](https://archlinux.org/download/ )
 - GUIは不要
 - メモリは`物理4GB+スワップ6GB`ぐらいを目安に
   - OS本体に1GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
 - Arm系CPUは未検証なのでx86_64推奨
 - CUDA使うならGPUもあるといい
-- RAM上のキャッシュディレクトリ（Linuxなら`/tmp`で十分）
+- RAM上のキャッシュディレクトリもあるといい（Linuxなら`/tmp`で十分）
 
 ### 1.2 必要なもののインストール
 
@@ -26,7 +26,7 @@ Git, ffmpeg, Goはバージョンあんまり気にしなくて良いのでパ�
 paru -S git ffmpeg go
 ```
 
-Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャでもいい。）
+Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャからでもいい。）
 ```bash
 paru -S node-n
 sudo n latest
@@ -204,7 +204,7 @@ python run.py
 
 <summary>Click to Expand.</summary>
 
-英語の読み辞書など巨大な辞書向けにNim製の置換ツールを利用できます。     
+[英語の読み辞書](https://github.com/YTJVDCM/bep-eng-json/blob/master/bep-eng.json )など巨大な辞書向けにNim製の置換ツールを利用できます。     
 なくても動きます。
 
 ### 5.1 Nimをインストールする
@@ -231,8 +231,6 @@ mkdir dicts
 ```
 
 その中に辞書を配置すればロードされます。
-
-<!-- 辞書のサンプルは後日添付 -->
 
 動くかチェック（Ctrl+Cで終了）
 ```bash
@@ -283,6 +281,8 @@ pnpm install
 ```
 ## 手順7 起動
 
+複数窓のターミナルが必要なのでGUIがない場合はscreenとかbyobuを使って起動してください。
+
 ### 7.1 Kagome frontの起動
 ```bash
 ./main
@@ -324,8 +324,3 @@ systemctl --user daemon-reload
 ```
 
 有効にして起動する
-
-
-
-
-
