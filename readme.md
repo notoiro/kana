@@ -28,8 +28,16 @@ Discord.jsを利用した様々なエンジンを利用できる高性能なDisc
   - こっそり人の声で発言するコマンド
   - 読み解析をアホにする機能
 
+## インストール
+### Linux向け
+<!-- TODO: リンク先の更新 -->
+https://github.com/notoiro/voicevox-tts-discord/blob/release-2/docs/setup_linux.md
+
+### Windows向け
+未定
+
 ## 使い方
-/help
+https://note.com/notoiro/n/nab874c35d3ab
 
 ## dictionaries以下のファイルについて
 Kagome frontで利用されている形態素解析辞書、Neologd辞書はネット辞書であるというその性質上、間違った読み、自動化のミスによる異常な読み、極端に特定の界隈に偏った略語、一般的ではあるが問題のある略語などを含みます。
