@@ -1,4 +1,4 @@
-# Kana-tts セットアップ Linux向け
+# Kana セットアップ Linux向け
 
 ## 手順1 環境構築
 
@@ -241,7 +241,7 @@ mkdir dicts
 
 </details>
 
-## 手順6 Kana-ttsの準備
+## 手順6 Kanaの準備
 ### 6.1 クローンしてくる
 ```bash
 git clone git@github.com:notoiro/voicevox-tts-discord.git

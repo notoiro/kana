@@ -1,4 +1,4 @@
-# Kana-tts
+# Kana
 
 Discord.jsを利用した様々なエンジンを利用できる高性能なDiscord読み上げボット
 
