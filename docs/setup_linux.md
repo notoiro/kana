@@ -6,8 +6,10 @@
 
 - 動作確認済のLinuxは[Ubuntu](https://ubuntu.com/download/server )または[Arch](https://archlinux.org/download/ )
 - GUIは不要
+- CPUはCUDAなしならIntel 8世代のi3程度あるといい（マルチエンジンならi5以上推奨）
 - メモリは`物理4GB+スワップ6GB`ぐらいを目安に
   - OS本体に1GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
+- ストレージはボイスエンジン抜きで10GBぐらいいると思う
 - Arm系CPUは未検証なのでx86_64推奨
 - CUDA使うならGPUもあるといい
 - RAM上のキャッシュディレクトリもあるといい（Linuxなら`/tmp`で十分）
@@ -99,7 +101,7 @@ VOICEVOX系でAPIに互換性があればこのリストにないエンジンで
 [VOICEVOXの公式](https://voicevox.hiroshiba.jp/ )から環境に合ったものをダウンロードする。
 GPUがあるならGPU版、CPUだけならCPU版。
 
-この後の構築の関係で`tar.gz`バージョンを推奨。 
+この後の構築の関係で`tar.gz`バージョンを推奨。
 
 ![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/f8ee50c7-7739-4ef9-9bd2-ff4cdfaa3558)
 
@@ -139,7 +141,7 @@ chmod +x run
 
 COEIROINKにはネイティブで動くv1とWine経由で動くv2があります。
 
-構築こそ大変手間がかかりますが、それでもなおMYCOEによるボイス拡張は魅力です。       
+構築こそ大変手間がかかりますが、それでもなおMYCOEによるボイス拡張は魅力です。
 そのため自分が叩いたコマンドラインや参考資料などを載せますが、それでも自力での構築が必須であり、あなたが怠惰な初心者の場合は非推奨のボイスエンジンになります。
 
 #### 4.1.c.a v1の場合
@@ -204,7 +206,7 @@ python run.py
 
 <summary>Click to Expand.</summary>
 
-[英語の読み辞書](https://github.com/YTJVDCM/bep-eng-json/blob/master/bep-eng.json )など巨大な辞書向けにNim製の置換ツールを利用できます。     
+[英語の読み辞書](https://github.com/YTJVDCM/bep-eng-json/blob/master/bep-eng.json )など巨大な辞書向けにNim製の置換ツールを利用できます。
 なくても動きます。
 
 ### 5.1 Nimをインストールする
