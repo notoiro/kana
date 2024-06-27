@@ -45,17 +45,17 @@ sudo npm i -g pnpm
 
 [Discord Developer Portal](https://discord.com/developers/applications )にアクセスして`New Application`を押す。
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/1580dddb-b330-49b1-a417-93ba515acd4d)
+![image](https://github.com/notoiro/kana/assets/114740031/1580dddb-b330-49b1-a417-93ba515acd4d)
 
 名前は適当に。チェックボックスは入れる。
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/407de9ff-a6c3-417d-875b-ccc5a381dcc0)
+![image](https://github.com/notoiro/kana/assets/114740031/407de9ff-a6c3-417d-875b-ccc5a381dcc0)
 
 `APPLICETION ID`をコピーしてメモ帳にでも貼り付けておく。
 
 ついでにアイコンとか名前とかいい感じに設定する。
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/79558e2f-a781-44f5-a87a-45ef7f0ccde4)
+![image](https://github.com/notoiro/kana/assets/114740031/79558e2f-a781-44f5-a87a-45ef7f0ccde4)
 
 左の`Bot`を押してBotのタブを開く。
 
@@ -65,8 +65,8 @@ sudo npm i -g pnpm
 
 お好みで公開Botにしたくない場合は`PUBLIC BOT`をオフにする
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/456206c4-a432-4d73-b27a-62e3de7b2771)
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/3bc3555e-ab0e-49e5-8550-df64e4284192)
+![image](https://github.com/notoiro/kana/assets/114740031/456206c4-a432-4d73-b27a-62e3de7b2771)
+![image](https://github.com/notoiro/kana/assets/114740031/3bc3555e-ab0e-49e5-8550-df64e4284192)
 
 ## 手順3 Kagome frontの準備
 
@@ -103,11 +103,11 @@ GPUがあるならGPU版、CPUだけならCPU版。
 
 この後の構築の関係で`tar.gz`バージョンを推奨。
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/f8ee50c7-7739-4ef9-9bd2-ff4cdfaa3558)
+![image](https://github.com/notoiro/kana/assets/114740031/f8ee50c7-7739-4ef9-9bd2-ff4cdfaa3558)
 
 使うのは`VOICEVOX`フォルダ内の`vv-engine`フォルダの中身だけなのでそれだけ取り出せばOK。
 
-![image](https://github.com/notoiro/voicevox-tts-discord/assets/114740031/f2b5d4ed-ac85-4578-9d6f-ca5f8654ca48)
+![image](https://github.com/notoiro/kana/assets/114740031/f2b5d4ed-ac85-4578-9d6f-ca5f8654ca48)
 
 動くかチェック（Ctrl+Cで終了）
 ```bash
@@ -244,8 +244,8 @@ mkdir dicts
 ## 手順6 Kanaの準備
 ### 6.1 クローンしてくる
 ```bash
-git clone git@github.com:notoiro/voicevox-tts-discord.git
-cd voicevox-tts-discord
+git clone git@github.com:notoiro/kana.git
+cd kana
 ```
 
 ### 6.2 コンフィグを調整する
