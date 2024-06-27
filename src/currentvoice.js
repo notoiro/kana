@@ -47,10 +47,12 @@ module.exports = async (interaction, override_id = null) => {
 
   if(member_id === "DEFAULT") name = "デフォルト";
 
+  let voice_name = app.voice_list.find(el => el.value === sample_voice_info.voice)?.name ?? "存在しない声";
+
   const em = new EmbedBuilder()
     .setTitle(`${name}の声設定`)
     .addFields(
-      { name: "声の種類(voice)", value: (app.voice_list.find(el => el.value === sample_voice_info.voice)).name },
+      { name: "声の種類(voice)", value: voice_name },
       { name: "声の速度(speed)", value: `${sample_voice_info.speed}`},
       { name: "声のピッチ(pitch)", value: `${sample_voice_info.pitch}`},
       { name: "声のイントネーション(intonation)", value: `${sample_voice_info.intonation}`},
