@@ -1,5 +1,5 @@
 const app = require('../index.js');
-const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
+const { ApplicationCommandOptionType } = require('discord.js');
 
 module.exports = {
   data: {

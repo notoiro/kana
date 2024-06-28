@@ -1,5 +1,5 @@
 [Unit]
-Description=kana tts daemon
+Description=kana daemon
 After=voicevox.service kagome-daemon.service
 Requires=voicevox.service kagome-daemon.service
 
@@ -8,7 +8,7 @@ Type=simple
 User=YOUR_USERNAME
 ExecStartPre=/usr/bin/sleep 5
 ExecStart=/usr/bin/npm run production
-WorkingDirectory=/home/YOUR_USERNAME/kana-tts-discord/
+WorkingDirectory=/home/YOUR_USERNAME/kana/
 TimeoutSec=60
 Restart=always
 

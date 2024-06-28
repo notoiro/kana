@@ -17,6 +17,7 @@ async function main(){
     if(fs.statSync(f_path).isDirectory()) continue;
     if(!(/.*\.json$/.test(f))) continue;
     if(/autojoin\.json/.test(f)) continue;
+    if(/uservoices\.json/.test(f)) continue;
 
     migration(f_path);
   }

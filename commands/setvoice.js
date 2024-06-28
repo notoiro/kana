@@ -2,8 +2,8 @@ const app = require('../index.js');
 
 module.exports = {
   data: {
-    name: "voicepick",
-    description: "ちょっと使いやすい…かもしれないボイス選択。"
+    name: "setvoice",
+    description: "声を設定します。"
   },
 
   execute(interaction){
