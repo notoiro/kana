@@ -1,9 +1,21 @@
-const app = require('../index.js');
+const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
 
-module.exports = {
+const app = require('../index.js');
+const { silentify, reply } = require('../src/silentify.js');
+
+module.exports = silentify({
   data: {
-    name: "connect",
-    description: "ボイスチャンネルに接続します。"
+    name: "catconnect",
+    description: "カテゴリに接続します。",
+    options: [
+      {
+        type: ApplicationCommandOptionType.Channel,
+        name: "target_category",
+        channel_types: [ChannelType.GuildCategory],
+        description: "カテゴリ",
+        required: true
+      }
+    ]
   },
 
   async execute(interaction){
@@ -15,6 +27,7 @@ module.exports = {
       await interaction.reply({ content: "接続先のVCが見つかりません。", ephemeral: true });
       return;
     }
+
     if(!member_vc.joinable) {
       await interaction.reply({ content: "VCに接続できません。", ephemeral: true });
       return;
@@ -33,15 +46,24 @@ module.exports = {
       return;
     }
 
+    let category_id = interaction.options.get('target_category').value;
+
+    const category = await guild.channels.fetch(category_id);
+
+    let texts = [];
+    for(let c of category.children.valueOf()){
+      let val = c[1];
+
+      if(val.type === ChannelType.GuildText) texts.push(c[0]);
+    }
+
     const data = {
       voice_id: member_vc.id,
-      text_ids: [interaction.channel.id],
+      text_ids: texts,
     }
 
     await app._connect_vc(guild_id, data);
 
-    if(!app.status.debug){
-      await interaction.reply({ content: '接続しました。' });
-    }
+    await reply(interaction, { content: '接続しました。' });
   }
-}
+})

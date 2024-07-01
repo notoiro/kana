@@ -3,8 +3,8 @@ const app = require('../index.js');
 
 module.exports = {
   data: {
-    name: "setdefaultvoice",
-    description: "デフォルトの声一括設定するやつ。",
+    name: "setglobalvoice",
+    description: "ユーザー紐づけの声一括設定するやつ。",
     options: [
       {
         type: ApplicationCommandOptionType.String,
@@ -16,11 +16,7 @@ module.exports = {
     ]
   },
 
-  async execute(interaction){
-    if(!(interaction.member.permissions.has('Administrator'))){
-      await interaction.reply({ content: "権限がないよ！", ephemeral: true });
-      return;
-    }
-    return app.setvoiceall(interaction, "DEFAULT");
+  execute(interaction){
+    return app.setvoiceall(interaction, null, true);
   }
 }

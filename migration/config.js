@@ -24,8 +24,16 @@ function migration(f_path){
   let new_json = {};
 
   for(let l of lists){
-    if(json[l] === "VOICEBOX_ENGINE"){
-      new_json["VOICEVOX_ENGINE"] = json[l];
+    if(l === "VOICE_ENGINES" && json[l] === undefined){
+      if(json["VOICEVOX_ENGINE"] === undefined) console.error("NO VOICEVOX HOST INFO");
+
+      new_json["VOICE_ENGINES"] = {
+        name: "VOICEVOX",
+        type: "VOICEVOX",
+        server: json["VOICEVOX_ENGINE"],
+        credit_url: "https://voicevox.hiroshiba.jp"
+      };
+
       continue;
     }
     if(json[l] === undefined){
@@ -37,7 +45,7 @@ function migration(f_path){
   }
 
   try{
-    fs.writeFileSync(f_path + '.new', JSON.stringify(new_json, undefined, " "));
+    fs.writeFileSync(f_path + '.new', JSON.stringify(new_json, undefined, "  "));
   }catch(e){
     console.error(`failed to migration(${f_path}):`)
     console.error(e);

@@ -2,20 +2,26 @@ const { default: axios } = require('axios');
 const fs = require('fs');
 
 const {
-  VOICEVOX_ENGINE,
   TMP_DIR
-} = require('../config.json');
+} = require('../../config.json');
 
 module.exports = class Voicevox{
-  constructor(){
-    this.rpc = axios.create({baseURL: VOICEVOX_ENGINE, proxy: false});
-    this.version = "Unknown";
+  #rpc;
+  #version;
+
+  constructor(host){
+    this.#rpc = axios.create({baseURL: host, proxy: false});
+    this.#version = "Unknown";
+  }
+
+  get version(){
+    return this.#version;
   }
 
   async check_version(){
     try{
-      this.version = await this.rpc.get('version');
-      this.version = this.version.data;
+      this.#version = await this.#rpc.get('version');
+      this.#version = this.#version.data;
     }catch(e){
       throw e;
     }
@@ -24,7 +30,7 @@ module.exports = class Voicevox{
   async speakers(){
     let result;
     try{
-      result = await this.rpc.get('speakers', {headers: { 'accept': 'application/json' }});
+      result = await this.#rpc.get('speakers', {headers: { 'accept': 'application/json' }});
     }catch(e){
       throw e;
     }
@@ -39,7 +45,7 @@ module.exports = class Voicevox{
   //   volume: Num
   async synthesis(text, filename, voice_id, param){
     try{
-      const query = await this.rpc.post(`audio_query?text=${encodeURI(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
+      const query = await this.#rpc.post(`audio_query?text=${encodeURI(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
 
       const query_data = query.data;
 
@@ -48,7 +54,7 @@ module.exports = class Voicevox{
       query_data.intonationScale = param.intonation;
       query_data.volumeScale = param.volume;
 
-      const synth = await this.rpc.post(`synthesis?speaker=${voice_id}`, JSON.stringify(query_data), {
+      const synth = await this.#rpc.post(`synthesis?speaker=${voice_id}`, JSON.stringify(query_data), {
         responseType: 'arraybuffer',
         headers: {
           "accept": "audio/wav",
