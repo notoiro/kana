@@ -37,7 +37,7 @@ module.exports = {
 
     for(let d of dict){
       if(d[0] === word_from){
-        interaction.reply({ content: "既に登録されています！" });
+        await interaction.reply({ content: "既に登録されています！" });
         return;
       }
     }
