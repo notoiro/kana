@@ -59,7 +59,7 @@ module.exports = {
   async execute(interaction){
     const guild_id = interaction.guild.id;
 
-    const server_file = app.bot_utils.get_server_file(guild_id);
+    const server_file = app.data_utils.get_server_file(guild_id);
     let dict = server_file.dict;
 
     const query = interaction.options.get("query").value;

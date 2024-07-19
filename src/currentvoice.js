@@ -21,7 +21,7 @@ module.exports = async (interaction, override_id = null) => {
   const global_voice = app.uservoices_map.get(member_id);
   if(!!global_voice && global_voice.enabled) is_global_voice = true;
 
-  const server_file = app.bot_utils.get_server_file(interaction.guild.id);
+  const server_file = app.data_utils.get_server_file(interaction.guild.id);
 
   let voices = server_file.user_voices;
 

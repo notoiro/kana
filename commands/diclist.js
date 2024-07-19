@@ -12,7 +12,7 @@ module.exports = silentify({
   },
 
   async execute(interaction){
-    const server_file = app.bot_utils.get_server_file(interaction.guild.id);
+    const server_file = app.data_utils.get_server_file(interaction.guild.id);
     let dict = server_file.dict;
 
     let list = [];

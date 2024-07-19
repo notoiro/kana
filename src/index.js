@@ -16,6 +16,7 @@ const KagomeTokenizer = require('./kagome_tokenizer.js');
 const RemoteReplace = require('./remote_replace.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
+const DataUtils = require('./data_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
@@ -47,6 +48,7 @@ module.exports = class App{
     this.voice_engines = new VoiceEngines(this.logger);
 
     this.bot_utils = new BotUtils(this.logger);
+    this.data_utils = new DataUtils(this.logger);
     this.voicepick_controller = new VoicepickController(this.logger);
 
     this.connections_map = new Map();
@@ -80,6 +82,7 @@ module.exports = class App{
     this.voice_liblary_list = this.voice_engines.liblarys;
 
     this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+    this.data_utils.init(this.voice_list[0].value);
     this.voicepick_controller.init(this.voice_engines);
 
     await this.test_opus_convert();
@@ -107,12 +110,12 @@ module.exports = class App{
   }
 
   setup_autojoin(){
-    const list = this.bot_utils.get_autojoin_list();
+    const list = this.data_utils.get_autojoin_list();
     for(let l in list) this.autojoin_map.set(l, list[l]);
   }
 
   setup_uservoice_list(){
-    const list = this.bot_utils.get_uservoices_list();
+    const list = this.data_utils.get_uservoices_list();
     for(let l in list) this.uservoices_map.set(l, list[l]);
   }
 
@@ -479,7 +482,7 @@ module.exports = class App{
       is_ponkotsu: !!IS_PONKOTSU
     };
 
-    const server_file = this.bot_utils.get_server_file(guild_id);
+    const server_file = this.data_utils.get_server_file(guild_id);
 
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
