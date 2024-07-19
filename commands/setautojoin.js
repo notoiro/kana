@@ -34,7 +34,7 @@ module.exports = {
 
     const guild_id = interaction.guild.id;
 
-    const autojoin_list = app.bot_utils.get_autojoin_list();
+    const autojoin_list = app.data_utils.get_autojoin_list();
 
     if(!autojoin_list[guild_id]){
       autojoin_list[guild_id] = {};
@@ -42,7 +42,7 @@ module.exports = {
 
     autojoin_list[guild_id][voice_channel_id] = text_channel_id;
 
-    app.bot_utils.write_autojoin_list(autojoin_list);
+    app.data_utils.write_autojoin_list(autojoin_list);
     app.setup_autojoin();
 
     await interaction.reply({ content: `自動接続を設定しました！`, ephemeral: true });

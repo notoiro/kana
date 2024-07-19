@@ -29,7 +29,7 @@ module.exports = {
 
     const connection = app.connections_map.get(guild_id);
 
-    const server_file = app.bot_utils.get_server_file(guild_id);
+    const server_file = app.data_utils.get_server_file(guild_id);
     let dict = server_file.dict;
 
     const word_from = interaction.options.get("from").value;
@@ -56,7 +56,7 @@ module.exports = {
       return result;
     });
 
-    app.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
+    app.data_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 
