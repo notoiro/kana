@@ -51,7 +51,7 @@ module.exports = silentify({
 
     const connection = app.connections_map.get(guild_id);
 
-    const server_file = app.bot_utils.get_server_file(guild_id);
+    const server_file = app.data_utils.get_server_file(guild_id);
     let dict = server_file.dict;
 
     const target = interaction.options.get("target").value;
@@ -78,7 +78,7 @@ module.exports = silentify({
       return result;
     });
 
-    app.bot_utils.write_serverinfo(guild_id, server_file, { dict: dict });
+    app.data_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
     if(connection) connection.dict = dict;
 

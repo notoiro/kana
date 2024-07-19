@@ -15,7 +15,7 @@ module.exports = silentify({
     description: "このBotの設定とサーバー固有の設定について。"
   },
   async execute(interaction){
-    const server_file = app.bot_utils.get_server_file(interaction.guild.id);
+    const server_file = app.data_utils.get_server_file(interaction.guild.id);
 
     const ram = Math.round(process.memoryUsage.rss() / 1024 / 1024 * 100) / 100;
     const total_ram = Math.round(os.totalmem() / (1024 * 1024));

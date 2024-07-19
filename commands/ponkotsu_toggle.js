@@ -11,10 +11,10 @@ module.exports = {
 
     const connection = app.connections_map.get(guild_id);
 
-    const server_file = app.bot_utils.get_server_file(guild_id);
+    const server_file = app.data_utils.get_server_file(guild_id);
     let is_ponkotsu = !server_file.is_ponkotsu;
 
-    app.bot_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
+    app.data_utils.write_serverinfo(guild_id, server_file, { is_ponkotsu });
 
     if(connection) connection.is_ponkotsu = is_ponkotsu;
 

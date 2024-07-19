@@ -9,10 +9,10 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
 
   let server_file, voices, is_enabled, name_dict;
   if(!is_global_uservoice){
-    server_file = app.bot_utils.get_server_file(guild_id);
+    server_file = app.data_utils.get_server_file(guild_id);
     voices = server_file.user_voices;
   }else{
-    voices = app.bot_utils.get_uservoices_list();
+    voices = app.data_utils.get_uservoices_list();
 
     if(!voices[member_id]){
       is_enabled = false;
@@ -50,7 +50,7 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
   voices[member_id] = voice;
 
   if(!is_global_uservoice){
-    app.bot_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
+    app.data_utils.write_serverinfo(guild_id, server_file, { user_voices: voices });
 
     const connection = app.connections_map.get(guild_id);
     if(connection) connection.user_voices = voices;
@@ -58,7 +58,7 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
     voices[member_id].enabled = is_enabled;
     voices[member_id].name_dict = name_dict;
 
-    app.bot_utils.write_uservoices_list(voices);
+    app.data_utils.write_uservoices_list(voices);
     app.setup_uservoice_list();
   }
 

@@ -1,7 +1,8 @@
 const shorthash = require('shorthash-jp');
+const fs = require('fs');
 
 const {
-  VOICE_ENGINES, TMP_DIR, TMP_PREFIX
+  VOICE_ENGINES, TMP_DIR, TMP_PREFIX, SERVER_DIR
 } = require('../config.json');
 
 const Voicevox = require('./engine_loaders/voicevox.js');
@@ -115,8 +116,6 @@ module.exports = class VoiceEngines{
       }
     }
 
-    await this.generate_reference_volume();
-
     this.#engine_list = this._engines();
     this.#speakers = this._speakers();
     this.#safe_speakers = this._safe_speakers();
@@ -124,6 +123,9 @@ module.exports = class VoiceEngines{
     this.#safe_liblarys = this._safe_liblarys();
     this.#credit_urls = this._credit_urls();
     this.#infos = this._engine_infos();
+
+    await this.generate_reference_volume();
+    this.load_loudness_list();
 
     this._setup__maps();
   }
@@ -170,7 +172,7 @@ module.exports = class VoiceEngines{
       // ラウドネスを取得する
       const loud = await VolumeController.diff_loud(sample, this.#reference_lufs);
 
-      this.#speaker_volume_map.set(voice_id, loud);
+      this.write_loudness(voice_id, loud);
     }catch(e){
       // リファレンスの差分データの生成に失敗した場合は何もしない
       // ここで引っかかる例ってほぼないだろうし、あったとしてもその場で処理できるエラーでもない
@@ -197,6 +199,56 @@ module.exports = class VoiceEngines{
     lufs_setting.input_thresh = lufs_setting.input_thresh / lufs_settings.length;
 
     return lufs_setting;
+  }
+
+  check_ref(ref){
+    return !!ref &&
+           ref.input_i === this.#reference_lufs.input_i &&
+           ref.input_thresh === this.#reference_lufs.input_thresh &&
+           ref.input_tp === this.#reference_lufs.input_tp;
+  }
+
+  load_loudness_list(){
+    const data = this.get_loudness_data();
+    if(!this.check_ref(data.reference)){
+      this.#logger.info('Loudness is not loaded.(Reference changed)');
+      return;
+    }
+    for(let l in data.list) this.#speaker_volume_map.set(l, data.list[l]);
+    this.#logger.debug(`${this.#speaker_volume_map.size} loudness value loaded.`);
+  }
+
+  write_loudness(id, value){
+    this.#speaker_volume_map.set(id, value);
+    this.write_loudness_list(Object.fromEntries(this.#speaker_volume_map));
+  }
+
+  get_loudness_data(){
+    let result = {};
+    try{
+      let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/loudness.json`));
+
+      result = json;
+    }catch(e){
+      this.#logger.info(e);
+      result = {
+        ref: null
+      };
+    }
+
+    return result;
+  }
+
+  write_loudness_list(list){
+    const data = {
+      reference: this.#reference_lufs,
+      list: list
+    }
+    try{
+      fs.writeFileSync(`${SERVER_DIR}/loudness.json`, JSON.stringify(data, null, "  "));
+    }catch(e){
+      this.#logger.info(e);
+    }
   }
 
   get engines(){
