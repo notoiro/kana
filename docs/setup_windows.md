@@ -22,12 +22,14 @@
   - Windowsに4GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
 - ストレージは100GB以上推奨
 - CUDA用GPUもあればより快適に
+- 拡張子が表示される設定になっていることを前提としています
 - Windowsには**何故か**`/tmp`みたいなメモリキャッシュがないので作ります
 
 ## 1.2 RAMディスク作る
+### 1.2.1 スクリプトの準備をする
 [OSFMount](https://www.osforensics.com/tools/mount-disk-images.html )をダウンロードしてインストールする
 
-`C:\setup_ramdisk.bat`として↓を保存
+↓をメモ帳に貼り付ける
 ```bat
 @ECHO OFF
 SET RAMDISK_DRIVE=V:
@@ -35,6 +37,22 @@ SET RAMDISK_SIZE=512MB
 SET RAMDISK_LABEL=RAM Disk
 IF NOT EXIST "%RAMDISK_DRIVE%" (
   "%PROGRAMFILES%\OSFMount\OSFMount.com" -a -t vm -s %RAMDISK_SIZE% -o format:ntfs:"%RAMDISK_LABEL%" -m "%RAMDISK_DRIVE%
-  MKDIR "%RAMDISK_DRIVE%\TEMP"
 )
 ```
+
+デスクトップに`setup_ramdisk.bat`として保存して、保存したものをC直下に移動する
+
+### 1.2.2 自動で起動するようにする
+タスクスケジューラを起動する
+
+基本タスクの作成を押す
+
+トリガーを`コンピューターの起動時`、`プログラムの開始`でプログラム/スクリプトを`C:\setup_ramdisk.bat`にして作成する
+
+作成したタスクのプロパティを開いて`ユーザーがログオンしているかどうかにかかわらず実行する`を選択、`最上位の特権で実行する`にチェックを入れる
+
+![image](https://github.com/user-attachments/assets/52258a57-ba6d-4dfe-8100-85cb7c612794)
+
+条件タブに切り替えてすべてのチェックを外す
+
+![image](https://github.com/user-attachments/assets/b64847e5-7888-4d90-976a-25562dc02b79)
