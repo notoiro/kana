@@ -177,9 +177,7 @@ https://shirowanisan.booth.pm/items/3436565 の起動方法の通りに展開し
 なくても動きます。
 
 ### 5.1 Nimをインストールする
-```powershell
-winget install nim.nim
-```
+https://github.com/dom96/choosenim のガイド通りインストールする
 
 ### 5.2 クローンしてくる
 ```powershell
@@ -203,15 +201,85 @@ mkdir dicts
 
 動くかチェック（Ctrl+Cで終了）
 ```powershell
-./ReplaceHttp
+./ReplaceHttp.exe
 ```
 
 </details>
 
+## 手順6 Kanaの準備
+### 6.1 クローンしてくる
+```powershell
+git clone https://github.com/notoiro/kana.git
+cd kana
+```
+
+### 6.2 コンフィグを調整する
+```powershell
+cp sample.json config.json
+```
+
+`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
+
+| 項目名 | 意味 |
+| ------------- | ------------- |
+| `TMP_DIR` | 音声のキャッシュディレクトリ。ガイド通りにやっているなら`V:/`にすればOK |
+| `TOKEN`  | 2.1で生成したDiscord Botのトークン |
+| `PREFIX` | その文字で始まる文章を読まなくする文字 |
+| `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
+| `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
+| `OPUS_CONVERT` | 音声のOpusへの変換設定。`enable`で有効/無効、`bitlate`と`threads`はそれぞれビットレートと変換に利用するスレッド数。 |
+| `DICT_DIR` | トークン単位の辞書の保存先。 |
+| `IS_PONKOTSU` | ポンコツ設定をデフォルトで有効にするか |
+| `TMP_PREFIX` | キャッシュディレクトリに保存されるファイルのファイル名につける識別子。複数動かす場合に便利 |
 
 
+`VOICE_ENGINES`は音声エンジンの設定。用意したエンジンの数だけ以下の内容のオプジェクトを入れれば良い。
 
+| 項目名 | 内容 |
+| ------ | ---- |
+| `name` | エンジン名。これは内部で利用されるshortidに影響するため、互換性上標準的な名前をつけることが推奨される。（e.g. `VOICEVOX`, `SHAREVOX`, `COEIROINK`など) |
+| `type` | エンジンタイプ。エンジンのAPIがVOICEVOX互換である場合は`VOICEVOX`、COEIROINK v2の場合は`COEIROINK_V2`。 |
+| `server` | エンジンのホスト。ここで指定されたポート通りにエンジンを起動する必要がある。 |
+| `credit_url` | クレジットを表示したときに表示するエンジンの公式ページのURL。 |
 
+### 6.3 依存関係のインストール
+```powershell
+pnpm install
+```
+
+## 手順7 起動
+
+複数窓のターミナルが必要なのでWindowsターミナルのタブなど使っていい感じに。
+
+### 7.1 Kagome frontの起動
+```powershell
+./main.exe
+```
+### 7.2 エンジンの起動
+VOICEVOX系なら`--port ポート番号`でポート指定、`--cpu_num_threads コア数`でコア数指定、`--use_gpu`でGPU使用等のオプションが利用できます。
+COEIROINKのv2ならポート50032固定です
+
+Bot側の設定とか見ながらいい感じに起動します。
+```powershell
+/run.exe --port 2970 --cpu_num_threads 2
+```
+
+### 7.3 (オプション)ReplaceHttpの起動
+```powershell
+./ReplaceHttp
+```
+
+### 7.4 本体の起動
+```powershell
+$ENV:NODE_ENV = "production"
+node index.js
+```
+
+### 7.5 招待する
+`https://discord.com/oauth2/authorize?client_id=APPLICATIONID&scope=bot&permissions=2184268864`の`APPLICATIONID`を2.1でコピーしたIDに置き換えてからブラウザで開く。
+
+## 手順8 自動起動
+作者にWindowsの自動起動に関する知識がないので調査後追記
 
 
 
