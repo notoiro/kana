@@ -261,7 +261,7 @@ COEIROINKのv2ならポート50032固定です
 
 Bot側の設定とか見ながらいい感じに起動します。
 ```powershell
-/run.exe --port 2970 --cpu_num_threads 2
+./run.exe --port 2970 --cpu_num_threads 2
 ```
 
 ### 7.3 (オプション)ReplaceHttpの起動
