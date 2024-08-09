@@ -266,7 +266,7 @@ Bot側の設定とか見ながらいい感じに起動します。
 
 ### 7.3 (オプション)ReplaceHttpの起動
 ```powershell
-./ReplaceHttp
+./ReplaceHttp.exe
 ```
 
 ### 7.4 本体の起動
