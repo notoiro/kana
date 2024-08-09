@@ -168,6 +168,50 @@ https://shirowanisan.booth.pm/items/3436565 の起動方法の通りに展開し
 ```
 </details>
 
+## 手順5 (オプション)ReplaceHttpの準備
+<details>
+
+<summary>Click to Expand.</summary>
+
+[英語の読み辞書](https://github.com/YTJVDCM/bep-eng-json/blob/master/bep-eng.json )など巨大な辞書向けにNim製の置換ツールを利用できます。
+なくても動きます。
+
+### 5.1 Nimをインストールする
+```powershell
+winget install nim.nim
+```
+
+### 5.2 クローンしてくる
+```powershell
+git clone https://github.com/notoiro/replace_http.git
+cd replace_http
+```
+
+### 5.3 ビルド
+```powershell
+nimble build
+```
+
+### 5.3 辞書を配置する
+`dicts`という名前のフォルダを作る
+
+```powershell
+mkdir dicts
+```
+
+その中に辞書を配置すればロードされます。
+
+動くかチェック（Ctrl+Cで終了）
+```powershell
+./ReplaceHttp
+```
+
+</details>
+
+
+
+
+
 
 
 
