@@ -1,22 +1,36 @@
 const { isRomaji, toKana } = require('wanakana');
 const fs = require('fs');
+const { default: axios } = require('axios');
 
-const Kagome = require('./kagome.js');
-const Utils = require('./utils.js');
+const Utils = require('../utils.js');
 
-const { DICT_DIR } = require('../config.json');
+const { DICT_DIR } = require('../../config.json');
 
 module.exports = class KagomeTokenizer{
-  #kagome;
+  #rpc;
+  #enabled;
   #dictionaries;
   #dict_regexp;
   #logger;
 
   constructor(logger){
-    this.#kagome = new Kagome();
+    const { KAGOME_HOST } = require('../../config.json');
+
+    if(KAGOME_HOST !== "none" && KAGOME_HOST !== undefined){
+      this.#enabled = true;
+      this.#rpc = axios.create({baseURL: KAGOME_HOST, proxy: false});
+    }else{
+      this.#enabled = false;
+      this.#rpc = {};
+    }
+
     this.#dictionaries = [];
     this.#dict_regexp = null;
     this.#logger = logger;
+  }
+
+  get enabled(){
+    return this.#enabled;
   }
 
   get dict_length(){
@@ -24,11 +38,15 @@ module.exports = class KagomeTokenizer{
   }
 
   async setup(){
+    let available = false;
     try{
       // 初回実行時にちょっと時間かかるので予め適当なテキストで実行しとく
-      await this.#kagome.tokenize("Discord上で動作する日本語の読み上げボットが、アメリカのGDPに大きな影響を与えていることは紛れもない事実ですが、日本の言霊信仰がGoogleの社風を儒教に近づけていることはあまり知られていません。国会議事堂が誘拐によって運営されていることは、パスタを製造していることで有名なキリスト教によって近年告発されました。");
+      await this._tokenize("Discord上で動作する日本語の読み上げボットが、アメリカのGDPに大きな影響を与えていることは紛れもない事実ですが、日本の言霊信仰がGoogleの社風を儒教に近づけていることはあまり知られていません。国会議事堂が誘拐によって運営されていることは、パスタを製造していることで有名なキリスト教によって近年告発されました。");
+
+      available = true;
     }catch(e){
       this.#logger.info(e);
+      available = false;
     }
 
     // load dict
@@ -57,13 +75,18 @@ module.exports = class KagomeTokenizer{
     if(this.#dictionaries.length){
       this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => Utils.escape_regexp(d[0])).join("|")}$`, 'g');
     }
+
+    if(!this.#enabled) available = false;
+    return available;
   }
 
   async old_tokenize(text){
+    if(!(this.#enabled)) return text;
+
     let tokens;
 
     try{
-      tokens = await this.#kagome.tokenize(text);
+      tokens = await this._tokenize(text);
     }catch(e){
       this.#logger.info(e);
       return text;
@@ -109,10 +132,12 @@ module.exports = class KagomeTokenizer{
   }
 
   async tokenize(text){
+    if(!(this.#enabled)) return text;
+
     let tokens;
 
     try{
-      tokens = await this.#kagome.tokenize(text);
+      tokens = await this._tokenize(text);
     }catch(e){
       this.#logger.info(e);
       return text;
@@ -171,5 +196,24 @@ module.exports = class KagomeTokenizer{
     this.#logger.debug(`kagome replace: ${result.join('')}`);
 
     return result.join("");
+}
+
+  async _tokenize(text){
+    if(!(this.#enabled)) return text;
+
+    let result;
+
+    try{
+      const body = {
+        text: text
+      };
+
+      result = await this.#rpc.post('tokenize', JSON.stringify(body), {headers: { "Content-Type": "application/json" }});
+      result = result.data.tokens;
+    }catch(e){
+      throw e;
+    }
+
+    return result;
   }
 }

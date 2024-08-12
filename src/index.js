@@ -12,8 +12,7 @@ const fs = require('fs');
 const log4js = require('log4js');
 
 const VoiceEngines = require('./voice_engines.js');
-const KagomeTokenizer = require('./kagome_tokenizer.js');
-const RemoteReplace = require('./remote_replace.js');
+const YomiParser = require('./yomi_parser/index.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
@@ -35,9 +34,8 @@ module.exports = class App{
   }
 
   constructor(){
-    this.remote_repalce = new RemoteReplace();
-    this.logger = log4js.getLogger();
-    this.kagome_tokenizer = new KagomeTokenizer(this.logger);
+    this.yomi_parser = new YomiParser();
+    this.logger = log4js.getLogger('main');
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates,
@@ -65,8 +63,7 @@ module.exports = class App{
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
       discord_username: "NAME",
-      opus_convert_available: false,
-      remote_replace_available: false
+      opus_convert_available: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
@@ -86,8 +83,8 @@ module.exports = class App{
     this.voicepick_controller.init(this.voice_engines);
 
     await this.test_opus_convert();
-    await this.kagome_tokenizer.setup();
-    await this.remote_repalce.test_available();
+    await this.yomi_parser.setup();
+
     this.currentvoice = require('./currentvoice.js');
     this.setvoiceall = require('./setvoiceall.js');
     this.setvoice = require('./setvoice.js');
@@ -292,7 +289,7 @@ module.exports = class App{
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
     // 4
-    content = await this.fix_reading(content, connection.is_ponkotsu);
+    content = await this.yomi_parser.fix_reading(content, connection.is_ponkotsu);
     this.logger.debug(`content(fix reading): ${content}`);
 
     const q = { str: content, id: msg.member.id, volume_order: volume_order, is_extend };
@@ -412,36 +409,6 @@ module.exports = class App{
     }
 
     return result;
-  }
-
-
-  async fix_reading(text, is_ponkotsu = !!IS_PONKOTSU){
-    let result = text;
-    if(!is_ponkotsu){
-      result = await this.kagome_tokenizer.tokenize(result);
-      result = await this.replace_http(result);
-    }else{
-      result = await this.kagome_tokenizer.old_tokenize(result);
-    }
-
-    return result;
-  }
-
-  async replace_http(text){
-    if(!this.status.remote_replace_available) return text;
-
-    let tmp_text = text;
-
-    try{
-      tmp_text = await this.remote_repalce.replace_http(text);
-    }catch(e){
-      this.logger.info(e);
-      tmp_text = text;
-    }
-
-    this.logger.debug(`remote replace: ${tmp_text}`);
-
-    return tmp_text;
   }
 
   async _connect_vc(guild_id, data){
