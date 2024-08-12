@@ -3,6 +3,7 @@
   "TOKEN": "YOUR_DISCORD_TOKEN",
   "PREFIX": ";",
   "SERVER_DIR": "./servers",
+  "KAGOME_HOST": "http://127.0.0.1:2971/",
   "REMOTE_REPLACE_HOST": "http://127.0.0.1:2972/",
   "OPUS_CONVERT": {
     "enable": false,

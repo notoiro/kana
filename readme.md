@@ -30,11 +30,10 @@ Discord.jsを利用した様々なエンジンを利用できる高性能なDisc
 
 ## インストール
 ### Linux向け
-<!-- TODO: リンク先の更新 -->
 https://github.com/notoiro/kana/blob/master/docs/setup_linux.md
 
 ### Windows向け
-未定
+https://github.com/notoiro/kana/blob/master/docs/setup_windows.md
 
 ## 使い方
 https://note.com/notoiro/n/nab874c35d3ab
