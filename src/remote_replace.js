@@ -39,5 +39,19 @@ module.exports = class RemoteReplace{
 
     return result;
   }
+
+  // 利用可能かテストする
+  async test_available(){
+    if(!this.#enabled) return false;
+
+    try{
+      await this.replace_http('A person who destroys a submarine telegraph line in order to protect his own life or ship, or in order to lay or repair a submarine telegraph line, shall notify the telegraph office or the Imperial Consulate immediately by wireless telegraphy, and if wireless telegraphy is not possible, shall notify the local telegraph office or the Imperial Consulate within 24 hours of the first landing of the ship. Any person who violates the provisions of the preceding paragraph shall be fined not more than 200 yen.');
+    }catch(e){
+      this.logger.info(e);
+      return false;
+    }
+
+    return true;
+  }
 }
 

@@ -87,7 +87,7 @@ module.exports = class App{
 
     await this.test_opus_convert();
     await this.kagome_tokenizer.setup();
-    await this.test_remote_replace();
+    await this.remote_repalce.test_available();
     this.currentvoice = require('./currentvoice.js');
     this.setvoiceall = require('./setvoiceall.js');
     this.setvoice = require('./setvoice.js');
@@ -129,21 +129,6 @@ module.exports = class App{
       this.logger.info(`Opus convert init err.`);
       console.log(e);
       this.status.opus_convert_available = false;
-    }
-  }
-
-  // 利用可能かテストする
-  async test_remote_replace(){
-    if(!this.remote_repalce.enabled){
-      this.status.remote_replace_available = false;
-      return;
-    }
-    try{
-      await this.remote_repalce.replace_http('A person who destroys a submarine telegraph line in order to protect his own life or ship, or in order to lay or repair a submarine telegraph line, shall notify the telegraph office or the Imperial Consulate immediately by wireless telegraphy, and if wireless telegraphy is not possible, shall notify the local telegraph office or the Imperial Consulate within 24 hours of the first landing of the ship. Any person who violates the provisions of the preceding paragraph shall be fined not more than 200 yen.');
-      this.status.remote_replace_available = true;
-    }catch(e){
-      this.logger.info(e);
-      this.status.remote_replace_available = false;
     }
   }
 
