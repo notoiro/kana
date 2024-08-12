@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU
+  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST
 } = require('../config.json');
 
 const pkgjson = require("../package.json");
@@ -101,6 +101,7 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${app.config.opus_convert.bitrate}`);
     console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
   }
+  console.log(`${indent}${fg_blue}kagome host:     ${fg_default}  ${KAGOME_HOST}`);
   console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
   console.log(`${indent}${fg_blue}ponkotsu         ${fg_default}  ${ans(IS_PONKOTSU, "default", "option")}`);
 
@@ -109,9 +110,10 @@ module.exports = (app) => {
   console.log(`${indent}${fg_blue}production:      ${fg_default}  ${ans(!app.status.debug, 'yes', 'no')}`);
   console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${app.status.connected_servers} servers`);
   console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${app.voice_list.length} voices`);
-  console.log(`${indent}${fg_blue}dict word count: ${fg_default}  ${app.kagome_tokenizer.dict_length}`);
+  console.log(`${indent}${fg_blue}dict word count: ${fg_default}  ${app.yomi_parser.kagome_dict_length}`);
   console.log(`${indent}${fg_blue}pre opus convert:${fg_default}  ${ans(app.status.opus_convert_available, "available", "unavailable")}`);
-  console.log(`${indent}${fg_blue}remote replace:  ${fg_default}  ${ans(app.status.remote_replace_available, "available", "unavailable")}`);
+  console.log(`${indent}${fg_blue}kagome tokenizer:${fg_default}  ${ans(app.yomi_parser.kagome_available, "available", "unavailable")}`);
+  console.log(`${indent}${fg_blue}remote replace:  ${fg_default}  ${ans(app.yomi_parser.remote_replace_available, "available", "unavailable")}`);
   console.log(`\n`);
 
   console.log(`${indent}Ready in as ${fg_green}${app.status.discord_username}${reset}!`);
