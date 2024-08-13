@@ -11,7 +11,7 @@
   "dependencies": {
     "@discordjs/voice": "^0.17.0",
     "@djs-button-pages/presets": "^1.0.0",
-    "axios": "^1.7.2",
+    "axios": "^1.7.3",
     "discord.js": "^14.15.3",
     "djs-button-pages": "^4.0.1",
     "emoji-regex": "^10.3.0",
@@ -22,8 +22,8 @@
     "wanakana": "^5.3.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.5.0",
-    "eslint": "^9.5.0",
-    "globals": "^15.6.0"
+    "@eslint/js": "^9.9.0",
+    "eslint": "^9.9.0",
+    "globals": "^15.9.0"
   }
 }
