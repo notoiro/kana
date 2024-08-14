@@ -11,7 +11,7 @@
   "dependencies": {
     "@discordjs/voice": "^0.17.0",
     "@djs-button-pages/presets": "^1.0.0",
-    "axios": "^1.7.3",
+    "axios": "^1.7.4",
     "discord.js": "^14.15.3",
     "djs-button-pages": "^4.0.1",
     "emoji-regex": "^10.3.0",
