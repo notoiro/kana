@@ -1,5 +1,14 @@
 # Kana セットアップ Linux向け
 
+## 手順0 構築する構成を決める
+このBotには2つのオプション依存があります
+
+- メモリと少しの遅延を代償に、巨大なネット辞書を利用してより自然な読みを提供するKagome front
+- 少しの遅延を代償に、英語をカタカナ語に変換してくれる辞書などを利用できるReplace Http
+
+これらの構築には若干の手間がかかるのでこれらを導入するかを予め決めておくことをおすすめします
+
+
 ## 手順1 環境構築
 
 ### 1.1 お好きなLinux環境を用意する
@@ -7,8 +16,12 @@
 - 動作確認済のLinuxは[Ubuntu](https://ubuntu.com/download/server )または[Arch](https://archlinux.org/download/ )
 - GUIは不要
 - CPUはCUDAなしならIntel 8世代のi3程度あるといい（マルチエンジンならi5以上推奨）
-- メモリは`物理4GB+スワップ6GB`ぐらいを目安に
-  - OS本体に1GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
+- メモリはフル機能なら`物理4GB+スワップ6GB`ぐらいを目安に、それ以外なら以下を参考に
+  - OS本体に500MB~1GB
+  - Bot本体に100~200MB
+  - エンジンが1個辺り1.5〜5GB程度
+  - (オプション)Kagome frontに2.5~3GB
+  - (オプション)Replace Httpに100~500MB
 - ストレージはボイスエンジン抜きで10GBぐらいいると思う
 - Arm系CPUは未検証なのでx86_64推奨
 - CUDA使うならGPUもあるといい
@@ -19,13 +32,12 @@
 以下の物を入れる。説明はArchだけど適宜自分のLinuxと読み替えてインストールすること。
 - Git
 - ffmpeg
-- Go
 - Node.js
 - pnpm
 
-Git, ffmpeg, Goはバージョンあんまり気にしなくて良いのでパッケージマネージャで。
+Git, ffmpegはバージョンあんまり気にしなくて良いのでパッケージマネージャで。
 ```bash
-paru -S git ffmpeg go
+paru -S git ffmpeg
 ```
 
 Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャからでもいい。）
@@ -68,34 +80,22 @@ sudo npm i -g pnpm
 ![image](https://github.com/notoiro/kana/assets/114740031/456206c4-a432-4d73-b27a-62e3de7b2771)
 ![image](https://github.com/notoiro/kana/assets/114740031/3bc3555e-ab0e-49e5-8550-df64e4284192)
 
-## 手順3 Kagome frontの準備
-
-### 3.1 クローンしてくる
-```bash
-git clone git@github.com:notoiro/kagome_front.git
-cd kagome_front
-```
-
-### 3.2 ビルド
-```bash
-go build main.go
-```
-
-動くかチェック（Ctrl+Cで終了）
-```bash
-./main
-```
-
-## 手順4 エンジンの用意
+## 手順3 エンジンの用意
 各エンジンごとに微妙に差異があります。
 
 VOICEVOX系でAPIに互換性があればこのリストにないエンジンでも利用できます。
 
+このリストにはエンジン部分のみ起動できてLinux上でもちゃんと聞ける品質で生成できるエンジンのみ乗っています。
+
 なお1つ選んでやってもいいし全部やってもいいです。
 
-### 4.1.a [VOICEVOX](https://voicevox.hiroshiba.jp )の場合
-<details>
+### 3.1.a [VOICEVOX](https://voicevox.hiroshiba.jp )の場合
 
+VOICEVOXは活発に開発されている音声合成ソフトウェアです。
+
+声いっぱいあるし、容量も軽いのでエンジンに迷ったらこれ！
+
+<details>
 <summary>Click to Expand.</summary>
 
 [VOICEVOXの公式](https://voicevox.hiroshiba.jp/ )から環境に合ったものをダウンロードする。
@@ -116,7 +116,12 @@ GPUがあるならGPU版、CPUだけならCPU版。
 </details>
 
 
-### 4.1.b [SHAREVOX](https://www.sharevox.app )の場合
+### 3.1.b [SHAREVOX](https://www.sharevox.app )の場合
+
+SHAREVOXはVOICEVOX派生の音声合成ソフトウェアです。
+
+体感だけどCPUだとVOICEVOXより合成が速い気がする。
+
 <details>
 
 <summary>Click to Expand.</summary>
@@ -134,17 +139,41 @@ chmod +x run
 ```
 </details>
 
-### 4.1.c [COEIROINK](https://coeiroink.com )の場合
+### 3.1.c [COEIROINK](https://coeiroink.com )の場合
+
+COEIROINKは少し特殊ながら面白い音声合成ソフトウェアです。
+
+デフォルトの声だけでなく、MYCOEIROINKによって他のユーザーが作成した声を追加したり、自分で音声ライブラリになることだってできる！音声ライブラリのサイズがめっちゃでかい！VOICEVOXと似てるようで全然違う個性とロマンの塊みたいなソフトです。v2になってからLinuxで動かすことが難しくなっていた中わざわざWine使って実装したv2 API対応が公式Linuxビルドによって生きることになって私は嬉しいです。
+
 <details>
 
 <summary>Click to Expand.</summary>
+
+[公式](https://coeiroink.com/download )から環境にあったものをダウンロードする。
+
+展開する。おそらくは`engine`と`speaker_info`があればいいのだけど、ちゃんとルートのフォルダがあるので全部展開したほうがわかりやすいと思う。
+
+ダウンロードページの下の方にある音声ダウンロード、または[MYCOE](https://coeiroink.com/mycoeiroink/list )から好きな音声ライブラリをダウンロードしてくる。
+
+[公式のガイド](https://coeiroink.com/mycoeiroink/installation )の通りに導入する。
+
+動くかチェック（Ctrl+Cで終了）
+```bash
+cd engine
+./engine
+```
+
+<details>
+
+<summary>古い情報</summary>
+
 
 COEIROINKにはネイティブで動くv1とWine経由で動くv2があります。
 
 構築こそ大変手間がかかりますが、それでもなおMYCOEによるボイス拡張は魅力です。
 そのため自分が叩いたコマンドラインや参考資料などを載せますが、それでも自力での構築が必須であり、あなたが怠惰な初心者の場合は非推奨のボイスエンジンになります。
 
-#### 4.1.c.a v1の場合
+#### 3.1.c.a v1の場合
 - [Github](https://github.com/shirowanisan/voicevox_engine )からクローンしてくる
 - Linuxネイティブで動きます。
 - CUDAも動きます。
@@ -193,13 +222,47 @@ python run.py
 - https://zenn.dev/sansuke05/articles/ad971fe2607f81
 - https://qiita.com/0kq/items/3194f5f3a3fbc541150b
 
-#### 4.1.c.b v2の場合
+#### 3.1.c.b v2の場合
 - [公式](https://coeiroink.com/download )からダウンロードしてくる
 - `engine`フォルダの`engine.exe`をWine経由で起動すれば動く。
 - CPU版は普通に動く。GPU版は頑張ればまともに動きそうな雰囲気はあるもののあんまりまともには動かない。
 - オプションが不明のためポート指定やコア数指定はできません。
 
 </details>
+</details>
+
+## 手順4 (オプション)Kagome frontの準備
+<details>
+
+<summary>Click to Expand.</summary>
+
+巨大なネット辞書であるNeologd辞書を利用してより自然な読みを提供します。
+
+元々は必須の依存で、固有名詞や漢字、更には細かな日本語の表現などの読み品質を圧倒的に改善する、このBot強みでもありますが、今はもうなくても動きます。
+
+### 4.1 Goをインストールする
+```bash
+paru -S go
+```
+
+### 4.2 クローンしてくる
+```bash
+git clone git@github.com:notoiro/kagome_front.git
+cd kagome_front
+```
+
+### 4.3 ビルド
+```bash
+go build main.go
+```
+
+動くかチェック（Ctrl+Cで終了）
+```bash
+./main
+```
+
+</details>
+
 
 ## 手順5 (オプション)ReplaceHttpの準備
 <details>
