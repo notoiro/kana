@@ -37,12 +37,12 @@
 
 Git, ffmpegはバージョンあんまり気にしなくて良いのでパッケージマネージャで。
 ```bash
-paru -S git ffmpeg
+sudo pacman -S git ffmpeg
 ```
 
 Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャからでもいい。）
 ```bash
-paru -S node-n
+paru -S node-n # AURヘルパーならなんでも
 sudo n latest
 ```
 
@@ -242,7 +242,7 @@ python run.py
 
 ### 4.1 Goをインストールする
 ```bash
-paru -S go
+sudo pacman -S go
 ```
 
 ### 4.2 クローンしてくる
@@ -314,9 +314,10 @@ cd kana
 ### 6.2 コンフィグを調整する
 ```bash
 cp sample.json config.json
+nano config.json # vimでもnvimでもkwriteでもいい
 ```
 
-`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
+`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `KAGOME_HOST`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
 
 | 項目名 | 意味 |
 | ------------- | ------------- |
@@ -324,6 +325,7 @@ cp sample.json config.json
 | `TOKEN`  | 2.1で生成したDiscord Botのトークン |
 | `PREFIX` | その文字で始まる文章を読まなくする文字 |
 | `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
+| `KAGOME_HOST` | Kagome frontを利用する場合のホスト。使わないなら`none`にする。 |
 | `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
 | `OPUS_CONVERT` | 音声のOpusへの変換設定。`enable`で有効/無効、`bitlate`と`threads`はそれぞれビットレートと変換に利用するスレッド数。 |
 | `DICT_DIR` | トークン単位の辞書の保存先。 |
@@ -348,21 +350,26 @@ pnpm install
 
 複数窓のターミナルが必要なのでGUIがない場合はscreenとかbyobuを使って起動してください。
 
-### 7.1 Kagome frontの起動
-```bash
-./main
-```
-### 7.2 エンジンの起動
+### 7.1 エンジンの起動
 VOICEVOX系なら`--port ポート番号`でポート指定、`--cpu_num_threads コア数`でコア数指定、`--use_gpu`でGPU使用等のオプションが利用できます。
+COEIROINKなら50032固定です。
 
 Bot側の設定とか見ながらいい感じに起動します。
 ```bash
-/run --port 2970 --cpu_num_threads 2
+./run --port 2970 --cpu_num_threads 2 # VOICEVOX
+```
+```bash
+./engine # COEIROINK
+```
+
+### 7.2 (オプション)Kagome frontの起動
+```bash
+./main # --port 2971
 ```
 
 ### 7.3 (オプション)ReplaceHttpの起動
 ```bash
-./ReplaceHttp
+./ReplaceHttp # 2972
 ```
 
 ### 7.4 本体の起動
@@ -389,3 +396,7 @@ systemctl --user daemon-reload
 ```
 
 有効にして起動する
+```bash
+systemctl --user enable kana.service
+systemctl --user start kana.service
+```
