@@ -187,6 +187,8 @@ go build main.go
 ./main.exe
 ```
 
+</details>
+
 
 ## 手順5 (オプション)ReplaceHttpの準備
 <details>
