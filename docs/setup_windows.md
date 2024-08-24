@@ -4,7 +4,7 @@
 
 > [!WARNING]
 > このガイドはKVM+QEMU+VirtIO上のWindows 11 Enterprise Evaluation 23H2を実行環境として書かれています
-> 
+>
 > お使いのWindowsとは画面や前提に差異がある場合があります
 
 > [!WARNING]
@@ -15,11 +15,23 @@
 >
 > 低スペックなPCを利用する場合には120%Linuxのほうが快適です
 
+## 手順0 構築する構成を決める
+このBotには2つのオプション依存があります
+
+- メモリと少しの遅延を代償に、巨大なネット辞書を利用してより自然な読みを提供するKagome front
+- 少しの遅延を代償に、英語をカタカナ語に変換してくれる辞書などを利用できるReplace Http
+
+これらの構築には若干の手間がかかるのでこれらを導入するかを予め決めておくことをおすすめします
+
 ## 手順1 環境構築
 ### 1.1 Windows環境を用意する
 - CPUはWindowsと軽めのゲームを動かせる程度に（Windows 11入るぐらい新しめのi5ぐらいはあったほうがよさげ）
-- メモリは16GBぐらいほしい(Linuxみたいにスワップで無茶はできない印象があるので)
-  - Windowsに4GB、Bot本体および依存系で3GB、エンジンが1個辺り1.5〜5GB程度と考えるといい
+- メモリはフル機能なら16GBぐらいを目安に、それ以外なら以下を参考に
+  - Windowsに4GB
+  - Bot本体に100~500MB
+  - エンジンが1個辺り1.5〜5GB程度
+  - (オプション)Kagome frontに2.5~3GB
+  - (オプション)Replace Httpに100~500MB
 - ストレージは100GB以上推奨
 - CUDA用GPUもあればより快適に
 - 拡張子が表示される設定になっていることを前提としています
@@ -61,55 +73,32 @@ IF NOT EXIST "%RAMDISK_DRIVE%" (
 以下の物を入れる。
 - Git
 - ffmpeg
-- Go
 - Node.js
 - pnpm
 
 必要ではないですがまともな圧縮展開ソフトも入れたほうがいいです。
-  
+
 Git, ffmpeg, Node.jsはwingetで
 ```powershell
 winget install Git.Git
 winget install Gyan.FFmpeg
 winget install OpenJS.NodeJS
 ```
-
-Goは無いので公式のガイド通りに
-
-https://go.dev/doc/install
-
-pnpmも公式のガイド通りに
+pnpmは公式のガイド通りに
 
 https://pnpm.io/installation
 
 ## 手順2 Discord APIの準備
 See https://github.com/notoiro/kana/blob/master/docs/setup_linux.md#%E6%89%8B%E9%A0%862-discord-api%E3%81%AE%E6%BA%96%E5%82%99
 
-## 手順3 Kagome frontの準備
-### 3.1 クローンしてくる
-```powershell
-git clone https://github.com/notoiro/kagome_front.git
-cd kagome_front
-```
-
-### 3.2 ビルド
-```powershell
-go build main.go
-```
-
-動くかチェック（Ctrl+Cで終了）
-```powershell
-./main.exe
-```
-
-## 手順4 エンジンの用意
+## 手順3 エンジンの用意
 各エンジンごとに微妙に差異があります。
 
 VOICEVOX系でAPIに互換性があればこのリストにないエンジンでも利用できます。
 
 なお1つ選んでやってもいいし全部やってもいいです。
 
-### 4.1.a [VOICEVOX](https://voicevox.hiroshiba.jp )の場合
+### 3.1.a [VOICEVOX](https://voicevox.hiroshiba.jp )の場合
 <details>
 
 <summary>Click to Expand.</summary>
@@ -132,7 +121,7 @@ GPUがあるならGPU版、CPUだけならCPU版。
 ```
 </details>
 
-### 4.1.b [SHAREVOX](https://www.sharevox.app )の場合
+### 3.1.b [SHAREVOX](https://www.sharevox.app )の場合
 <details>
 
 <summary>Click to Expand.</summary>
@@ -151,7 +140,7 @@ GPUがあるなら`nvidia`がついてるものを、CPUだけなら`cpu`って�
 ```
 </details>
 
-### 4.1.c [COEIROINK](https://coeiroink.com )の場合
+### 3.1.c [COEIROINK](https://coeiroink.com )の場合
 <details>
 
 <summary>Click to Expand.</summary>
@@ -167,6 +156,37 @@ https://shirowanisan.booth.pm/items/3436565 の起動方法の通りに展開し
 ./engine/engine.exe
 ```
 </details>
+
+## 手順4 (オプション)Kagome frontの準備
+<details>
+
+<summary>Click to Expand.</summary>
+
+巨大なネット辞書であるNeologd辞書を利用してより自然な読みを提供します。
+
+元々は必須の依存で、固有名詞や漢字、更には細かな日本語の表現などの読み品質を圧倒的に改善する、このBot強みでもありますが、今はもうなくても動きます。
+
+### 4.1 Goのインストール
+Goを公式のガイド通りにインストール
+
+https://go.dev/doc/install
+
+### 4.2 クローンしてくる
+```powershell
+git clone https://github.com/notoiro/kagome_front.git
+cd kagome_front
+```
+
+### 4.3 ビルド
+```powershell
+go build main.go
+```
+
+動くかチェック（Ctrl+Cで終了）
+```powershell
+./main.exe
+```
+
 
 ## 手順5 (オプション)ReplaceHttpの準備
 <details>
@@ -218,13 +238,14 @@ cd kana
 cp sample.json config.json
 ```
 
-`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
+`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `KAGOME_HOST`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
 
 | 項目名 | 意味 |
 | ------------- | ------------- |
 | `TMP_DIR` | 音声のキャッシュディレクトリ。ガイド通りにやっているなら`V:/`にすればOK |
 | `TOKEN`  | 2.1で生成したDiscord Botのトークン |
 | `PREFIX` | その文字で始まる文章を読まなくする文字 |
+| `KAGOME_HOST` | Kagome frontを利用する場合のホスト。使わないなら`none`にする。 |
 | `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
 | `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
 | `OPUS_CONVERT` | 音声のOpusへの変換設定。`enable`で有効/無効、`bitlate`と`threads`はそれぞれビットレートと変換に利用するスレッド数。 |
@@ -251,17 +272,18 @@ pnpm install
 
 複数窓のターミナルが必要なのでWindowsターミナルのタブなど使っていい感じに。
 
-### 7.1 Kagome frontの起動
-```powershell
-./main.exe
-```
-### 7.2 エンジンの起動
+### 7.1 エンジンの起動
 VOICEVOX系なら`--port ポート番号`でポート指定、`--cpu_num_threads コア数`でコア数指定、`--use_gpu`でGPU使用等のオプションが利用できます。
 COEIROINKのv2ならポート50032固定です
 
 Bot側の設定とか見ながらいい感じに起動します。
 ```powershell
 ./run.exe --port 2970 --cpu_num_threads 2
+```
+
+### 7.2 (オプション)Kagome frontの起動
+```powershell
+./main.exe
 ```
 
 ### 7.3 (オプション)ReplaceHttpの起動
