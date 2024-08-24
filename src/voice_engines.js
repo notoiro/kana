@@ -167,7 +167,7 @@ module.exports = class VoiceEngines{
     const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
     try{
-      const sample = await this.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}_${ref.voice_id}${TMP_PREFIX}`, '.wav', voice_id, tmp_voice, true);
+      const sample = await this.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}_${voice_id}${TMP_PREFIX}`, '.wav', voice_id, tmp_voice, true);
 
       // ラウドネスを取得する
       const loud = await VolumeController.diff_loud(sample, this.#reference_lufs);
