@@ -1,6 +1,6 @@
 FROM archlinux:latest
 
-RUN pacman -Syu && pacman -S nodejs ffmpeg
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm nodejs ffmpeg
 
 COPY . /app
 WORKDIR /app
