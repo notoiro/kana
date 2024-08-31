@@ -1,6 +1,6 @@
-FROM node:latest
+FROM archlinux:latest
 
-RUN apt update && apt install -y ffmpeg
+RUN pacman -Syu && pacman -S nodejs ffmpeg
 
 COPY . /app
 WORKDIR /app
