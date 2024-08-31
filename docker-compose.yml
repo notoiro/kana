@@ -5,8 +5,9 @@ services:
     build: https://github.com/notoiro/replace_http.git
   voicevox:
     image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-  sharevox:
-    image: sharevox/sharevox_engine:cpu-ubuntu20.04-latest
+    healthcheck:
+      # prettier-ignore
+      test: ['CMD-SHELL',"curl localhost:50021 | grep -q 'Not Found' || exit 1"]
   kana:
     build: .
     depends_on:
