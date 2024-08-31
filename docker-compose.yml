@@ -4,12 +4,8 @@ services:
   replace_http:
     build: https://github.com/notoiro/replace_http.git
   voicevox:
-    image: voicevox/voicevox_engine
-    ports:
-      - "50021:2970"
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
   sharevox:
-    image: sharevox/sharevox_engine
-    ports:
-      - "50025:2981"
+    image: sharevox/sharevox_engine:cpu-ubuntu20.04-latest
   kana:
     build: .

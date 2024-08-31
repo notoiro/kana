@@ -18,7 +18,7 @@
     {
       "name": "VOICEVOX",
       "type": "VOICEVOX",
-      "server": "http://voicevox:2970",
+      "server": "http://voicevox:50021",
       "credit_url": "https://voicevox.hiroshiba.jp"
     },
     {
@@ -30,7 +30,7 @@
     {
       "name": "SHAREVOX",
       "type": "VOICEVOX",
-      "server": "http://sharevox:2981",
+      "server": "http://sharevox:50025",
       "credit_url": "https://www.sharevox.app"
     }
   ]
