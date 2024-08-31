@@ -15,3 +15,4 @@ services:
       - kagome_front
       - replace_http
       - voicevox
+        condition: service_healthy
