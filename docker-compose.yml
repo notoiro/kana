@@ -9,3 +9,8 @@ services:
     image: sharevox/sharevox_engine:cpu-ubuntu20.04-latest
   kana:
     build: .
+    depends_on:
+      - kagome_front
+      - replace_http
+      - voicevox
+      - sharevox
