@@ -1,0 +1,11 @@
+services:
+  kagome_front:
+    image: git@github.com:notoiro/kagome_front.git
+  replace_http:
+    image: git@github.com:notoiro/replace_http.git
+  voicevox:
+    image: voicevox/voicevox_engine
+  sharevox:
+    image: sharevox/sharevox_engine
+  kana:
+    build: .

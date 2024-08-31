@@ -1,0 +1,37 @@
+{
+  "TMP_DIR": "/tmp",
+  "TOKEN": "YOUR_DISCORD_TOKEN",
+  "PREFIX": ";",
+  "SERVER_DIR": "./servers",
+  "KAGOME_HOST": "http://kagome_front:2971/",
+  "REMOTE_REPLACE_HOST": "http://replace_http:2972/",
+  "OPUS_CONVERT": {
+    "enable": false,
+    "bitrate": "96k",
+    "threads": 2
+  },
+  "DICT_DIR": "./dictionaries",
+  "EXTEND_PASS": "notoiro",
+  "IS_PONKOTSU": false,
+  "TMP_PREFIX": "_main",
+  "VOICE_ENGINES": [
+    {
+      "name": "VOICEVOX",
+      "type": "VOICEVOX",
+      "server": "http://voicevox:2970",
+      "credit_url": "https://voicevox.hiroshiba.jp"
+    },
+    {
+      "name": "COEIROINK",
+      "type": "COEIROINK_V2",
+      "server": "http://coeiroink:50032",
+      "credit_url": "https://coeiroink.com"
+    },
+    {
+      "name": "SHAREVOX",
+      "type": "VOICEVOX",
+      "server": "http://sharevox:2981",
+      "credit_url": "https://www.sharevox.app"
+    }
+  ]
+}
