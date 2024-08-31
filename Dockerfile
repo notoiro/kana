@@ -1,6 +1,6 @@
-FROM node:current-alpine
+FROM node:latest
 
-RUN apk --no-cache add ffmpeg
+RUN apt update && apt install -y ffmpeg
 
 COPY . /app
 WORKDIR /app
