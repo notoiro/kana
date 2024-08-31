@@ -5,7 +5,11 @@ services:
     build: git@github.com:notoiro/replace_http.git
   voicevox:
     image: voicevox/voicevox_engine
+    ports:
+      - "50021:2970"
   sharevox:
     image: sharevox/sharevox_engine
+    ports:
+      - "50025:2981"
   kana:
     build: .
