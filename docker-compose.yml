@@ -10,7 +10,7 @@ services:
       start_period: "2s"
   kana:
     build: .
-    command: sleep 5 && npm run production
+    command: sleep 10 && cd /app && npm run production
     depends_on:
       - kagome_front
       - replace_http
