@@ -6,11 +6,11 @@ services:
   voicevox:
     image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
     healthcheck:
-      test: ['CMD-SHELL',"curl http://localhost:50021/speakers || exit 1"]
+      test: curl http://localhost:50021/speakers || exit 1
       start_period: "2s"
   kana:
     build: .
     depends_on:
-      - "kagome_front"
-      - "replace_http"
-      - "voicevox"
+      - kagome_front
+      - replace_http
+      - voicevox
