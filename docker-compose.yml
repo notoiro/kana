@@ -14,4 +14,3 @@ services:
       - kagome_front
       - replace_http
       - voicevox
-      - sharevox
