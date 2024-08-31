@@ -6,13 +6,11 @@ services:
   voicevox:
     image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
     healthcheck:
-      # prettier-ignore
       test: ['CMD-SHELL',"curl http://localhost:50021/speakers || exit 1"]
       start_period: "2s"
   kana:
     build: .
     depends_on:
-      - kagome_front
-      - replace_http
-      - voicevox
-        condition: service_healthy
+      - "kagome_front"
+      - "replace_http"
+      - "voicevox"
