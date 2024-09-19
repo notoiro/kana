@@ -225,7 +225,7 @@ module.exports = class App{
       return;
     }
 
-    const is_song = this.bot_utils.is_song(content);
+    const is_song = this.bot_utils.is_song(text);
 
     if(!is_song){
       text = Utils.replace_url(text);
