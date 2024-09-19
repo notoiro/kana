@@ -250,7 +250,7 @@ module.exports = class App{
         const q = { song: song, system: true };
         connection.queue.push(q);
 
-        this.play(msg.guild.id);
+        this.play(guild_id);
         return;
       }else{
         return;
