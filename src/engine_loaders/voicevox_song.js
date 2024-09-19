@@ -104,6 +104,9 @@ module.exports = class VoicevoxSong{
   // id: vocal_id
   async synthesis(text, filename, vocal_id){
     try{
+      // Discordの仕様上歌詞部分に空白が入る場合があるので対策する
+      text = text.split(';').map(x => x.trim()).join(';');
+
       let song;
       song = this.#vml.parse_voicevox(text, 0);
       for(let t of song.tracks){
