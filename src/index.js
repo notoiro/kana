@@ -241,7 +241,7 @@ module.exports = class App{
       let song;
       let ok = true;
       try{
-        song = this.bot_utils.parse_song(content);
+        song = this.bot_utils.parse_song(text);
       }catch(e){
         ok = false;
       }
