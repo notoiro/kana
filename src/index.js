@@ -225,12 +225,37 @@ module.exports = class App{
       return;
     }
 
-    text = Utils.replace_url(text);
+    const is_song = this.bot_utils.is_song(content);
 
-    // 辞書と記号処理だけはやる
-    // clean_messageに記号処理っぽいものしか残ってなかったのでそれを使う
-    text = this.replace_at_dict(text, guild_id);
-    this.logger.debug(`text(replace dict): ${text}`);
+    if(!is_song){
+      text = Utils.replace_url(text);
+
+      // 辞書と記号処理だけはやる
+      // clean_messageに記号処理っぽいものしか残ってなかったのでそれを使う
+      text = this.replace_at_dict(text, guild_id);
+      this.logger.debug(`text(replace dict): ${text}`);
+    }
+
+    // ソングのチェック
+    if(this.bot_utils.is_song(text)){
+      let song;
+      let ok = true;
+      try{
+        song = this.bot_utils.parse_song(content);
+      }catch(e){
+        ok = false;
+      }
+
+      if(ok){
+        const q = { song: song, system: true };
+        connection.queue.push(q);
+
+        this.play(msg.guild.id);
+        return;
+      }else{
+        return;
+      }
+    }
 
     let volume_order = this.bot_utils.get_command_volume(text);
     if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
@@ -257,15 +282,38 @@ module.exports = class App{
     this.logger.debug(`content(from): `);
     this.logger.debug(msg);
 
+    // この時点でソングか1回判定する
+    // もしこの段階でソングだった場合には0, 1番の処理をしない。
+    const is_song = this.bot_utils.is_song(content);
+
     // テキストの処理順
-    // 0. ソングのチェック
-    // 1. テキスト追加系
-    // 2. 辞書の変換
+    // 0. テキスト追加系
+    // 1. 辞書の変換
+    // 2. ソングのチェック
     // 3. ボイス、音量の変換
     // 4. 問題のある文字列の処理
     // 5. kagomeで固有名詞などの読みを正常化、英単語の日本語化
 
     // 0
+    if(!skip_discord_features || !is_song){
+      if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
+
+      if(msg.stickers.size !== 0){
+        for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
+      }
+    }
+
+    // URLと衝突事故しないように
+    if(!is_song){
+      content = Utils.replace_url(content);
+
+      // 1
+      content = this.replace_at_dict(content, msg.guild.id);
+      this.logger.debug(`content(replace dict): ${content}`);
+    }
+
+    // 2
+    // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
     if(this.bot_utils.is_song(content)){
       let song;
       try{
@@ -281,21 +329,6 @@ module.exports = class App{
       this.play(msg.guild.id);
       return;
     }
-
-    // 1
-    if(!skip_discord_features){
-      if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
-
-      if(msg.stickers.size !== 0){
-        for(let i of msg.stickers.values()) content = `${i.name}、${content}`;
-      }
-    }
-
-    content = Utils.replace_url(content);
-
-    // 2
-    content = this.replace_at_dict(content, msg.guild.id);
-    this.logger.debug(`content(replace dict): ${content}`);
 
     // 3
     let volume_order = this.bot_utils.get_command_volume(content);
@@ -371,10 +404,12 @@ module.exports = class App{
       }catch(e){
         this.logger.info(e);
 
-        if(e instanceof VMLError){
-          q.msg.reply(`VMLにエラーがあります: ${e.message}`);
-        }else{
-          q.msg.reply('生成に失敗しました');
+        if(!q.system){
+          if(e instanceof VMLError){
+            q.msg.reply(`VMLにエラーがあります: ${e.message}`);
+          }else{
+            q.msg.reply('生成に失敗しました');
+          }
         }
 
         await Utils.sleep(10);
