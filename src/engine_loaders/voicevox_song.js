@@ -143,10 +143,7 @@ module.exports = class VoicevoxSong{
 
       let buf = await off_ctx.startRendering();
 
-      const file_path = `${TMP_DIR}/${filename}`;
-      fs.writeFileSync(file_path, new Buffer.from(toWav(buf)), 'binary');
-
-      return file_path;
+      return buf;
     }catch(e){
       throw e;
     }
