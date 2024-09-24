@@ -87,16 +87,30 @@ module.exports = class BotUtils{
   }
 
   parse_song(text){
-    const split_text = text.split('\n').join('').split(';');
+    const split_text_tracks = text.split('\n').join('').split('!').filter(Boolean);
 
-    const vocal_name = split_text.shift().replace('!song:', '');
-    const f = this.#singer_list.find(el => (new RegExp(el.name, 'g')).test(vocal_name));
-    if(!f) throw "singer not found";
+    const result_tracks = [];
 
-    return {
-      singer: f.value,
-      score: split_text.join(';')
-    };
+    for(let s of split_text_tracks){
+      const split_text = s.split(';');
+
+      const infos = split_text.shift().replace('song:', '').split(':');
+
+      const vocal_name = infos[0];
+      const gain = infos[1] ? parseInt(infos[1]) : 100;
+
+      const f = this.#singer_list.find(el => (new RegExp(el.name, 'g')).test(vocal_name));
+
+      if(!f) throw "singer not found";
+
+      result_tracks.push({
+        singer: f.value,
+        score: split_text.join(';'),
+        gain
+      });
+    }
+
+    return result_tracks;
   }
 
   replace_volume_command(text){

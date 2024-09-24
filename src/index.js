@@ -17,6 +17,7 @@ const YomiParser = require('./yomi_parser/index.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
+const MixUtils = require('./mix_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
@@ -372,7 +373,22 @@ module.exports = class App{
 
     if(q.song){
       try{
-        const voice_path = await this.voice_engines.song_synthesis(q.song.score, connection.filename_base, connection.ext, q.song.singer);
+        let voice_path = "";
+        if(q.song.length === 1){
+          const buffer = await this.voice_engines.song_synthesis(q.song[0].score, connection.filename_base, connection.ext, q.song[0].singer);
+          voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
+        // マルチトラックの場合
+        }else{
+          let tracks = [];
+          for(let s of q.song){
+            const buffer = await this.voice_engines.song_synthesis(s.score, connection.filename_base, connection.ext, s.singer);
+
+            tracks.push({ buffer, gain: s.gain });
+          }
+
+          const buffer = await MixUtils.mix(tracks);
+          voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
+        }
 
         let opus_voice_path;
 
