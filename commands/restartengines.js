@@ -9,7 +9,6 @@ module.exports = {
     console.log(`restart exex: ${interaction.guild.id}`);
 
     try{
-      const result_coeiroink = execSync('systemctl --user restart coeiroink.service');
       const result_voicevox = execSync('systemctl --user restart voicevox.service');
 
       console.log(result_coeiroink);
