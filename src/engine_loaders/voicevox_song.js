@@ -126,7 +126,7 @@ module.exports = class VoicevoxSong{
       last_note = last_note[last_note.length -2];
 
       const channel = 2;
-      const length = (last_note.ms_pos + last_note.ms + this.#vml.calc_ms('1', song.tempo)) * 0.001; // 最後のノートの位置+最後のノートの長さ+1分
+      const length = (last_note.ms_pos + last_note.ms + this.#vml.calc_ms('4', song.tempo)) * 0.001; // 最後のノートの位置+最後のノートの長さ+4分
       const sample = 48000;
 
       const off_ctx = new OfflineAudioContext(channel, sample * length, sample);
@@ -138,7 +138,7 @@ module.exports = class VoicevoxSong{
         const source = off_ctx.createBufferSource();
         source.buffer = synth_buf;
         source.connect(off_ctx.destination);
-        source.start((q.notes[1].ms_pos * 0.001) - (q.notes[0].frame_length / this.#vml.frame_rate));
+        source.start(Math.max((q.notes[1].ms_pos * 0.001) - (q.notes[0].frame_length / this.#vml.frame_rate), 0));
       }
 
       let buf = await off_ctx.startRendering();
