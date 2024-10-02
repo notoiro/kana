@@ -20,6 +20,7 @@ module.exports = class BotUtils{
   #EXTEND_ENABLE;
   #VOICE_REGEXP_NAME;
   #voice_list;
+  #singer_list;
 
   constructor(logger){
     this.#logger = logger;
@@ -29,15 +30,23 @@ module.exports = class BotUtils{
     this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
   }
 
-  init_voicelist(voice_list, voice_liblary_list){
+  init_voicelist(voice_list, voice_liblary_list, singer_list, singer_liblary_list){
     const list = voice_list.toSorted((a, b) => a.value - b.value);
+    const list2 = singer_list.toSorted((a, b) => a.value - b.value);
 
     let add = [];
+    let add2 = [];
 
     for(let l of voice_liblary_list){
       const r = new RegExp(escape_regexp_non_safe(l), 'g');
       const f = list.find(el => r.test(el.name));
       if(f) add.push({ name: l, value: f.value });
+    }
+
+    for(let l of singer_liblary_list){
+      const r = new RegExp(escape_regexp_non_safe(l), 'g');
+      const f = list2.find(el => r.test(el.name));
+      if(f) add2.push({ name: l, value: f.value });
     }
 
     for(let s of shortcut){
@@ -46,6 +55,12 @@ module.exports = class BotUtils{
     }
 
     this.#voice_list = JSON.parse(JSON.stringify(Array.prototype.concat(list, add))).map(el => {
+      el.name = escape_regexp_non_safe(el.name);
+      el.name = el.name.replace("(", "[\\(（]").replace(")", "[\\)）]");
+      return el;
+    });
+
+    this.#singer_list = JSON.parse(JSON.stringify(Array.prototype.concat(list2, add2))).map(el => {
       el.name = escape_regexp_non_safe(el.name);
       el.name = el.name.replace("(", "[\\(（]").replace(")", "[\\)）]");
       return el;
@@ -65,6 +80,37 @@ module.exports = class BotUtils{
     if(isNaN(volume)) return null;
 
     return volume < 100 ? volume : 100;
+  }
+
+  is_song(text){
+    return /^!song:/.test(text.split(';')?.[0]);
+  }
+
+  parse_song(text){
+    const split_text_tracks = text.split('\n').join('').split('!').filter(Boolean);
+
+    const result_tracks = [];
+
+    for(let s of split_text_tracks){
+      const split_text = s.split(';');
+
+      const infos = split_text.shift().replace('song:', '').split(':');
+
+      const vocal_name = infos[0];
+      const gain = infos[1] ? parseInt(infos[1]) : 100;
+
+      const f = this.#singer_list.find(el => (new RegExp(el.name, 'g')).test(vocal_name));
+
+      if(!f) throw "singer not found";
+
+      result_tracks.push({
+        singer: f.value,
+        score: split_text.join(';'),
+        gain
+      });
+    }
+
+    return result_tracks;
   }
 
   replace_volume_command(text){

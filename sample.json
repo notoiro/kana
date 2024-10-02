@@ -20,6 +20,12 @@
       "type": "VOICEVOX",
       "server": "http://127.0.0.1:2970",
       "credit_url": "https://voicevox.hiroshiba.jp"
+    },
+    {
+      "name": "VOICEVOX Song",
+      "type": "VOICEVOX_SONG",
+      "server": "http://127.0.0.1:50021",
+      "credit_url":"https://voicevox.hiroshiba.jp"
     }
   ]
 }
