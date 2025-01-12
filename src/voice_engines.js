@@ -482,6 +482,9 @@ module.exports = class VoiceEngines{
 
       const filepath = await v;
 
+      // 無音だったら無音のファイル返す
+      if(await VolumeController.is_silent_file(filepath)) return filepath;
+
       this.#logger.debug('set loud')
       return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
     }catch(e){

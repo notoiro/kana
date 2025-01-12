@@ -123,6 +123,43 @@ module.exports = class VolumeController{
 
     return JSON.parse(result.reverse().join('\n'));
   }
+
+  static is_silent_file(input){
+    return new Promise((resolve, reject) => {
+        const options = [
+          '-vn',
+          '-threads', '1',
+          '-af',
+          'ebur128=peak=true',
+          '-f null',
+          '-y',
+          '-hide_banner', '-nostats' // optimize
+        ];
+
+        ffmpeg()
+          .input(input)
+          .output('-')
+          .outputOption(options)
+          .on('end', (_, r) => {
+            let result = true;
+            for(let t of r.split("\n")){
+              if(t.match(/Peak/)){
+                let val = t.match(/([+-]?\d+\.\d+) dBFS/);
+                try{
+                  val = parseInt(val[1], 10);
+                  // -35 dbFS
+                  result = val < -35;
+                }catch(e){
+                  // do not
+                }
+              }
+            }
+            resolve(result);
+          })
+          .on('error', (err) => { reject(err) })
+          .run()
+    });
+  }
 }
 
 
