@@ -562,29 +562,11 @@ module.exports = class App{
     connectinfo.dict = server_file.dict;
     connectinfo.is_ponkotsu = server_file.is_ponkotsu;
 
-    const connection = joinVoiceChannel({
+    const connection = await this.join_voice_channel_wapper({
       guildId: guild_id,
       channelId: data.voice_id,
       adapterCreator: guild.voiceAdapterCreator,
       selfMute: false, selfDeaf: true,
-    });
-
-    connection.on(VoiceConnectionStatus.Disconnected, async(_, __)=>{
-      try{
-        await Promise.race([
-          entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-          entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-        ]);
-      }catch(e){
-        try{
-          // すでに接続が破棄されてる場合がある
-          connection.destroy();
-        }catch(e){
-          this.logger.log(e);
-        }
-
-        this.logger.debug(`system disconnected`);
-      }
     });
 
     const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Play } });
@@ -612,6 +594,37 @@ module.exports = class App{
     if(!this.status.debug){
       this.add_system_message("接続しました！", guild_id);
     }
+  }
+
+  async join_voice_channel_wapper(opts){
+    const connection = joinVoiceChannel(opts);
+
+    connection.on(VoiceConnectionStatus.Disconnected, async(_, __)=>{
+      try{
+        await Promise.race([
+          entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+          entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+        ]);
+      }catch(_){
+        try{
+          // すでに接続が破棄されてる場合がある
+          connection.destroy();
+        }catch(e){
+          this.logger.log(e);
+        }
+
+        this.logger.debug(`system disconnected`);
+      }
+    });
+
+    try{
+      await entersState(connection, VoiceConnectionStatus.Ready, 5_000);
+    }catch(e){
+      this.logger.error('vc connect error', e);
+      throw e;
+    }
+
+    return connection;
   }
 
   check_join_and_leave(old_s, new_s){
@@ -664,6 +677,7 @@ module.exports = class App{
   }
 
   async autojoin_check(old_s, new_s){
+    this.logger.debug('state change');
     const guild_id = new_s.guild.id;
 
     // 設定の登録がない場合は抜ける
@@ -690,6 +704,7 @@ module.exports = class App{
       return;
     }
 
+    // TODO: 接続できない場合のなんらかの意思表示
     if(!new_s.channel.joinable) return;
     if(!new_s.channel.speakable) return;
 
@@ -718,7 +733,11 @@ module.exports = class App{
       text_ids: texts,
     }
 
-    this._connect_vc(guild_id, data);
+    try{
+      await this._connect_vc(guild_id, data);
+    }catch(_){
+      // do not
+    }
   }
 
   skip_current_text(guild_id){
