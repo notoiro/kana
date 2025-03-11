@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType } = require('discord.js');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 
 const silent_option = {
   type: ApplicationCommandOptionType.Boolean,
@@ -20,7 +20,7 @@ module.exports = class Silentify{
     let ep = !!interaction.options.get("silent")?.value;
     if(silent_override !== null) ep = silent_override;
 
-    reply_data.ephemeral = ep;
+    if(ep) reply_data.flags = MessageFlags.Ephemeral;
 
     return interaction.reply(reply_data);
   }

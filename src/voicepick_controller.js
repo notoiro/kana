@@ -1,7 +1,7 @@
 const {
   EmbedBuilder, ButtonStyle,
   StringSelectMenuBuilder, StringSelectMenuOptionBuilder,
-  ActionRowBuilder, ButtonBuilder
+  ActionRowBuilder, ButtonBuilder, MessageFlags
 } = require('discord.js');
 
 const VOICE_SPLIT_COUNT = 25;
@@ -101,7 +101,7 @@ module.exports = class VoicepickController{
       .setTitle(`${TITLE}(1/${this.get_page_length(default_setting.engine)})`)
       .setDescription(DESCRIPTION);
 
-    await interaction.deferReply({ephemeral: true});
+    await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
     const selects = [
       this.get_split_selects("engine", null, default_setting.engine),

@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType } = require('discord.js');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 
 const app = require('../index.js');
 
@@ -29,7 +29,7 @@ module.exports = {
     const connection = app.connections_map.get(guild_id);
 
     if(!connection){
-      await interaction.reply({ content: "接続ないよ", ephemeral: true });
+      await interaction.reply({ content: "接続ないよ", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -45,6 +45,6 @@ module.exports = {
 
     app.add_text_queue(msg_obj, true);
 
-    await interaction.reply({ content: "まかせて！", ephemeral: true });
+    await interaction.reply({ content: "まかせて！", flags: MessageFlags.Ephemeral });
   }
 }

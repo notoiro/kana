@@ -1,4 +1,5 @@
 const app = require('../index.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = {
   data: {
@@ -10,12 +11,12 @@ module.exports = {
     const connection = app.connections_map.get(interaction.guild.id);
 
     if(!connection){
-      await interaction.reply({ content: "接続がないよ！", ephemeral: true });
+      await interaction.reply({ content: "接続がないよ！", flags: MessageFlags.Ephemeral });
       return;
     }
 
     connection.system_mute_counter++;
 
-    await interaction.reply({ content: `${connection.system_mute_counter}回システムボイスをミュートするよ`, ephemeral: true });
+    await interaction.reply({ content: `${connection.system_mute_counter}回システムボイスをミュートするよ`, flags: MessageFlags.Ephemeral });
   }
 }

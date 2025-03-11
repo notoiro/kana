@@ -1,5 +1,5 @@
 const app = require('../index.js');
-const { ApplicationCommandOptionType } = require('discord.js');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: {
@@ -37,6 +37,6 @@ module.exports = {
     app.data_utils.write_uservoices_list(uservoices_list);
     app.setup_uservoice_list();
 
-    await interaction.reply({ content: `設定しました！`, ephemeral: true });
+    await interaction.reply({ content: `設定しました！`, flags: MessageFlags.Ephemeral });
   }
 }

@@ -6,7 +6,7 @@ const {
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
-  Client, GatewayIntentBits, ActivityType, ChannelType
+  Client, GatewayIntentBits, ActivityType, ChannelType, MessageFlags
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
@@ -198,7 +198,7 @@ module.exports = class App{
     } catch (error) {
       this.logger.info(error);
       try{
-        await interaction.reply({ content: 'そんなコマンドないよ。', ephemeral: true });
+        await interaction.reply({ content: 'そんなコマンドないよ。', flags: MessageFlags.Ephemeral });
       }catch(e){
         // 元のインタラクションないのは知らない…
       }

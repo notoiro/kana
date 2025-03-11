@@ -11,6 +11,9 @@ dependencies:
   '@djs-button-pages/presets':
     specifier: ^1.0.0
     version: 1.0.0
+  '@notoiro/djs-button-pages':
+    specifier: ^4.0.2
+    version: 4.0.2(@djs-button-pages/presets@1.0.0)
   audiobuffer-to-wav:
     specifier: ^1.0.0
     version: 1.0.0
@@ -20,9 +23,6 @@ dependencies:
   discord.js:
     specifier: ^14.18.0
     version: 14.18.0
-  djs-button-pages:
-    specifier: ^4.0.1
-    version: 4.0.1(@djs-button-pages/presets@1.0.0)
   emoji-regex:
     specifier: ^10.4.0
     version: 10.4.0
@@ -273,6 +273,19 @@ packages:
     resolution: {integrity: sha512-2OTh/tokcLA1qom1zuCJm2gQzaZljCCbtX1YCrwRVd/toz7KxaDRFeLTAPwhs8m9hWgzrBn5rShRm6IaZofCPw==}
     dependencies:
       '@napi-rs/triples': 1.2.0
+    dev: false
+
+  /@notoiro/djs-button-pages@4.0.2(@djs-button-pages/presets@1.0.0):
+    resolution: {integrity: sha512-Hw+RSTU3EZt+cEcIT2Bo5/8qAtLdfiOEwKlD9aa5+N2Fon/Hf0WSnzRZJ2n5UN9OaQCE2J2ZalpRB/SkejYEhw==, tarball: https://npm.pkg.github.com/download/@notoiro/djs-button-pages/4.0.2/e118486beea1f5d1b23d114509595d75cfa943a3}
+    engines: {node: '>=16.9.0'}
+    peerDependencies:
+      '@djs-button-pages/presets': 1.x
+    dependencies:
+      '@djs-button-pages/presets': 1.0.0
+      discord.js: 14.18.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
     dev: false
 
   /@sapphire/async-queue@1.5.3:
