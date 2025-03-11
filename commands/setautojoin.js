@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
+const { ApplicationCommandOptionType, ChannelType, MessageFlags } = require('discord.js');
 const app = require('../index.js');
 
 module.exports = {
@@ -25,7 +25,7 @@ module.exports = {
 
   async execute(interaction){
     if(!(interaction.member.permissions.has('Administrator'))){
-      interaction.reply({ content: "管理者になって出直して", ephemeral: true });
+      interaction.reply({ content: "管理者になって出直して", flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -45,6 +45,6 @@ module.exports = {
     app.data_utils.write_autojoin_list(autojoin_list);
     app.setup_autojoin();
 
-    await interaction.reply({ content: `自動接続を設定しました！`, ephemeral: true });
+    await interaction.reply({ content: `自動接続を設定しました！`, flags: MessageFlags.Ephemeral });
   }
 }

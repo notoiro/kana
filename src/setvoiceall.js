@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, MessageFlags } = require('discord.js');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
 const app = require('../index.js');
@@ -33,17 +33,17 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
     voice = ResurrectionSpell.decode(voice);
     // もしボイスなければID0にフォールバック
     if(!(app.voice_list.find(el => el.value === voice.voice))){
-      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！", ephemeral: true });
+      await interaction.reply({ content: "リクエストされたボイスはこのBotには存在しません！", flags: MessageFlags.Ephemeral });
       return;
     }
   }catch(e){
     app.logger.debug(e);
-    await interaction.reply({ content: "ふっかつのじゅもんが違います！", ephemeral: true });
+    await interaction.reply({ content: "ふっかつのじゅもんが違います！", flags: MessageFlags.Ephemeral });
     return;
   }
 
   if(!(app.voice_list.find(el => el.value === voice.voice))){
-    await interaction.reply({ content: "ふっかつのじゅもんが違います！", ephemeral: true });
+    await interaction.reply({ content: "ふっかつのじゅもんが違います！", flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -74,5 +74,5 @@ module.exports = async (interaction, override_id = null, is_global_uservoice = f
       { name: "声のイントネーション(intonation)", value: `${voice.intonation}`},
     );
 
-  await interaction.reply({ embeds: [em], ephemeral: true });
+  await interaction.reply({ embeds: [em], flags: MessageFlags.Ephemeral });
 }

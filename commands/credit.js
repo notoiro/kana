@@ -1,5 +1,5 @@
-const { EmbedBuilder, ButtonStyle } = require('discord.js');
-const { PaginationWrapper } = require('djs-button-pages');
+const { EmbedBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { PaginationWrapper } = require('@notoiro/djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 
 const { credit_replaces } = require('../credit_replaces.json');
@@ -52,6 +52,10 @@ module.exports = silentify({
 
     let ep = !!interaction.options.get("silent")?.value;
 
-    await page.interactionReply(interaction, { ephemeral: ep });
+    if(ep){
+      await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });
+    }else{
+      await page.interactionReply(interaction);
+    }
   }
 })

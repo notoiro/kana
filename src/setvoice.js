@@ -1,4 +1,5 @@
 const app = require('../index.js');
+const { MessageFlags } = require('discord.js');
 
 module.exports = async (interaction, type) => {
   const guild_id = interaction.guild.id;
@@ -58,5 +59,5 @@ module.exports = async (interaction, type) => {
       break;
   }
 
-  await interaction.reply({ content: text, ephemeral: true });
+  await interaction.reply({ content: text, flags: MessageFlags.Ephemeral });
 }

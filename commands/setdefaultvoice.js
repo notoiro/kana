@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType } = require('discord.js');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 const app = require('../index.js');
 
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
 
   async execute(interaction){
     if(!(interaction.member.permissions.has('Administrator'))){
-      await interaction.reply({ content: "権限がないよ！", ephemeral: true });
+      await interaction.reply({ content: "権限がないよ！", flags: MessageFlags.Ephemeral });
       return;
     }
     return app.setvoiceall(interaction, "DEFAULT");

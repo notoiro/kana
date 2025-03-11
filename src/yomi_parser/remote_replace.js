@@ -3,7 +3,6 @@ const { default: axios } = require('axios');
 module.exports = class RemoteReplace{
   #rpc;
   #enabled;
-  #logger;
 
   constructor(){
     const { REMOTE_REPLACE_HOST } = require('../../config.json');

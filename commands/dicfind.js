@@ -1,7 +1,7 @@
 const { reply } = require('../src/silentify.js');
 const Utils = require('../src/utils.js');
-const { EmbedBuilder, ApplicationCommandOptionType, ButtonStyle } = require('discord.js');
-const { PaginationWrapper } = require('djs-button-pages');
+const { EmbedBuilder, ApplicationCommandOptionType, ButtonStyle, MessageFlags } = require('discord.js');
+const { PaginationWrapper } = require('@notoiro/djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 
 const app = require('../index.js');
@@ -141,6 +141,10 @@ module.exports = {
 
     let ep = !!interaction.options.get("silent")?.value;
 
-    await page.interactionReply(interaction, { ephemeral: ep });
+    if(ep){
+      await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });
+    }else{
+      await page.interactionReply(interaction);
+    }
   }
 }

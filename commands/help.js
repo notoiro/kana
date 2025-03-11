@@ -1,5 +1,5 @@
-const { EmbedBuilder, ButtonStyle } = require("discord.js");
-const { PaginationWrapper } = require('djs-button-pages');
+const { EmbedBuilder, ButtonStyle, MessageFlags } = require("discord.js");
+const { PaginationWrapper } = require('@notoiro/djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const pkgjson = require("../package.json");
 const { PREFIX } = require('../config.json');
@@ -191,6 +191,10 @@ ${bold}${green}各音声ライブラリの利用規約に従って使ってね�
 
     let ep = !!interaction.options.get("silent")?.value;
 
-    await page.interactionReply(interaction, { ephemeral: ep });
+    if(ep){
+      await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });
+    }else{
+      await page.interactionReply(interaction);
+    }
   },
 })
