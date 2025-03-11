@@ -11,16 +11,18 @@ module.exports = {
     const member = await guild.members.fetch(interaction.member.id);
     const member_vc = member.voice.channel;
 
+    await interaction.deferReply();
+
     if(!member_vc){
-      await interaction.reply({ content: "接続先のVCが見つかりません。", ephemeral: true });
+      await interaction.followUp({ content: "接続先のVCが見つかりません。" });
       return;
     }
     if(!member_vc.joinable) {
-      await interaction.reply({ content: "VCに接続できません。", ephemeral: true });
+      await interaction.followUp({ content: "VCに接続できません。" });
       return;
     }
     if(!member_vc.speakable) {
-      await interaction.reply({ content: "VCで音声を再生する権限がありません。", ephemeral: true });
+      await interaction.followUp({ content: "VCで音声を再生する権限がありません。"});
       return;
     }
 
@@ -29,7 +31,7 @@ module.exports = {
     const current_connection = app.connections_map.get(guild_id);
 
     if(current_connection){
-      await interaction.reply({ content: "接続済みです。", ephemeral: true });
+      await interaction.followUp({ content: "接続済みです。" });
       return;
     }
 
@@ -38,10 +40,16 @@ module.exports = {
       text_ids: [interaction.channel.id],
     }
 
-    await app._connect_vc(guild_id, data);
+    try{
+      await app._connect_vc(guild_id, data);
+    }catch(_){
+      await interaction.followUp({ content: 'VCに接続できませんでした！' });
+      return;
+    }
+
 
     if(!app.status.debug){
-      await interaction.reply({ content: '接続しました。' });
+      await interaction.followUp({ content: '接続しました。' });
     }
   }
 }
