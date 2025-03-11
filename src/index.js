@@ -296,7 +296,7 @@ module.exports = class App{
     // 5. kagomeで固有名詞などの読みを正常化、英単語の日本語化
 
     // 0
-    if(!skip_discord_features || !is_song){
+    if(!(skip_discord_features || is_song)){
       if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
       if(msg.stickers.size !== 0){
