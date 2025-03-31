@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST
+  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST, SUDACHI_HOST, USE_SUDACHI
 } = require('../config.json');
 
 const pkgjson = require("../package.json");
@@ -101,7 +101,11 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${app.config.opus_convert.bitrate}`);
     console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
   }
-  console.log(`${indent}${fg_blue}kagome host:     ${fg_default}  ${KAGOME_HOST}`);
+  if(USE_SUDACHI){
+    console.log(`${indent}${fg_blue}sudachi host:    ${fg_default}  ${SUDACHI_HOST}`);
+  }else{
+    console.log(`${indent}${fg_blue}kagome host:     ${fg_default}  ${KAGOME_HOST}`);
+  }
   console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
   console.log(`${indent}${fg_blue}ponkotsu         ${fg_default}  ${ans(IS_PONKOTSU, "default", "option")}`);
 
