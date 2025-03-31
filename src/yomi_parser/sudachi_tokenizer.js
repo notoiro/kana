@@ -108,7 +108,7 @@ module.exports = class SudachiTokenizer{
         continue;
       }
 
-      if(!token.is_oov && token.reading_form){
+      if(!token.is_oov && token.reading_form && token.pos[0] === "名詞"){
         this.#logger.debug(`DICT: KNOWN AND READING: ${token.reading_form}`)
         result.push(token.reading_form);
       }else{
@@ -139,5 +139,8 @@ module.exports = class SudachiTokenizer{
     }
 
     return result;
+  }
+  old_tokenize(text){
+    return this.tokenize(text);
   }
 }
