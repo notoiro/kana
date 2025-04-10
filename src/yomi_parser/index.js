@@ -28,7 +28,7 @@ module.exports = class YomiParser{
     this.tokenizer_available = false;
   }
 
-  get kagome_dict_length(){
+  get tokenizer_dict_length(){
     return this.tokenizer.dict_length;
   }
 
