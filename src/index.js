@@ -2,7 +2,7 @@
 // deps
 const {
   joinVoiceChannel, getVoiceConnection, createAudioResource,
-  StreamType, createAudioPlayer, NoSubscriberBehavior,
+  createAudioPlayer, NoSubscriberBehavior,
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
+const { Readable } = require('stream');
 
 const VoiceEngines = require('./voice_engines.js');
 const YomiParser = require('./yomi_parser/index.js');
@@ -17,6 +18,7 @@ const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
+const LoudnessNormalizer = require('./loudness_normalizer.js');
 const convert_audio = require('./convert_audio.js');
 const print_info = require('./print_info.js');
 
@@ -44,6 +46,7 @@ module.exports = class App{
     });
 
     this.voice_engines = new VoiceEngines(this.logger);
+    this.normalizer = new LoudnessNormalizer();
 
     this.bot_utils = new BotUtils(this.logger);
     this.data_utils = new DataUtils(this.logger);
@@ -356,35 +359,55 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename_base, connection.ext, voice.voice, voice_data);
+      console.time('generate');
+      const raw_wav = await this.voice_engines.synthesis(text_data.text, voice.voice, voice_data);
 
-      let opus_voice_path;
+      console.timeEnd('generate');
 
-      if(this.config.opus_convert.enable){
-        // Opusへの変換は失敗してもいいので入れ子にする
-        try{
-          opus_voice_path = await convert_audio(
-            voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
-            this.config.opus_convert.bitrate, this.config.opus_convert.threads
-          );
-        }catch(e){
-          this.logger.info(e);
-          opus_voice_path = null;
+//      let opus_voice_path;
+//
+//      if(this.config.opus_convert.enable){
+//        // Opusへの変換は失敗してもいいので入れ子にする
+//        try{
+//          opus_voice_path = await convert_audio(
+//            voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
+//            this.config.opus_convert.bitrate, this.config.opus_convert.threads
+//          );
+//        }catch(e){
+//          this.logger.info(e);
+//          opus_voice_path = null;
+//        }
+//      }
+//
+//      let audio_res;
+//      if(this.config.opus_convert.enable && opus_voice_path){
+//        audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
+//          inputType: StreamType.OggOpus, inlineVolume: false
+//        });
+//      }else{
+//        audio_res = createAudioResource(voice_path, { inlineVolume: false });
+//      }
+
+      console.time('normalize');
+
+      const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27);
+
+      console.timeEnd('normalize');
+
+      console.time('stream');
+
+      const data = new Readable({
+        read() {
+          this.push(normalize_wav);
+          this.push(null);
         }
-      }
+      });
 
-      let audio_res;
-      if(this.config.opus_convert.enable && opus_voice_path){
-        audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
-          inputType: StreamType.OggOpus, inlineVolume: false
-        });
-      }else{
-        audio_res = createAudioResource(voice_path, { inlineVolume: false });
-      }
-
-      this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
+      const audio_res = createAudioResource(data, { inlineVolume: false });
+      // this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
 
       connection.audio_player.play(audio_res);
+      console.timeEnd('stream');
     }catch(e){
       this.logger.info(e);
 

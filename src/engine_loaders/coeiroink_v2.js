@@ -1,8 +1,6 @@
 const { default: axios } = require('axios');
-const fs = require('fs');
-
-const { TMP_DIR } = require('../../config.json');
 const { AxiosError } = require('axios');
+// TODO: TMP NOT WORK
 
 module.exports = class COEIROINKV2{
   #rpc;

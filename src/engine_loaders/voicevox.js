@@ -1,9 +1,4 @@
 const { default: axios } = require('axios');
-const fs = require('fs');
-
-const {
-  TMP_DIR
-} = require('../../config.json');
 
 module.exports = class Voicevox{
   #rpc;
@@ -43,7 +38,7 @@ module.exports = class Voicevox{
   //   pitch: Num
   //   intonation: Num
   //   volume: Num
-  async synthesis(text, filename, voice_id, param){
+  async synthesis(text, voice_id, param){
     try{
       const query = await this.#rpc.post(`audio_query?text=${encodeURI(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
 
@@ -62,10 +57,7 @@ module.exports = class Voicevox{
         }
       });
 
-      const file_path = `${TMP_DIR}/${filename}`;
-      fs.writeFileSync(file_path, new Buffer.from(synth.data), 'binary');
-
-      return file_path;
+      return new Uint8Array(synth.data).buffer;
     }catch(e){
       throw e;
     }
