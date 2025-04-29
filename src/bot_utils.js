@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const log4js = require('log4js');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
 const SafeRegexpUtils = require('./safe_regexp_utils.js');
@@ -21,8 +22,9 @@ module.exports = class BotUtils{
   #VOICE_REGEXP_NAME;
   #voice_list;
 
-  constructor(logger){
-    this.#logger = logger;
+  constructor(){
+    this.#logger = log4js.getLogger('bot_utils');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
     this.#VOICE_REGEXP = new RegExp(`ボイス[\\(（]([${ResurrectionSpell.spell_chars()}]{12,})[\\)）]`, "g");
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
 

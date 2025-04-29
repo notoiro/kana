@@ -1,4 +1,5 @@
 const shorthash = require('shorthash-jp');
+const log4js = require('log4js');
 
 const {
   VOICE_ENGINES
@@ -22,8 +23,9 @@ module.exports = class VoiceEngines{
   #credit_urls;
   #infos;
 
-  constructor(logger){
-    this.#logger = logger;
+  constructor(){
+    this.#logger = log4js.getLogger('voice_engine_manager');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
 
     if(VOICE_ENGINES){
       this.#engines = new Map();

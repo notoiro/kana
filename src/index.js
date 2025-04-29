@@ -42,12 +42,12 @@ module.exports = class App{
       ]
     });
 
-    this.voice_engines = new VoiceEngines(this.logger);
+    this.voice_engines = new VoiceEngines();
     this.normalizer = new LoudnessNormalizer();
 
-    this.bot_utils = new BotUtils(this.logger);
-    this.data_utils = new DataUtils(this.logger);
-    this.voicepick_controller = new VoicepickController(this.logger);
+    this.bot_utils = new BotUtils();
+    this.data_utils = new DataUtils();
+    this.voicepick_controller = new VoicepickController();
 
     this.connections_map = new Map();
     this.autojoin_map = new Map();

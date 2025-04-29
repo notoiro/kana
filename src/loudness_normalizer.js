@@ -1,9 +1,13 @@
 const { AudioContext } = require('node-web-audio-api');
 const toWav = require('audiobuffer-to-wav');
+const log4js = require('log4js');
 
 class LoudnessNormalizer {
   constructor() {
     this.audio_context = new AudioContext();
+
+    this.logger = log4js.getLogger('normalizer');
+    this.logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
   }
 
   async load_audio_file(buffer) {
@@ -65,9 +69,9 @@ class LoudnessNormalizer {
 
     const gain_factor = Math.pow(10, gain / 20);
 
-    // console.log(`現在のラウドネス: ${current_lufs.toFixed(2)} LUFS`);
-    // console.log(`ターゲットラウドネス: ${target_lufs.toFixed(2)} LUFS`);
-    // console.log(`適用するゲイン: ${gain.toFixed(2)} dB (係数: ${gain_factor.toFixed(4)})`);
+    this.logger.debug(`現在のラウドネス: ${current_lufs.toFixed(2)} LUFS`);
+    this.logger.debug(`ターゲットラウドネス: ${target_lufs.toFixed(2)} LUFS`);
+    this.logger.debug(`適用するゲイン: ${gain.toFixed(2)} dB (係数: ${gain_factor.toFixed(4)})`);
 
     return this.adjust_volume(audioBuffer, gain_factor);
   }
@@ -79,7 +83,7 @@ class LoudnessNormalizer {
 
       return await this.export_buffer_to_wav(normalized_buffer);
     } catch (err) {
-      console.error('バッチ正規化中にエラーが発生しました:', err);
+      this.logger.error('normalizer err', err);
       throw err;
     }
   }
