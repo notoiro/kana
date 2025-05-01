@@ -245,6 +245,8 @@ module.exports = class App{
     content = this.replace_at_dict(content, msg.guild.id);
     this.logger.debug(`content(replace dict): ${content}`);
 
+    const text_speed = this.bot_utils.get_text_speed(content);
+
     let texts = content.split(/[。\n「」『』]{1}/);
     let text_queues = [];
 
@@ -266,15 +268,35 @@ module.exports = class App{
       const q = { str: text, id: msg.member.id, volume_order: volume_order, queue_id: `${msg.id}` };
 
       if(voice_override) q.voice_override = voice_override;
+      q.text_speed = text_speed;
 
       text_queues.push(q);
+    }
+
+    let count = 0;
+    const result_queue = [];
+
+    for(let q of text_queues){
+      const text = q.str;
+      this.logger.debug(`text count: ${count}`);
+      this.logger.debug(`text count + length: ${count + text.length}`);
+      this.logger.debug(`max: ${(count + text.length) - 280}`);
+      if((count + text.length) > 280){
+        const max = (count + text.length) - 280;
+        q.str = text.slice(0, max) + '。いかしょうりゃく';
+        result_queue.push(q);
+        break;
+      }else{
+        result_queue.push(q);
+        count += text.length;
+      }
     }
 
     connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
     if(!connection) return;
 
-    Array.prototype.push.apply(connection.generate_queue, text_queues);
+    Array.prototype.push.apply(connection.generate_queue, result_queue);
 
     this.generate_queue_start(msg.guild.id);
   }
@@ -295,6 +317,8 @@ module.exports = class App{
       return;
     }
 
+    if(!q.text_speed) q.text_speed = 0;
+
     // connectionあるならデフォルトボイスはある
     // もしvoice_overrideがあるならそれを優先する
     let setting_voice;
@@ -306,20 +330,14 @@ module.exports = class App{
     let voice = q.voice_override ?? setting_voice;
     this.logger.debug(`generate voice: ${JSON.stringify(voice)}`);
 
-    const text_data = Utils.get_text_and_speed(q.str);
-    this.logger.debug(`generate text speed: ${text_data.speed}`);
-
     // デバッグ時は省略せず全文読ませる
     if(this.status.debug){
-      text_data.speed = voice.speed;
-    }
-    if(this.status.debug){
-      text_data.text = q.str;
+      q.text_speed = voice.speed;
     }
 
     const voice_data = {
       // 加速はユーザー設定と加速設定のうち速い方を利用する。
-      speed: Utils.map_voice_setting(((voice.speed > text_data.speed) ? voice.speed : text_data.speed), 0.5, 1.5),
+      speed: Utils.map_voice_setting(((voice.speed > q.text_speed) ? voice.speed : q.text_speed), 0.5, 1.5),
       pitch: Utils.map_voice_setting(voice.pitch, -0.15, 0.15),
       intonation: Utils.map_voice_setting(voice.intonation, 0, 2),
       volume: Utils.map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
@@ -329,7 +347,7 @@ module.exports = class App{
 
     try{
       console.time('generate');
-      const raw_wav = await this.voice_engines.synthesis(text_data.text, voice.voice, voice_data);
+      const raw_wav = await this.voice_engines.synthesis(q.str, voice.voice, voice_data);
       console.timeEnd('generate');
 
       console.time('normalize');

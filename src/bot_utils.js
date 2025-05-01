@@ -70,6 +70,25 @@ module.exports = class BotUtils{
     return text.replace(this.#VOICE_REGEXP, "");
   }
 
+  // テキストをBotで読ませてうざくないように調整する
+  get_text_speed(text){
+    const fixed_text = this.replace_volume_command(this.replace_voice_spell(text));
+    const count = fixed_text.length;
+    let text_speed = 0;
+
+    // 80文字以下、加速しない、変更しない
+    if(count < 80) text_speed = 0;
+    // 80文字以上280文字以下、加速する、変更しない
+    else if(count > 80 && count < 280) text_speed = 280;
+    // 280文字以上、加速する、変更する`。
+    // 処理順的にテキストの省略処理ができないので一旦気にしないことにする
+    else{
+      text_speed = 200;
+    }
+
+    return text_speed;
+  }
+
   get_spell_voice(spell){
     let voice_command = SafeRegexpUtils.exec(this.#VOICE_REGEXP, spell);
 
