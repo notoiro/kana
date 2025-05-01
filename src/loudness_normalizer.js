@@ -1,17 +1,16 @@
-const { AudioContext } = require('node-web-audio-api');
+const { OfflineAudioContext } = require('node-web-audio-api');
 const toWav = require('audiobuffer-to-wav');
 const log4js = require('log4js');
 
 class LoudnessNormalizer {
   constructor() {
-    this.audio_context = new AudioContext();
-
     this.logger = log4js.getLogger('normalizer');
     this.logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
   }
 
   async load_audio_file(buffer) {
-    return await this.audio_context.decodeAudioData(buffer);
+    const context = new OfflineAudioContext(2, 44100, 44100);
+    return await context.decodeAudioData(buffer);
   }
 
   calc_rms_loudness(buffer) {
@@ -27,15 +26,12 @@ class LoudnessNormalizer {
         count++;
       }
     }
-
     return Math.sqrt(squares / count);
   }
 
   estimate_integrated_loudness(buffer) {
     const rms = this.calc_rms_loudness(buffer);
-
     const db_rms = 20 * Math.log10(rms);
-
     return db_rms - 10;
   }
 
@@ -43,52 +39,46 @@ class LoudnessNormalizer {
     const channels = buffer.numberOfChannels;
     const length = buffer.length;
 
-    const adjusted_buffer = this.audio_context.createBuffer(
-      channels,
-      length,
-      buffer.sampleRate
-    );
+    const off_ctx = new OfflineAudioContext(channels, length, buffer.sampleRate);
 
-    for (let channel = 0; channel < channels; channel++) {
-      const data = buffer.getChannelData(channel);
-      const adjusted_data = adjusted_buffer.getChannelData(channel);
+    const buf_source = off_ctx.createBufferSource();
+    buf_source.buffer = buffer;
 
-      for (let i = 0; i < length; i++) {
-        // クリッピングを防ぐために値を-1.0～1.0の範囲に制限
-        adjusted_data[i] = Math.max(-1.0, Math.min(1.0, data[i] * gain));
-      }
-    }
+    const gainNode = off_ctx.createGain();
+    gainNode.gain.value = gain;
 
-    return adjusted_buffer;
+    buf_source.connect(gainNode);
+    gainNode.connect(off_ctx.destination);
+
+    buf_source.start(0);
+
+    return off_ctx.startRendering();
   }
 
-  normalize_loudness(audioBuffer, target_lufs) {
-    const current_lufs = this.estimate_integrated_loudness(audioBuffer);
-
-    const gain = target_lufs - current_lufs;
-
-    const gain_factor = Math.pow(10, gain / 20);
+  normalize_loudness(audio_buffer, target_lufs) {
+    const current_lufs = this.estimate_integrated_loudness(audio_buffer);
+    const gain = Math.pow(10, (target_lufs - current_lufs) / 20);
 
     this.logger.debug(`現在のラウドネス: ${current_lufs.toFixed(2)} LUFS`);
     this.logger.debug(`ターゲットラウドネス: ${target_lufs.toFixed(2)} LUFS`);
-    this.logger.debug(`適用するゲイン: ${gain.toFixed(2)} dB (係数: ${gain_factor.toFixed(4)})`);
+    this.logger.debug(`適用するゲイン: ${(20 * Math.log10(gain)).toFixed(2)} dB (係数: ${gain.toFixed(4)})`);
 
-    return this.adjust_volume(audioBuffer, gain_factor);
+    return this.adjust_volume(audio_buffer, gain);
   }
 
   async normalize_to_lufs(input_buffer, target_lufs) {
     try {
       const buffer = await this.load_audio_file(input_buffer);
-      const normalized_buffer = this.normalize_loudness(buffer, target_lufs);
+      const normalized_buffer = await this.normalize_loudness(buffer, target_lufs);
 
-      return await this.export_buffer_to_wav(normalized_buffer);
+      return this.export_buffer_to_wav(normalized_buffer);
     } catch (err) {
       this.logger.error('normalizer err', err);
       throw err;
     }
   }
 
-  async export_buffer_to_wav(audioBuffer) {
+  export_buffer_to_wav(audioBuffer) {
     const wavData = toWav(audioBuffer);
     return Buffer.from(wavData);
   }
