@@ -45,7 +45,7 @@ ${cyan}利用可能なボイス数${gray}:${reset} ${app.voice_list.length}
 \`\`\`ansi
 ${cyan}英語辞書変換${gray}:${reset} ${ans(app.status.remote_replace_available, "有効", "無効")}
 ${cyan}ポンコツ${gray}:${reset} ${ans(!!IS_PONKOTSU, "何もしなければ", "設定次第")}
-${cyan}サーバー辞書単語数${gray}:${reset} ${app.kagome_tokenizer.dict_length}
+${cyan}サーバー辞書単語数${gray}:${reset} ${app.yomi_parser.tokenizer_dict_length}
 \`\`\`
           `,
           inline: true
