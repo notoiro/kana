@@ -11,6 +11,7 @@ const {
 const fs = require('fs');
 const log4js = require('log4js');
 const { Readable } = require('stream');
+const crypto = require("crypto");
 
 const VoiceEngines = require('./voice_engines.js');
 const YomiParser = require('./yomi_parser/index.js');
@@ -205,12 +206,12 @@ module.exports = class App{
 
     text = Utils.clean_message(text);
 
-    const q = { str: text, id: voice_ref_id, volume_order: volume_order };
+    const q = { str: text, id: voice_ref_id, volume_order: volume_order, queue_id: crypto.randomUUID() };
 
     if(voice_override) q.voice_override = voice_override;
 
-    connection.queue.push(q);
-    this.play(guild_id);
+    connection.generate_queue.push(q);
+    this.generate_queue_start(guild_id);
   }
 
   async add_text_queue(msg, skip_discord_features = false){
@@ -244,50 +245,53 @@ module.exports = class App{
     content = this.replace_at_dict(content, msg.guild.id);
     this.logger.debug(`content(replace dict): ${content}`);
 
-    // 2
-    let volume_order = this.bot_utils.get_command_volume(content);
-    if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
+    let texts = content.split(/[。\n「」『』]{1}/);
+    let text_queues = [];
 
-    let voice_override = this.bot_utils.get_spell_voice(content);
-    if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
+    for(let text of texts){
+      // 2
+      let volume_order = this.bot_utils.get_command_volume(text);
+      if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-    let is_extend = this.bot_utils.get_extend_flag(content);
-    if(is_extend !== null) content = this.bot_utils.replace_extend_command(content);
+      let voice_override = this.bot_utils.get_spell_voice(text);
+      if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
 
-    // 3
-    content = Utils.clean_message(content);
-    this.logger.debug(`content(clean): ${content}`);
-    // 4
-    content = await this.yomi_parser.fix_reading(content, connection.is_ponkotsu);
-    this.logger.debug(`content(fix reading): ${content}`);
+      // 3
+      text = Utils.clean_message(text);
+      this.logger.debug(`content(clean): ${text}`);
+      // 4
+      text = await this.yomi_parser.fix_reading(text, connection.is_ponkotsu);
+      this.logger.debug(`content(fix reading): ${text}`);
 
-    const q = { str: content, id: msg.member.id, volume_order: volume_order, is_extend };
+      const q = { str: text, id: msg.member.id, volume_order: volume_order, queue_id: `${msg.id}` };
+
+      if(voice_override) q.voice_override = voice_override;
+
+      text_queues.push(q);
+    }
 
     connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
     if(!connection) return;
 
-    if(voice_override) q.voice_override = voice_override;
+    Array.prototype.push.apply(connection.generate_queue, text_queues);
 
-    connection.queue.push(q);
-
-    this.play(msg.guild.id);
+    this.generate_queue_start(msg.guild.id);
   }
 
-  async play(guild_id){
+  async generate_queue_start(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection || connection.is_play || connection.queue.length === 0) return;
+    if(!connection || connection.is_generate || connection.generate_queue.length === 0) return;
 
-    connection.is_play = true;
-    this.logger.debug(`play start`);
+    connection.is_generate = true;
+    this.logger.debug(`generate start`);
 
-    const q = connection.queue.shift();
+    const q = connection.generate_queue.shift();
     // 何もないなら次へ
     if(!(q.str) || q.str.trim().length === 0){
-      connection.is_play = false;
-      this.play(guild_id);
-      this.logger.debug(`play empty next`);
+      connection.is_generate = false;
+      this.generate_queue_start(guild_id);
       return;
     }
 
@@ -300,17 +304,16 @@ module.exports = class App{
     else setting_voice = user_voice;
 
     let voice = q.voice_override ?? setting_voice;
-    this.logger.debug(`play voice: ${JSON.stringify(voice)}`);
+    this.logger.debug(`generate voice: ${JSON.stringify(voice)}`);
 
     const text_data = Utils.get_text_and_speed(q.str);
-    this.logger.debug(`play text speed: ${text_data.speed}`);
+    this.logger.debug(`generate text speed: ${text_data.speed}`);
 
     // デバッグ時は省略せず全文読ませる
     if(this.status.debug){
       text_data.speed = voice.speed;
     }
-    this.logger.debug(`Extend: ${q.is_extend}`);
-    if(q.is_extend || this.status.debug){
+    if(this.status.debug){
       text_data.text = q.str;
     }
 
@@ -333,10 +336,45 @@ module.exports = class App{
       const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27);
       console.timeEnd('normalize');
 
+      connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
+
+      connection.is_generate = false;
+
+      this.generate_queue_start(guild_id);
+      this.play(guild_id);
+    }catch(e){
+      this.logger.info(e);
+
+      connection.is_generate = false;
+
+      this.generate_queue_start(guild_id);
+    }
+  }
+
+  async play(guild_id){
+    // 接続ないなら抜ける
+    const connection = this.connections_map.get(guild_id);
+    if(!connection || connection.is_play || connection.play_queue.length === 0) return;
+
+    connection.is_play = true;
+    this.logger.debug(`play start`);
+
+    const q = connection.play_queue.shift();
+    connection.current_play = q.queue_id;
+
+    if(connection.skip_list.some(id => id === q.queue_id)){
+      connection.is_play = false;
+      connection.current_play = "";
+
+      this.play(guild_id);
+      return;
+    }
+
+    try{
       console.time('stream');
       const data = new Readable({
         read() {
-          this.push(normalize_wav);
+          this.push(q.wav);
           this.push(null);
         }
       });
@@ -348,8 +386,8 @@ module.exports = class App{
     }catch(e){
       this.logger.info(e);
 
-      await Utils.sleep(10);
       connection.is_play = false;
+      connection.current_play = "";
 
       this.play(guild_id);
     }
@@ -381,8 +419,12 @@ module.exports = class App{
       check_texts: texts,
       voice: data.voice_id,
       audio_player: null,
-      queue: [],
+      generate_queue: [],
+      play_queue: [],
+      skip_list: [],
+      current_play: "",
       is_play: false,
+      is_generate: false,
       system_mute_counter: 0,
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
@@ -417,8 +459,8 @@ module.exports = class App{
 
     player.on(AudioPlayerStatus.Idle, async () => {
       this.logger.debug(`queue end`);
-      await Utils.sleep(20);
       connectinfo.is_play = false;
+      connectinfo.current_play = "";
       this.play(guild_id);
     });
 
@@ -579,6 +621,14 @@ module.exports = class App{
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
     if(!connection || !connection.is_play) return;
+
+    const target_id = connection.current_play;
+    connection.skip_list.push(target_id);
+
+    connection.generate_queue = connection.generate_queue.filter(item => item.queue_id !== target_id);
+    connection.play_queue = connection.play_queue.filter(item => item.queue_id !== target_id);
+
+    setTimeout(() => connection.skip_list.filter(item => item !== target_id), 60000);
 
     connection.audio_player.stop(true);
   }

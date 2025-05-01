@@ -1,15 +1,11 @@
-const crypto = require('crypto');
 const log4js = require('log4js');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
 const SafeRegexpUtils = require('./safe_regexp_utils.js');
 
-const { EXTEND_PASS } = require('../config.json');
-
 const { shortcut } = require('../shortcuts.json');
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
-const EXTEND_REGEXP = /エクステンド[\(（]([A-Za-z0-9]+)[\)）]/g;
 
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 const escape_regexp_non_safe = (str) => str.replace(/[.*+\-?^${}|[\]\\]/g, '\\$&');
@@ -18,7 +14,6 @@ module.exports = class BotUtils{
   #logger;
   #VOICE_REGEXP;
   #VOICE_REGEXP_SPELL;
-  #EXTEND_ENABLE;
   #VOICE_REGEXP_NAME;
   #voice_list;
 
@@ -27,8 +22,6 @@ module.exports = class BotUtils{
     this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
     this.#VOICE_REGEXP = new RegExp(`ボイス[\\(（]([${ResurrectionSpell.spell_chars()}]{12,})[\\)）]`, "g");
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
-
-    this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
   }
 
   init_voicelist(voice_list, voice_liblary_list){
@@ -77,10 +70,6 @@ module.exports = class BotUtils{
     return text.replace(this.#VOICE_REGEXP, "");
   }
 
-  replace_extend_command(text){
-    return text.replace(EXTEND_REGEXP, "");
-  }
-
   get_spell_voice(spell){
     let voice_command = SafeRegexpUtils.exec(this.#VOICE_REGEXP, spell);
 
@@ -118,21 +107,5 @@ module.exports = class BotUtils{
     }
 
     return voice;
-  }
-
-  get_extend_flag(text){
-    if(!this.#EXTEND_ENABLE) return null;
-
-    let extend_command = SafeRegexpUtils.exec(EXTEND_REGEXP, text);
-
-    if(!(extend_command && extend_command[0])) return null;
-
-    const now = new Date();
-    const pass_base = `${EXTEND_PASS}${now.getMonth() + 1}${now.getDate()}${now.getHours()}${now.getMinutes()}`;
-    const pass = crypto.createHash('sha3-224').update(pass_base).digest('hex');
-
-    this.#logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
-
-    return extend_command[1] === pass;
   }
 }
