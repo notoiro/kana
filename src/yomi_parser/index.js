@@ -43,7 +43,11 @@ module.exports = class YomiParser{
       if(this.tokenizer_available) result = await this.tokenizer.tokenize(result);
       if(this.remote_replace_available) result = await this.replace_http(result);
     }else{
-      if(this.tokenizer_available) result = await this.tokenizer.old_tokenize(result);
+      if(USE_SUDACHI){
+        if(this.tokenizer_available) result = await this.tokenizer.tokenize(result);
+      }else{
+        if(this.tokenizer_available) result = await this.tokenizer.old_tokenize(result);
+      }
     }
 
     return result;
