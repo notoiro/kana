@@ -3,6 +3,7 @@ const {
   StringSelectMenuBuilder, StringSelectMenuOptionBuilder,
   ActionRowBuilder, ButtonBuilder, MessageFlags
 } = require('discord.js');
+const log4js = require('log4js');
 
 const VOICE_SPLIT_COUNT = 25;
 const DESCRIPTION = "エンジン、話者、スタイルの順で選択します。\n左右で話者ページ切り替え、リストで選択、これにするで決定。";
@@ -13,9 +14,9 @@ module.exports = class VoicepickController{
   #setting_list;
   #engine;
 
-  constructor(logger){
-    this.#logger = logger;
-
+  constructor(){
+    this.#logger = log4js.getLogger('voicepick_controller');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
     this.#setting_list = new Map();
   }
 

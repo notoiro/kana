@@ -1,4 +1,5 @@
 const fs = require('fs');
+const log4js = require('log4js');
 
 const { SERVER_DIR, IS_PONKOTSU } = require('../config.json');
 
@@ -16,8 +17,9 @@ module.exports = class DataUtils{
   }
   #SETTING_LISTS;
 
-  constructor(logger){
-    this.#logger = logger;
+  constructor(){
+    this.#logger = log4js.getLogger('data_utils');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
 
     this.#autojoin_cache = {};
     this.#uservoices_cache = {};

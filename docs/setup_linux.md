@@ -25,19 +25,17 @@
 - ストレージはボイスエンジン抜きで10GBぐらいいると思う
 - Arm系CPUは未検証なのでx86_64推奨
 - CUDA使うならGPUもあるといい
-- RAM上のキャッシュディレクトリもあるといい（Linuxなら`/tmp`で十分）
 
 ### 1.2 必要なもののインストール
 
 以下の物を入れる。説明はArchだけど適宜自分のLinuxと読み替えてインストールすること。
 - Git
-- ffmpeg
 - Node.js
 - pnpm
 
 Git, ffmpegはバージョンあんまり気にしなくて良いのでパッケージマネージャで。
 ```bash
-sudo pacman -S git ffmpeg
+sudo pacman -S git
 ```
 
 Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャからでもいい。）
@@ -321,16 +319,13 @@ nano config.json # vimでもnvimでもkwriteでもいい
 
 | 項目名 | 意味 |
 | ------------- | ------------- |
-| `TMP_DIR` | 音声のキャッシュディレクトリ。`/tmp`などのRAM上を推奨。 |
 | `TOKEN`  | 2.1で生成したDiscord Botのトークン |
 | `PREFIX` | その文字で始まる文章を読まなくする文字 |
 | `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
 | `KAGOME_HOST` | Kagome frontを利用する場合のホスト。使わないなら`none`にする。 |
 | `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
-| `OPUS_CONVERT` | 音声のOpusへの変換設定。`enable`で有効/無効、`bitlate`と`threads`はそれぞれビットレートと変換に利用するスレッド数。 |
 | `DICT_DIR` | トークン単位の辞書の保存先。 |
 | `IS_PONKOTSU` | ポンコツ設定をデフォルトで有効にするか |
-| `TMP_PREFIX` | キャッシュディレクトリに保存されるファイルのファイル名につける識別子。複数動かす場合に便利 |
 
 
 `VOICE_ENGINES`は音声エンジンの設定。用意したエンジンの数だけ以下の内容のオプジェクトを入れれば良い。

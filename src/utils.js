@@ -9,25 +9,6 @@ module.exports = class Utils{
     return (sample - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
   }
 
-  // テキストをBotで読ませてうざくないように調整する
-  static get_text_and_speed(text){
-    const count = text.length;
-    let text_speed = 0;
-    let text_after = text;
-
-    // 80文字以下、加速しない、変更しない
-    if(count < 80) text_speed = 0;
-    // 80文字以上280文字以下、加速する、変更しない
-    else if(count > 80 && count < 280) text_speed = 200;
-    // 280文字以上、加速する、変更する。
-    else{
-      text_speed = 200;
-      text_after = text.slice(0, 280) + "。いかしょうりゃく";
-    }
-
-    return { text: text_after, speed: text_speed };
-  }
-
   static clean_message(text){
     let result = text;
 

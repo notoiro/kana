@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, TMP_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST, SUDACHI_HOST, USE_SUDACHI
+  SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST, SUDACHI_HOST, USE_SUDACHI
 } = require('../config.json');
 
 const pkgjson = require("../package.json");
@@ -91,16 +91,9 @@ module.exports = (app) => {
 
   console.log("");
 
-  console.log(`${indent}${fg_blue}temp directory:  ${fg_default}  ${TMP_DIR}`);
   console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
   console.log(`${indent}${fg_blue}dict directory:  ${fg_default}  ${DICT_DIR}`);
 
-  console.log(`${indent}${fg_blue}pre opus convert:${fg_default}`);
-  console.log(`${indent}${fg_blue}  enabled:       ${fg_default}  ${ans(app.config.opus_convert.enable, "yes", "no")}`);
-  if(app.config.opus_convert.enable){
-    console.log(`${indent}${fg_blue}  bitrate:       ${fg_default}  ${app.config.opus_convert.bitrate}`);
-    console.log(`${indent}${fg_blue}  threads:       ${fg_default}  ${app.config.opus_convert.threads} core`);
-  }
   if(USE_SUDACHI){
     console.log(`${indent}${fg_blue}sudachi host:    ${fg_default}  ${SUDACHI_HOST}`);
   }else{
@@ -115,7 +108,6 @@ module.exports = (app) => {
   console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${app.status.connected_servers} servers`);
   console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${app.voice_list.length} voices`);
   console.log(`${indent}${fg_blue}dict word count: ${fg_default}  ${app.yomi_parser.tokenizer_dict_length}`);
-  console.log(`${indent}${fg_blue}pre opus convert:${fg_default}  ${ans(app.status.opus_convert_available, "available", "unavailable")}`);
   if(USE_SUDACHI){
     console.log(`${indent}${fg_blue}sudachi tokenizer:${fg_default} ${ans(app.yomi_parser.tokenizer_available, "available", "unavailable")}`);
   }else{

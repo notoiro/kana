@@ -1,14 +1,11 @@
-const crypto = require('crypto');
+const log4js = require('log4js');
 
 const ResurrectionSpell = require('./resurrection_spell.js');
 const SafeRegexpUtils = require('./safe_regexp_utils.js');
 
-const { EXTEND_PASS } = require('../config.json');
-
 const { shortcut } = require('../shortcuts.json');
 
 const VOL_REGEXP = /音量[\(（][0-9０-９]{1,3}[\)）]/g;
-const EXTEND_REGEXP = /エクステンド[\(（]([A-Za-z0-9]+)[\)）]/g;
 
 const zenint2hanint = (str) => str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
 const escape_regexp_non_safe = (str) => str.replace(/[.*+\-?^${}|[\]\\]/g, '\\$&');
@@ -17,16 +14,14 @@ module.exports = class BotUtils{
   #logger;
   #VOICE_REGEXP;
   #VOICE_REGEXP_SPELL;
-  #EXTEND_ENABLE;
   #VOICE_REGEXP_NAME;
   #voice_list;
 
-  constructor(logger){
-    this.#logger = logger;
+  constructor(){
+    this.#logger = log4js.getLogger('bot_utils');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
     this.#VOICE_REGEXP = new RegExp(`ボイス[\\(（]([${ResurrectionSpell.spell_chars()}]{12,})[\\)）]`, "g");
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
-
-    this.#EXTEND_ENABLE = EXTEND_PASS !== undefined && EXTEND_PASS !== "none";
   }
 
   init_voicelist(voice_list, voice_liblary_list){
@@ -75,8 +70,23 @@ module.exports = class BotUtils{
     return text.replace(this.#VOICE_REGEXP, "");
   }
 
-  replace_extend_command(text){
-    return text.replace(EXTEND_REGEXP, "");
+  // テキストをBotで読ませてうざくないように調整する
+  get_text_speed(text){
+    const fixed_text = this.replace_volume_command(this.replace_voice_spell(text));
+    const count = fixed_text.length;
+    let text_speed = 0;
+
+    // 80文字以下、加速しない、変更しない
+    if(count < 80) text_speed = 0;
+    // 80文字以上280文字以下、加速する、変更しない
+    else if(count > 80 && count < 280) text_speed = 280;
+    // 280文字以上、加速する、変更する`。
+    // 処理順的にテキストの省略処理ができないので一旦気にしないことにする
+    else{
+      text_speed = 200;
+    }
+
+    return text_speed;
   }
 
   get_spell_voice(spell){
@@ -116,21 +126,5 @@ module.exports = class BotUtils{
     }
 
     return voice;
-  }
-
-  get_extend_flag(text){
-    if(!this.#EXTEND_ENABLE) return null;
-
-    let extend_command = SafeRegexpUtils.exec(EXTEND_REGEXP, text);
-
-    if(!(extend_command && extend_command[0])) return null;
-
-    const now = new Date();
-    const pass_base = `${EXTEND_PASS}${now.getMonth() + 1}${now.getDate()}${now.getHours()}${now.getMinutes()}`;
-    const pass = crypto.createHash('sha3-224').update(pass_base).digest('hex');
-
-    this.#logger.debug(`Pass = ${pass}, Command = ${extend_command[1]}`);
-
-    return extend_command[1] === pass;
   }
 }

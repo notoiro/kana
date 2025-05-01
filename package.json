@@ -9,14 +9,16 @@
     "production": "env NODE_ENV=production node index.js"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
     "@djs-button-pages/presets": "^1.0.0",
     "@notoiro/djs-button-pages": "^4.0.2",
+    "audiobuffer-to-wav": "^1.0.0",
     "axios": "^1.8.4",
     "discord.js": "^14.18.0",
     "emoji-regex": "^10.4.0",
-    "fluent-ffmpeg": "^2.1.3",
     "log4js": "^6.9.1",
+    "node-web-audio-api": "^1.0.4",
     "shorthash-jp": "github:notoiro/node-shorthash",
     "sodium-native": "^5.0.1",
     "wanakana": "^5.3.1"

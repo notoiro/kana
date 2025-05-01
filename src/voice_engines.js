@@ -1,21 +1,18 @@
 const shorthash = require('shorthash-jp');
-const fs = require('fs');
+const log4js = require('log4js');
 
 const {
-  VOICE_ENGINES, TMP_DIR, TMP_PREFIX, SERVER_DIR
+  VOICE_ENGINES
 } = require('../config.json');
 
 const Voicevox = require('./engine_loaders/voicevox.js');
 const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
-const VolumeController = require('./volume_controller.js');
 
 module.exports = class VoiceEngines{
   #logger;
   #engines;
   #liblary_engine_map;
   #speaker_engine_map;
-  #speaker_volume_map;
-  #reference_lufs;
 
   #engine_list;
   #short_id_map;
@@ -26,14 +23,14 @@ module.exports = class VoiceEngines{
   #credit_urls;
   #infos;
 
-  constructor(logger){
-    this.#logger = logger;
+  constructor(){
+    this.#logger = log4js.getLogger('voice_engine_manager');
+    this.#logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
 
     if(VOICE_ENGINES){
       this.#engines = new Map();
       this.#liblary_engine_map = new Map();
       this.#speaker_engine_map = new Map();
-      this.#speaker_volume_map = new Map();
 
       this.load_engines();
     }else{
@@ -108,7 +105,7 @@ module.exports = class VoiceEngines{
       const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
 
       try{
-        await e.api.synthesis("てすと", `test_${e.name}${TMP_PREFIX}.wav`, shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
+        await e.api.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
 
         this.#logger.debug(`${e.name} OK`);
       }catch(e){
@@ -124,131 +121,7 @@ module.exports = class VoiceEngines{
     this.#credit_urls = this._credit_urls();
     this.#infos = this._engine_infos();
 
-    await this.generate_reference_volume();
-    this.load_loudness_list();
-
     this._setup__maps();
-  }
-
-  async generate_reference_volume(){
-    const ref = Array.from(this.#engines.values())[0];
-    const id = this.#short_id_map.get(ref.voice_list[0].value).id;
-
-    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-
-    try{
-      let samples = [];
-
-      // 2つの系譜の異なる文章を読ませる
-      // ここは起動時処理なのでキュー処理は考慮しない
-      samples.push(await ref.api.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}${TMP_PREFIX}.wav`, id, tmp_voice));
-      samples.push(await ref.api.synthesis("にゃんにゃんにゃんにゃんにゃんにゃんにゃんにゃんにゃんにゃん", `test_2_${ref.name}${TMP_PREFIX}.wav`, id, tmp_voice));
-
-      // ラウドネスを取得する
-      const tests = [];
-      for(let r of samples) tests.push(VolumeController.get_loud(r));
-
-      const test_result = await Promise.all(tests);
-      this.#reference_lufs = this.merge_lufs(test_result);
-    }catch(e){
-      throw e;
-    }
-  }
-
-  async generate_reference_diff(voice_id){
-    const map_item = this.#speaker_volume_map.get(voice_id);
-    // 何か入ってるならスキップ（これはLOCKって入ってても同様の処理で大丈夫）
-    if(map_item) return;
-
-    this.#speaker_volume_map.set(voice_id, "LOCK");
-
-    const ref = this.#speaker_engine_map.get(voice_id);
-
-    const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-
-    try{
-      const sample = await this.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", `test_1_${ref.name}_${voice_id}${TMP_PREFIX}`, '.wav', voice_id, tmp_voice, true);
-
-      // ラウドネスを取得する
-      const loud = await VolumeController.diff_loud(sample, this.#reference_lufs);
-
-      this.write_loudness(voice_id, loud);
-    }catch(e){
-      // リファレンスの差分データの生成に失敗した場合は何もしない
-      // ここで引っかかる例ってほぼないだろうし、あったとしてもその場で処理できるエラーでもない
-      // なおかつこの程度で終了かかるべきでもないのでログだけ出す
-      this.#logger.info("Reference diff err");
-      this.#logger.info(e);
-    }
-  }
-
-  merge_lufs(lufs_settings){
-    let lufs_setting = {
-      input_i: 0,
-      input_tp: 0,
-      input_thresh: 0
-    }
-    for(let l of lufs_settings){
-      lufs_setting.input_i      += parseFloat(l.input_i);
-      lufs_setting.input_tp     += parseFloat(l.input_tp);
-      lufs_setting.input_thresh += parseFloat(l.input_thresh);
-    }
-
-    lufs_setting.input_i =      lufs_setting.input_i      / lufs_settings.length;
-    lufs_setting.input_tp =     lufs_setting.input_tp     / lufs_settings.length;
-    lufs_setting.input_thresh = lufs_setting.input_thresh / lufs_settings.length;
-
-    return lufs_setting;
-  }
-
-  check_ref(ref){
-    return !!ref &&
-           ref.input_i === this.#reference_lufs.input_i &&
-           ref.input_thresh === this.#reference_lufs.input_thresh &&
-           ref.input_tp === this.#reference_lufs.input_tp;
-  }
-
-  load_loudness_list(){
-    const data = this.get_loudness_data();
-    if(!this.check_ref(data.reference)){
-      this.#logger.info('Loudness is not loaded.(Reference changed)');
-      return;
-    }
-    for(let l in data.list) this.#speaker_volume_map.set(l, data.list[l]);
-    this.#logger.debug(`${this.#speaker_volume_map.size} loudness value loaded.`);
-  }
-
-  write_loudness(id, value){
-    this.#speaker_volume_map.set(id, value);
-    this.write_loudness_list(Object.fromEntries(this.#speaker_volume_map));
-  }
-
-  get_loudness_data(){
-    let result = {};
-    try{
-      let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/loudness.json`));
-
-      result = json;
-    }catch(e){
-      this.#logger.info(e);
-      result = {
-        ref: null
-      };
-    }
-
-    return result;
-  }
-
-  write_loudness_list(list){
-    const data = {
-      reference: this.#reference_lufs,
-      list: list
-    }
-    try{
-      fs.writeFileSync(`${SERVER_DIR}/loudness.json`, JSON.stringify(data, null, "  "));
-    }catch(e){
-      this.#logger.info(e);
-    }
   }
 
   get engines(){
@@ -421,18 +294,15 @@ module.exports = class VoiceEngines{
   }
 
   // voice_idはshortidである
-  synthesis(text, filename_base, ext, voice_id, param, pass_volume_controll = false){
+  synthesis(text, voice_id, param){
     const engine = this.#speaker_engine_map.get(voice_id);
     if(engine === undefined) throw "Unknown Engine or Voice";
 
     return new Promise((resolve, reject) => {
         const queue = {
           text,
-          filename_base,
-          ext,
           voice_id,
           param,
-          pass_volume_controll,
           resolve,
           reject
         };
@@ -450,7 +320,9 @@ module.exports = class VoiceEngines{
     const q = engine.queue.shift();
 
     try{
-      const result = await this._synthesis(engine, q.text, q.filename_base, q.ext, q.voice_id, q.param, q.pass_volume_controll);
+      // 音量平均化実装が簡易化されたので_synthesisは廃止
+      const id = this.#short_id_map.get(q.voice_id).id;
+      const result = await engine.api.synthesis(q.text, id, q.param);
       q.resolve(result);
     }catch(e){
       q.reject(e);
@@ -458,37 +330,5 @@ module.exports = class VoiceEngines{
 
     engine.lock = false;
     this.queue_start(engine);
-  }
-
-  // voice_idはshortidである
-  async _synthesis(engine, text, filename_base, ext, voice_id, param, pass_volume_controll = false){
-    const id = this.#short_id_map.get(voice_id).id;
-    const volume = this.#speaker_volume_map.get(voice_id);
-
-    try{
-      const v = engine.api.synthesis(text, `${filename_base}_orig${ext}`, id, param);
-
-      // 生成中なら無視して返す
-      if(pass_volume_controll || volume === 'LOCK'){
-        this.#logger.debug('pass volume controll');
-        return await v;
-      }
-      // 未生成なら生成叩いて返す
-      if(!volume){
-        this.#logger.debug('generate volume controll')
-        this.generate_reference_diff(voice_id);
-        return await v;
-      }
-
-      const filepath = await v;
-
-      // 無音だったら無音のファイル返す
-      if(await VolumeController.is_silent_file(filepath)) return filepath;
-
-      this.#logger.debug('set loud')
-      return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
-    }catch(e){
-      throw e;
-    }
   }
 }
