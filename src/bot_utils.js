@@ -76,15 +76,10 @@ module.exports = class BotUtils{
     const count = fixed_text.length;
     let text_speed = 0;
 
-    // 80文字以下、加速しない、変更しない
+    // 80文字以下、加速しない
     if(count < 80) text_speed = 0;
-    // 80文字以上280文字以下、加速する、変更しない
-    else if(count > 80 && count < 280) text_speed = 280;
-    // 280文字以上、加速する、変更する`。
-    // 処理順的にテキストの省略処理ができないので一旦気にしないことにする
-    else{
-      text_speed = 200;
-    }
+    // 80文字以上、加速する
+    else text_speed = 200;
 
     return text_speed;
   }

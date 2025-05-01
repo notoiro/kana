@@ -538,19 +538,12 @@ module.exports = class App{
 
     const new_voice_id = new_s.channelId;
     const old_voice_id = old_s.channelId;
-    this.logger.debug(`old_voice_id: ${old_voice_id}`);
-    this.logger.debug(`new_voice_id: ${new_voice_id}`);
-    this.logger.debug(`con voice id: ${connection.voice}`);
 
     // 現在の監視対象じゃないなら抜ける
     if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id) && (old_voice_id === new_voice_id)) return;
 
     const is_join = (new_s.channelId === connection.voice);
     const is_leave = (old_s.channelId === connection.voice);
-
-    this.logger.debug(`is_join: ${is_join}`);
-    this.logger.debug(`is_leave: ${is_leave}`);
-    this.logger.debug(`xor: ${Utils.xor(is_join, is_leave)}`);
 
     if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
       const d_connection = getVoiceConnection(guild_id);

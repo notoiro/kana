@@ -8,7 +8,7 @@ const { silentify, reply } = require('../src/silentify.js');
 const ans = (flag, true_text, false_text) => {
   return flag ? true_text:false_text;
 };
-
+// TODO: Tokenizerのタイプを出す
 module.exports = silentify({
   data: {
     name: "info",
