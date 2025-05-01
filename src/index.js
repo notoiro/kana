@@ -274,22 +274,26 @@ module.exports = class App{
     }
 
     let count = 0;
-    const result_queue = [];
+    let result_queue = [];
 
-    for(let q of text_queues){
-      const text = q.str;
-      this.logger.debug(`text count: ${count}`);
-      this.logger.debug(`text count + length: ${count + text.length}`);
-      this.logger.debug(`max: ${(count + text.length) - 280}`);
-      if((count + text.length) > 280){
-        const max = (count + text.length) - 280;
-        q.str = text.slice(0, max) + '。いかしょうりゃく';
-        result_queue.push(q);
-        break;
-      }else{
-        result_queue.push(q);
-        count += text.length;
+    if(!this.status.debug){
+      for(let q of text_queues){
+        const text = q.str;
+        this.logger.debug(`text count: ${count}`);
+        this.logger.debug(`text count + length: ${count + text.length}`);
+        this.logger.debug(`max: ${(count + text.length) - 280}`);
+        if((count + text.length) > 280){
+          const max = (count + text.length) - 280;
+          q.str = text.slice(0, max) + '。いかしょうりゃく';
+          result_queue.push(q);
+          break;
+        }else{
+          result_queue.push(q);
+          count += text.length;
+        }
       }
+    }else{
+      result_queue = text_queues;
     }
 
     connection = this.connections_map.get(msg.guild.id);
@@ -477,6 +481,7 @@ module.exports = class App{
 
     player.on(AudioPlayerStatus.Idle, async () => {
       this.logger.debug(`queue end`);
+      await Utils.sleep(200);
       connectinfo.is_play = false;
       connectinfo.current_play = "";
       this.play(guild_id);
