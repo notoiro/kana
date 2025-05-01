@@ -346,13 +346,13 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      console.time('generate');
+      // console.time('generate');
       const raw_wav = await this.voice_engines.synthesis(q.str, voice.voice, voice_data);
-      console.timeEnd('generate');
+      // console.timeEnd('generate');
 
-      console.time('normalize');
+      // console.time('normalize');
       const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27);
-      console.timeEnd('normalize');
+      // console.timeEnd('normalize');
 
       connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
 
@@ -389,7 +389,7 @@ module.exports = class App{
     }
 
     try{
-      console.time('stream');
+      // console.time('stream');
       const data = new Readable({
         read() {
           this.push(q.wav);
@@ -400,7 +400,7 @@ module.exports = class App{
       const audio_res = createAudioResource(data, { inlineVolume: false });
 
       connection.audio_player.play(audio_res);
-      console.timeEnd('stream');
+      // console.timeEnd('stream');
     }catch(e){
       this.logger.info(e);
 
