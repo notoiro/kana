@@ -48,8 +48,6 @@ module.exports = {
     }
 
 
-    if(!app.status.debug){
-      await interaction.followUp({ content: '接続しました。' });
-    }
+    await interaction.followUp({ content: '接続しました。' });
   }
 }

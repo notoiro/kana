@@ -1,7 +1,4 @@
 const { default: axios } = require('axios');
-const fs = require('fs');
-
-const { TMP_DIR } = require('../../config.json');
 const { AxiosError } = require('axios');
 
 module.exports = class COEIROINKV2{
@@ -74,7 +71,7 @@ module.exports = class COEIROINKV2{
   //   pitch: Num
   //   intonation: Num
   //   volume: Num
-  async synthesis(text, filename, style_id, param){
+  async synthesis(text, style_id, param){
     try{
       const query = await this.#rpc.post(`v1/estimate_prosody`, JSON.stringify({text: text}), { headers: { 'Content-Type': 'application/json' }});
 
@@ -103,10 +100,7 @@ module.exports = class COEIROINKV2{
         }
       });
 
-      const file_path = `${TMP_DIR}/${filename}`;
-      fs.writeFileSync(file_path, new Buffer.from(synth.data), 'binary');
-
-      return file_path;
+      return new Uint8Array(synth.data).buffer;
     }catch(e){
       if(e instanceof AxiosError){
         console.log(JSON.stringify(e.response?.data, null, "  "));

@@ -1,4 +1,5 @@
 const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
+const crypto = require("crypto");
 
 const app = require('../index.js');
 
@@ -38,6 +39,7 @@ module.exports = {
 
     // add_text_queue が利用している部分だけ満たすObjectを作る
     let msg_obj = {
+      id: crypto.randomUUID(),
       cleanContent: text,
       guild:{ id: guild_id },
       member: { id: voice_target }

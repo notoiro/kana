@@ -2,7 +2,7 @@
 // deps
 const {
   joinVoiceChannel, getVoiceConnection, createAudioResource,
-  StreamType, createAudioPlayer, NoSubscriberBehavior,
+  createAudioPlayer, NoSubscriberBehavior,
   VoiceConnectionStatus, entersState, AudioPlayerStatus
 } = require("@discordjs/voice");
 const {
@@ -10,7 +10,12 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
+<<<<<<< HEAD
 const { VMLError } = require('vml');
+=======
+const { Readable } = require('stream');
+const crypto = require("crypto");
+>>>>>>> dev
 
 const VoiceEngines = require('./voice_engines.js');
 const YomiParser = require('./yomi_parser/index.js');
@@ -19,14 +24,12 @@ const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
 const MixUtils = require('./mix_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
-const convert_audio = require('./convert_audio.js');
+const LoudnessNormalizer = require('./loudness_normalizer.js');
 const print_info = require('./print_info.js');
 
 const SKIP_PREFIX = "s";
 
-const {
-  TOKEN, PREFIX, TMP_DIR, OPUS_CONVERT, IS_PONKOTSU, TMP_PREFIX
-} = require('../config.json');
+const { TOKEN, PREFIX, IS_PONKOTSU } = require('../config.json');
 
 module.exports = class App{
   #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
@@ -45,11 +48,12 @@ module.exports = class App{
       ]
     });
 
-    this.voice_engines = new VoiceEngines(this.logger);
+    this.voice_engines = new VoiceEngines();
+    this.normalizer = new LoudnessNormalizer();
 
-    this.bot_utils = new BotUtils(this.logger);
-    this.data_utils = new DataUtils(this.logger);
-    this.voicepick_controller = new VoicepickController(this.logger);
+    this.bot_utils = new BotUtils();
+    this.data_utils = new DataUtils();
+    this.voicepick_controller = new VoicepickController();
 
     this.connections_map = new Map();
     this.autojoin_map = new Map();
@@ -57,22 +61,17 @@ module.exports = class App{
     this.voice_list = [];
     this.voice_liblary_list = [];
     this.commands = {};
-    this.config = {
-      opus_convert: { enable: false, bitrate: '96k', threads: 2 }
-    };
 
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
-      discord_username: "NAME",
-      opus_convert_available: false
+      discord_username: "NAME"
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
   }
 
   async start(){
-    this.setup_config();
     this.setup_autojoin();
     this.setup_uservoice_list();
     await this.voice_engines.init_engines();
@@ -87,7 +86,6 @@ module.exports = class App{
     this.data_utils.init(this.voice_list[0].value);
     this.voicepick_controller.init(this.voice_engines);
 
-    await this.test_opus_convert();
     await this.yomi_parser.setup();
 
     this.currentvoice = require('./currentvoice.js');
@@ -99,18 +97,6 @@ module.exports = class App{
     this.client.login(TOKEN);
   }
 
-  setup_config(){
-    if(OPUS_CONVERT !== undefined && OPUS_CONVERT.hasOwnProperty('enable')){
-      this.config.opus_convert.enable = OPUS_CONVERT.enable;
-      if(OPUS_CONVERT.enable){
-        this.config.opus_convert.bitrate = OPUS_CONVERT.bitrate ?? this.config.opus_convert.bitrate;
-        this.config.opus_convert.threads = OPUS_CONVERT.threads ?? this.config.opus_convert.threads;
-      }
-    }
-
-    this.config.opus_convert.threads = this.config.opus_convert.threads.toString();
-  }
-
   setup_autojoin(){
     const list = this.data_utils.get_autojoin_list();
     for(let l in list) this.autojoin_map.set(l, list[l]);
@@ -119,19 +105,6 @@ module.exports = class App{
   setup_uservoice_list(){
     const list = this.data_utils.get_uservoices_list();
     for(let l in list) this.uservoices_map.set(l, list[l]);
-  }
-
-  async test_opus_convert(){
-    try{
-      const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-      await this.voice_engines.synthesis("てすと", `test${TMP_PREFIX}`, '.wav', this.voice_list[0].value, tmp_voice);
-      const opus_voice_path = await convert_audio(`${TMP_DIR}/test${TMP_PREFIX}_orig.wav`, `${TMP_DIR}/test${TMP_PREFIX}.ogg`);
-      this.status.opus_convert_available = !!opus_voice_path;
-    }catch(e){
-      this.logger.info(`Opus convert init err.`);
-      console.log(e);
-      this.status.opus_convert_available = false;
-    }
   }
 
   setup_discord(){
@@ -266,12 +239,12 @@ module.exports = class App{
 
     text = Utils.clean_message(text);
 
-    const q = { str: text, id: voice_ref_id, volume_order: volume_order };
+    const q = { str: text, id: voice_ref_id, volume_order: volume_order, queue_id: crypto.randomUUID() };
 
     if(voice_override) q.voice_override = voice_override;
 
-    connection.queue.push(q);
-    this.play(guild_id);
+    connection.generate_queue.push(q);
+    this.generate_queue_start(guild_id);
   }
 
   async add_text_queue(msg, skip_discord_features = false){
@@ -313,6 +286,7 @@ module.exports = class App{
       this.logger.debug(`content(replace dict): ${content}`);
     }
 
+<<<<<<< HEAD
     // 2
     // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
     if(this.bot_utils.is_song(content)){
@@ -334,41 +308,86 @@ module.exports = class App{
     // 3
     let volume_order = this.bot_utils.get_command_volume(content);
     if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
+=======
+    const text_speed = this.bot_utils.get_text_speed(content);
+>>>>>>> dev
 
-    let voice_override = this.bot_utils.get_spell_voice(content);
-    if(voice_override !== null) content = this.bot_utils.replace_voice_spell(content);
+    let texts = content.split(/[。\n「」『』]{1}/);
+    let text_queues = [];
 
-    let is_extend = this.bot_utils.get_extend_flag(content);
-    if(is_extend !== null) content = this.bot_utils.replace_extend_command(content);
+    for(let text of texts){
+      // 2
+      let volume_order = this.bot_utils.get_command_volume(text);
+      if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
+<<<<<<< HEAD
     // 4
     content = Utils.clean_message(content);
     this.logger.debug(`content(clean): ${content}`);
     // 5
     content = await this.yomi_parser.fix_reading(content, connection.is_ponkotsu);
     this.logger.debug(`content(fix reading): ${content}`);
+=======
+      let voice_override = this.bot_utils.get_spell_voice(text);
+      if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
+>>>>>>> dev
 
-    const q = { str: content, id: msg.member.id, volume_order: volume_order, is_extend };
+      // 3
+      text = Utils.clean_message(text);
+      this.logger.debug(`content(clean): ${text}`);
+      // 4
+      text = await this.yomi_parser.fix_reading(text, connection.is_ponkotsu);
+      this.logger.debug(`content(fix reading): ${text}`);
+
+      const q = { str: text, id: msg.member.id, volume_order: volume_order, queue_id: `${msg.id}` };
+
+      if(voice_override) q.voice_override = voice_override;
+      q.text_speed = text_speed;
+
+      text_queues.push(q);
+    }
+
+    let count = 0;
+    let result_queue = [];
+
+    if(!this.status.debug){
+      for(let q of text_queues){
+        const text = q.str;
+        this.logger.debug(`text count: ${count}`);
+        this.logger.debug(`text count + length: ${count + text.length}`);
+        this.logger.debug(`max: ${(count + text.length) - 280}`);
+        if((count + text.length) > 280){
+          const max = (count + text.length) - 280;
+          q.str = text.slice(0, max) + '。いかしょうりゃく';
+          result_queue.push(q);
+          break;
+        }else{
+          result_queue.push(q);
+          count += text.length;
+        }
+      }
+    }else{
+      result_queue = text_queues;
+    }
 
     connection = this.connections_map.get(msg.guild.id);
     this.logger.debug(`play connection: ${connection}`);
     if(!connection) return;
 
-    if(voice_override) q.voice_override = voice_override;
+    Array.prototype.push.apply(connection.generate_queue, result_queue);
 
-    connection.queue.push(q);
-
-    this.play(msg.guild.id);
+    this.generate_queue_start(msg.guild.id);
   }
 
-  async play(guild_id){
+  async generate_queue_start(guild_id){
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
-    if(!connection || connection.is_play || connection.queue.length === 0) return;
+    if(!connection || connection.is_generate || connection.generate_queue.length === 0) return;
 
-    connection.is_play = true;
-    this.logger.debug(`play start`);
+    connection.is_generate = true;
+    this.logger.debug(`generate start`);
 
+<<<<<<< HEAD
     const q = connection.queue.shift();
 
     if(q.song){
@@ -436,13 +455,17 @@ module.exports = class App{
       return;
     }
 
+=======
+    const q = connection.generate_queue.shift();
+>>>>>>> dev
     // 何もないなら次へ
     if(!(q.str) || q.str.trim().length === 0){
-      connection.is_play = false;
-      this.play(guild_id);
-      this.logger.debug(`play empty next`);
+      connection.is_generate = false;
+      this.generate_queue_start(guild_id);
       return;
     }
+
+    if(!q.text_speed) q.text_speed = 0;
 
     // connectionあるならデフォルトボイスはある
     // もしvoice_overrideがあるならそれを優先する
@@ -453,23 +476,16 @@ module.exports = class App{
     else setting_voice = user_voice;
 
     let voice = q.voice_override ?? setting_voice;
-    this.logger.debug(`play voice: ${JSON.stringify(voice)}`);
-
-    const text_data = Utils.get_text_and_speed(q.str);
-    this.logger.debug(`play text speed: ${text_data.speed}`);
+    this.logger.debug(`generate voice: ${JSON.stringify(voice)}`);
 
     // デバッグ時は省略せず全文読ませる
     if(this.status.debug){
-      text_data.speed = voice.speed;
-    }
-    this.logger.debug(`Extend: ${q.is_extend}`);
-    if(q.is_extend || this.status.debug){
-      text_data.text = q.str;
+      q.text_speed = voice.speed;
     }
 
     const voice_data = {
       // 加速はユーザー設定と加速設定のうち速い方を利用する。
-      speed: Utils.map_voice_setting(((voice.speed > text_data.speed) ? voice.speed : text_data.speed), 0.5, 1.5),
+      speed: Utils.map_voice_setting(((voice.speed > q.text_speed) ? voice.speed : q.text_speed), 0.5, 1.5),
       pitch: Utils.map_voice_setting(voice.pitch, -0.15, 0.15),
       intonation: Utils.map_voice_setting(voice.intonation, 0, 2),
       volume: Utils.map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
@@ -478,40 +494,66 @@ module.exports = class App{
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
 
     try{
-      const voice_path = await this.voice_engines.synthesis(text_data.text, connection.filename_base, connection.ext, voice.voice, voice_data);
+      // console.time('generate');
+      const raw_wav = await this.voice_engines.synthesis(q.str, voice.voice, voice_data);
+      // console.timeEnd('generate');
 
-      let opus_voice_path;
+      // console.time('normalize');
+      const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27);
+      // console.timeEnd('normalize');
 
-      if(this.config.opus_convert.enable){
-        // Opusへの変換は失敗してもいいので入れ子にする
-        try{
-          opus_voice_path = await convert_audio(
-            voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
-            this.config.opus_convert.bitrate, this.config.opus_convert.threads
-          );
-        }catch(e){
-          this.logger.info(e);
-          opus_voice_path = null;
-        }
-      }
+      connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
 
-      let audio_res;
-      if(this.config.opus_convert.enable && opus_voice_path){
-        audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
-          inputType: StreamType.OggOpus, inlineVolume: false
-        });
-      }else{
-        audio_res = createAudioResource(voice_path, { inlineVolume: false });
-      }
+      connection.is_generate = false;
 
-      this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
-
-      connection.audio_player.play(audio_res);
+      this.generate_queue_start(guild_id);
+      this.play(guild_id);
     }catch(e){
       this.logger.info(e);
 
-      await Utils.sleep(10);
+      connection.is_generate = false;
+
+      this.generate_queue_start(guild_id);
+    }
+  }
+
+  async play(guild_id){
+    // 接続ないなら抜ける
+    const connection = this.connections_map.get(guild_id);
+    if(!connection || connection.is_play || connection.play_queue.length === 0) return;
+
+    connection.is_play = true;
+    this.logger.debug(`play start`);
+
+    const q = connection.play_queue.shift();
+    connection.current_play = q.queue_id;
+
+    if(connection.skip_list.some(id => id === q.queue_id)){
       connection.is_play = false;
+      connection.current_play = "";
+
+      this.play(guild_id);
+      return;
+    }
+
+    try{
+      // console.time('stream');
+      const data = new Readable({
+        read() {
+          this.push(q.wav);
+          this.push(null);
+        }
+      });
+
+      const audio_res = createAudioResource(data, { inlineVolume: false });
+
+      connection.audio_player.play(audio_res);
+      // console.timeEnd('stream');
+    }catch(e){
+      this.logger.info(e);
+
+      connection.is_play = false;
+      connection.current_play = "";
 
       this.play(guild_id);
     }
@@ -543,11 +585,12 @@ module.exports = class App{
       check_texts: texts,
       voice: data.voice_id,
       audio_player: null,
-      queue: [],
-      filename_base: `${guild_id}${TMP_PREFIX}`,
-      ext: ".wav",
-      opus_ext: ".ogg",
+      generate_queue: [],
+      play_queue: [],
+      skip_list: [],
+      current_play: "",
       is_play: false,
+      is_generate: false,
       system_mute_counter: 0,
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
@@ -582,8 +625,9 @@ module.exports = class App{
 
     player.on(AudioPlayerStatus.Idle, async () => {
       this.logger.debug(`queue end`);
-      await Utils.sleep(20);
+      await Utils.sleep(200);
       connectinfo.is_play = false;
+      connectinfo.current_play = "";
       this.play(guild_id);
     });
 
@@ -643,19 +687,12 @@ module.exports = class App{
 
     const new_voice_id = new_s.channelId;
     const old_voice_id = old_s.channelId;
-    this.logger.debug(`old_voice_id: ${old_voice_id}`);
-    this.logger.debug(`new_voice_id: ${new_voice_id}`);
-    this.logger.debug(`con voice id: ${connection.voice}`);
 
     // 現在の監視対象じゃないなら抜ける
     if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id) && (old_voice_id === new_voice_id)) return;
 
     const is_join = (new_s.channelId === connection.voice);
     const is_leave = (old_s.channelId === connection.voice);
-
-    this.logger.debug(`is_join: ${is_join}`);
-    this.logger.debug(`is_leave: ${is_leave}`);
-    this.logger.debug(`xor: ${Utils.xor(is_join, is_leave)}`);
 
     if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
       const d_connection = getVoiceConnection(guild_id);
@@ -744,6 +781,14 @@ module.exports = class App{
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
     if(!connection || !connection.is_play) return;
+
+    const target_id = connection.current_play;
+    connection.skip_list.push(target_id);
+
+    connection.generate_queue = connection.generate_queue.filter(item => item.queue_id !== target_id);
+    connection.play_queue = connection.play_queue.filter(item => item.queue_id !== target_id);
+
+    setTimeout(() => connection.skip_list.filter(item => item !== target_id), 60000);
 
     connection.audio_player.stop(true);
   }
