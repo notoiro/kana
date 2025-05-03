@@ -10,12 +10,9 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
-<<<<<<< HEAD
 const { VMLError } = require('vml');
-=======
 const { Readable } = require('stream');
 const crypto = require("crypto");
->>>>>>> dev
 
 const VoiceEngines = require('./voice_engines.js');
 const YomiParser = require('./yomi_parser/index.js');
@@ -286,31 +283,28 @@ module.exports = class App{
       this.logger.debug(`content(replace dict): ${content}`);
     }
 
-<<<<<<< HEAD
     // 2
     // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
     if(this.bot_utils.is_song(content)){
-      let song;
-      try{
-        song = this.bot_utils.parse_song(content);
-      }catch(e){
-        if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
-        else msg.reply('なんかのエラー');
-      }
-
-      const q = { song: song, msg: msg };
-      connection.queue.push(q);
-
-      this.play(msg.guild.id);
+      // TODO: 現在の処理系と合体させる
       return;
+      // let song;
+      // try{
+      //   song = this.bot_utils.parse_song(content);
+      // }catch(e){
+      //   if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
+      //   else msg.reply('なんかのエラー');
+      // }
+
+      // const q = { song: song, msg: msg };
+      // connection.queue.push(q);
+
+      // this.play(msg.guild.id);
+      // return;
     }
 
     // 3
-    let volume_order = this.bot_utils.get_command_volume(content);
-    if(volume_order !== null) content = this.bot_utils.replace_volume_command(content);
-=======
     const text_speed = this.bot_utils.get_text_speed(content);
->>>>>>> dev
 
     let texts = content.split(/[。\n「」『』]{1}/);
     let text_queues = [];
@@ -320,17 +314,8 @@ module.exports = class App{
       let volume_order = this.bot_utils.get_command_volume(text);
       if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
 
-<<<<<<< HEAD
-    // 4
-    content = Utils.clean_message(content);
-    this.logger.debug(`content(clean): ${content}`);
-    // 5
-    content = await this.yomi_parser.fix_reading(content, connection.is_ponkotsu);
-    this.logger.debug(`content(fix reading): ${content}`);
-=======
       let voice_override = this.bot_utils.get_spell_voice(text);
       if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
->>>>>>> dev
 
       // 3
       text = Utils.clean_message(text);
@@ -387,77 +372,47 @@ module.exports = class App{
     connection.is_generate = true;
     this.logger.debug(`generate start`);
 
-<<<<<<< HEAD
-    const q = connection.queue.shift();
+    // TODO: 現在の処理系と合体させる
+    // const q = connection.queue.shift();
 
-    if(q.song){
-      try{
-        let voice_path = "";
-        if(q.song.length === 1){
-          const buffer = await this.voice_engines.song_synthesis(q.song[0].score, connection.filename_base, connection.ext, q.song[0].singer);
-          voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
-        // マルチトラックの場合
-        }else{
-          let tracks = [];
-          for(let s of q.song){
-            const buffer = await this.voice_engines.song_synthesis(s.score, connection.filename_base, connection.ext, s.singer);
+    // if(q.song){
+    //   try{
+    //     let voice_path = "";
+    //     if(q.song.length === 1){
+    //       const buffer = await this.voice_engines.song_synthesis(q.song[0].score, connection.filename_base, connection.ext, q.song[0].singer);
+    //       voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
+    //     // マルチトラックの場合
+    //     }else{
+    //       let tracks = [];
+    //       for(let s of q.song){
+    //         const buffer = await this.voice_engines.song_synthesis(s.score, connection.filename_base, connection.ext, s.singer);
 
-            tracks.push({ buffer, gain: s.gain });
-          }
+    //         tracks.push({ buffer, gain: s.gain });
+    //       }
 
-          const buffer = await MixUtils.mix(tracks);
-          voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
-        }
+    //       const buffer = await MixUtils.mix(tracks);
+    //       voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
+    //     }
+    //   }catch(e){
+    //     this.logger.info(e);
 
-        let opus_voice_path;
+    //     if(!q.system){
+    //       if(e instanceof VMLError){
+    //         q.msg.reply(`VMLにエラーがあります: ${e.message}`);
+    //       }else{
+    //         q.msg.reply('生成に失敗しました');
+    //       }
+    //     }
 
-        if(this.config.opus_convert.enable){
-          // Opusへの変換は失敗してもいいので入れ子にする
-          try{
-            opus_voice_path = await convert_audio(
-              voice_path, `${TMP_DIR}/${connection.filename_base}${connection.opus_ext}`,
-              this.config.opus_convert.bitrate, this.config.opus_convert.threads
-            );
-          }catch(e){
-            this.logger.info(e);
-            opus_voice_path = null;
-          }
-        }
+    //     await Utils.sleep(10);
+    //     connection.is_play = false;
 
-        let audio_res;
-        if(this.config.opus_convert.enable && opus_voice_path){
-          audio_res = createAudioResource(fs.createReadStream(opus_voice_path), {
-            inputType: StreamType.OggOpus, inlineVolume: false
-          });
-        }else{
-          audio_res = createAudioResource(voice_path, { inlineVolume: false });
-        }
+    //     this.play(guild_id);
+    //   }
+    //   return;
+    // }
 
-        this.logger.debug(`play voice path: ${opus_voice_path || audio_res}`);
-
-        connection.audio_player.play(audio_res);
-      }catch(e){
-        this.logger.info(e);
-
-        if(!q.system){
-          if(e instanceof VMLError){
-            q.msg.reply(`VMLにエラーがあります: ${e.message}`);
-          }else{
-            q.msg.reply('生成に失敗しました');
-          }
-        }
-
-        await Utils.sleep(10);
-        connection.is_play = false;
-
-        this.play(guild_id);
-      }
-      return;
-    }
-
-=======
     const q = connection.generate_queue.shift();
->>>>>>> dev
     // 何もないなら次へ
     if(!(q.str) || q.str.trim().length === 0){
       connection.is_generate = false;
