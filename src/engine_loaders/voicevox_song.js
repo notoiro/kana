@@ -1,10 +1,6 @@
 const { VML } = require('vml');
 const { default: axios } = require('axios');
-const fs = require('fs');
 const { OfflineAudioContext } = require('node-web-audio-api');
-const toWav = require('audiobuffer-to-wav');
-
-const { TMP_DIR } = require('../../config.json');
 
 const linear_interpolation = (x1, y1, x2, y2, x,) => {
   return y1 + ((y2 - y1) * (x - x1)) / (x2 - x1);
@@ -102,7 +98,7 @@ module.exports = class VoicevoxSong{
   // text: score
   // filename: name
   // id: vocal_id
-  async synthesis(text, filename, vocal_id){
+  async synthesis(text, vocal_id){
     try{
       // Discordの仕様上歌詞部分に空白が入る場合があるので対策する
       text = text.split(';').map(x => x.trim()).join(';');

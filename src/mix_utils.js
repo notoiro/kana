@@ -1,6 +1,4 @@
 const { OfflineAudioContext } = require('node-web-audio-api');
-const toWav = require('audiobuffer-to-wav');
-const fs = require('fs');
 const Utils = require('./utils.js');
 
 module.exports = class MixUtils{
@@ -35,11 +33,5 @@ module.exports = class MixUtils{
     let buf = await off_ctx.startRendering();
 
     return buf;
-  }
-
-  static buf_to_wav_file(buf, file_path){
-    fs.writeFileSync(file_path, new Buffer.from(toWav(buf)), 'binary');
-
-    return file_path;
   }
 }

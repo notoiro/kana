@@ -286,21 +286,19 @@ module.exports = class App{
     // 2
     // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
     if(this.bot_utils.is_song(content)){
-      // TODO: 現在の処理系と合体させる
+      let song;
+      try{
+        song = this.bot_utils.parse_song(content);
+      }catch(e){
+        if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
+        else msg.reply('なんかのエラー');
+      }
+
+      const q = { song: song, queue_id: `${msg.id}`, msg: msg };
+      connection.generate_queue.push(q);
+
+      this.generate_queue_start(msg.guild.id);
       return;
-      // let song;
-      // try{
-      //   song = this.bot_utils.parse_song(content);
-      // }catch(e){
-      //   if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
-      //   else msg.reply('なんかのエラー');
-      // }
-
-      // const q = { song: song, msg: msg };
-      // connection.queue.push(q);
-
-      // this.play(msg.guild.id);
-      // return;
     }
 
     // 3
@@ -372,47 +370,52 @@ module.exports = class App{
     connection.is_generate = true;
     this.logger.debug(`generate start`);
 
-    // TODO: 現在の処理系と合体させる
-    // const q = connection.queue.shift();
-
-    // if(q.song){
-    //   try{
-    //     let voice_path = "";
-    //     if(q.song.length === 1){
-    //       const buffer = await this.voice_engines.song_synthesis(q.song[0].score, connection.filename_base, connection.ext, q.song[0].singer);
-    //       voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
-    //     // マルチトラックの場合
-    //     }else{
-    //       let tracks = [];
-    //       for(let s of q.song){
-    //         const buffer = await this.voice_engines.song_synthesis(s.score, connection.filename_base, connection.ext, s.singer);
-
-    //         tracks.push({ buffer, gain: s.gain });
-    //       }
-
-    //       const buffer = await MixUtils.mix(tracks);
-    //       voice_path = MixUtils.buf_to_wav_file(buffer, `${TMP_DIR}/${connection.filename_base}_orig${connection.ext}`);
-    //     }
-    //   }catch(e){
-    //     this.logger.info(e);
-
-    //     if(!q.system){
-    //       if(e instanceof VMLError){
-    //         q.msg.reply(`VMLにエラーがあります: ${e.message}`);
-    //       }else{
-    //         q.msg.reply('生成に失敗しました');
-    //       }
-    //     }
-
-    //     await Utils.sleep(10);
-    //     connection.is_play = false;
-
-    //     this.play(guild_id);
-    //   }
-    //   return;
-    // }
-
     const q = connection.generate_queue.shift();
+
+    if(q.song){
+      try{
+        let buffer = null;
+        if(q.song.length === 1){
+          buffer = await this.voice_engines.song_synthesis(q.song[0].score, q.song[0].singer);
+        // マルチトラックの場合
+        }else{
+          let tracks = [];
+          for(let s of q.song){
+            const buffer = await this.voice_engines.song_synthesis(s.score, s.singer);
+
+            tracks.push({ buffer, gain: s.gain });
+          }
+
+          buffer = await MixUtils.mix(tracks);
+        }
+
+        const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27);
+
+        connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
+
+        connection.is_generate = false;
+
+        this.generate_queue_start(guild_id);
+        this.play(guild_id);
+      }catch(e){
+        this.logger.info(e);
+
+        if(!q.system){
+          if(e instanceof VMLError){
+            q.msg.reply(`VMLにエラーがあります: ${e.message}`);
+          }else{
+            q.msg.reply('生成に失敗しました');
+          }
+        }
+
+        connection.is_generate = false;
+
+        this.generate_queue_start(guild_id);
+      }
+
+      return;
+    }
+
     // 何もないなら次へ
     if(!(q.str) || q.str.trim().length === 0){
       connection.is_generate = false;

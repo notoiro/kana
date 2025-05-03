@@ -1,4 +1,4 @@
-const { OfflineAudioContext } = require('node-web-audio-api');
+const { OfflineAudioContext, AudioBuffer } = require('node-web-audio-api');
 const toWav = require('audiobuffer-to-wav');
 const log4js = require('log4js');
 
@@ -9,6 +9,10 @@ class LoudnessNormalizer {
   }
 
   async load_audio_file(buffer) {
+    if(buffer instanceof AudioBuffer){
+      return buffer;
+    }
+
     const context = new OfflineAudioContext(2, 44100, 44100);
     return await context.decodeAudioData(buffer);
   }

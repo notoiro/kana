@@ -415,7 +415,7 @@ module.exports = class VoiceEngines{
 
   // TODO: no_file_use
   // voice_idはshortidである
-  song_synthesis(text, filename_base, ext, voice_id, pass_volume_controll = false){
+  song_synthesis(text, voice_id){
     const engine = this.#speaker_engine_map.get(voice_id);
     if(engine === undefined) throw "Unknown Engine or Voice";
     if(!engine.is_song) throw "I'm a sing engine";
@@ -423,10 +423,7 @@ module.exports = class VoiceEngines{
     return new Promise((resolve, reject) => {
         const queue = {
           text,
-          filename_base,
-          ext,
           voice_id,
-          pass_volume_controll,
           resolve,
           reject
         };
@@ -444,7 +441,7 @@ module.exports = class VoiceEngines{
     const q = engine.queue.shift();
 
     try{
-      const result = await this._song_synthesis(engine, q.text, q.filename_base, q.ext, q.voice_id, q.pass_volume_controll);
+      const result = await this._song_synthesis(engine, q.text, q.voice_id);
       q.resolve(result);
     }catch(e){
       q.reject(e);
@@ -455,30 +452,13 @@ module.exports = class VoiceEngines{
   }
 
   // voice_idはshortidである
-  async _song_synthesis(engine, text, filename_base, ext, voice_id, pass_volume_controll = false){
+  async _song_synthesis(engine, text, voice_id){
     const id = this.#short_id_song_map.get(voice_id).id;
-    // const volume = this.#speaker_volume_map.get(voice_id);
 
     try{
-      const v = engine.api.synthesis(text, `${filename_base}_orig${ext}`, id);
+      const v = engine.api.synthesis(text, id);
 
       return await v;
-      // 生成中なら無視して返す
-      // if(pass_volume_controll || volume === 'LOCK'){
-      //   this.#logger.debug('pass volume controll');
-      //   return await v;
-      // }
-      // 未生成なら生成叩いて返す
-      // if(!volume){
-      //   this.#logger.debug('generate volume controll')
-      //   this.generate_reference_diff(voice_id);
-      //   return await v;
-      // }
-
-      // const filepath = await v;
-
-      // this.#logger.debug('set loud')
-      // return await VolumeController.set_loud(filepath, `${TMP_DIR}/${filename_base}${ext}`, this.#reference_lufs, volume.input_thresh, volume.target_offset)
     }catch(e){
       throw e;
     }
