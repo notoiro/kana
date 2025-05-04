@@ -11,6 +11,8 @@ const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
 // VOCAL
 const VoicevoxSong = require('./engine_loaders/voicevox_song.js');
 
+const MixUtils = require('./mix_utils.js');
+
 const TEST_SONG = `
 こころにきざんだきみのいろ:t172,o4,f+4,e8,e4,d+4,e4.,g+4,f+4,e4,f+4,g+8,f+4,e4,g+4.;
 きみといきたきおくわわたしのたからもの:r4,e4,e4,b4,b8,b4,b4,b4.,g+4,f+4,e4,f+4,e8,f+4,g+4,a4.,b4,g+8,g+8,f+8;
@@ -464,5 +466,27 @@ module.exports = class VoiceEngines{
     }
   }
 
-  // TODO: END
+  async vml_synthesis(song){
+    let buffer = null;
+
+    try{
+      if(song.length === 1){
+        buffer = await this.song_synthesis(song[0].score, song[0].singer);
+      }else{
+        // マルチトラックの場合
+        let tracks = [];
+        for(let s of song){
+          const buffer = await this.song_synthesis(s.score, s.singer);
+
+          tracks.push({ buffer, gain: s.gain });
+        }
+
+        buffer = await MixUtils.mix(tracks);
+      }
+    }catch(e){
+      throw e;
+    }
+
+    return buffer;
+  }
 }

@@ -19,7 +19,6 @@ const YomiParser = require('./yomi_parser/index.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
-const MixUtils = require('./mix_utils.js');
 const VoicepickController = require('./voicepick_controller.js');
 const LoudnessNormalizer = require('./loudness_normalizer.js');
 const print_info = require('./print_info.js');
@@ -374,20 +373,7 @@ module.exports = class App{
 
     if(q.song){
       try{
-        let buffer = null;
-        if(q.song.length === 1){
-          buffer = await this.voice_engines.song_synthesis(q.song[0].score, q.song[0].singer);
-        // マルチトラックの場合
-        }else{
-          let tracks = [];
-          for(let s of q.song){
-            const buffer = await this.voice_engines.song_synthesis(s.score, s.singer);
-
-            tracks.push({ buffer, gain: s.gain });
-          }
-
-          buffer = await MixUtils.mix(tracks);
-        }
+        const buffer = await this.voice_engines.vml_synthesis(q.song);
 
         const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27);
 
