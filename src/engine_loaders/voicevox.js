@@ -40,7 +40,7 @@ module.exports = class Voicevox{
   //   volume: Num
   async synthesis(text, voice_id, param){
     try{
-      const query = await this.#rpc.post(`audio_query?text=${encodeURI(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
+      const query = await this.#rpc.post(`audio_query?text=${encodeURIComponent(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
 
       const query_data = query.data;
 
