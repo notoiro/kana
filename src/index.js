@@ -375,7 +375,7 @@ module.exports = class App{
       try{
         const buffer = await this.voice_engines.vml_synthesis(q.song);
 
-        const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27);
+        const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27 + connection.song_volume);
 
         connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
 
@@ -536,6 +536,7 @@ module.exports = class App{
       is_play: false,
       is_generate: false,
       system_mute_counter: 0,
+      song_volume: -10,
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
@@ -548,6 +549,7 @@ module.exports = class App{
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
     connectinfo.is_ponkotsu = server_file.is_ponkotsu;
+    connectinfo.song_volume = server_file.song_volume;
 
     const connection = await this.join_voice_channel_wapper({
       guildId: guild_id,

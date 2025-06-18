@@ -58,6 +58,7 @@ ${cyan}サーバー辞書単語数${gray}:${reset} ${app.yomi_parser.tokenizer_d
 ${cyan}辞書単語数${gray}:${reset} ${server_file.dict.length}
 ${cyan}ボイス登録数${gray}:${reset} ${Object.keys(server_file.user_voices).length}
 ${cyan}ポンコツ${gray}:${reset} ${ans(server_file.is_ponkotsu, "はい", "いいえ")}
+${cyan}ソング音量${gray}:${reset} ${server_file.song_volume}
 \`\`\`
           `,
           inline: true

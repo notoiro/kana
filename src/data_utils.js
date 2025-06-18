@@ -13,7 +13,8 @@ module.exports = class DataUtils{
       DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false }
     },
     dict: [["Discord", "でぃすこーど", 2], ["さんが退出しました", "さんが射出されました", 2]],
-    is_ponkotsu: !!IS_PONKOTSU
+    is_ponkotsu: !!IS_PONKOTSU,
+    song_volume: -10
   }
   #SETTING_LISTS;
 
