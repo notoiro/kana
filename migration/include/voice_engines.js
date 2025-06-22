@@ -1,4 +1,5 @@
-const { VOICE_ENGINES } = require('../../config.json');
+// TODO: 大幅変更で原型がないので多分消す
+const { VOICE_ENGINES } = require('../../src/config.js');
 
 const Voicevox = require('../../src/engine_loaders/voicevox.js');
 const COEIROINKV2 = require('../../src/engine_loaders/coeiroink_v2.js');
