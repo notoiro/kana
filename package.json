@@ -14,18 +14,19 @@
     "@djs-button-pages/presets": "^1.0.0",
     "@notoiro/djs-button-pages": "^4.0.2",
     "audiobuffer-to-wav": "^1.0.0",
-    "axios": "^1.8.4",
-    "discord.js": "^14.18.0",
+    "axios": "^1.10.0",
+    "discord.js": "^14.20.0",
     "emoji-regex": "^10.4.0",
+    "json5": "^2.2.3",
     "log4js": "^6.9.1",
     "node-web-audio-api": "^1.0.4",
     "shorthash-jp": "github:notoiro/node-shorthash",
-    "sodium-native": "^5.0.1",
+    "sodium-native": "^5.0.6",
     "wanakana": "^5.3.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
-    "eslint": "^9.24.0",
-    "globals": "^16.0.0"
+    "@eslint/js": "^9.29.0",
+    "eslint": "^9.29.0",
+    "globals": "^16.2.0"
   }
 }
