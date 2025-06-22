@@ -5,7 +5,9 @@ module.exports = class Utils{
     return text.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
   }
   // Botの声設定の値をVoiceboxの値に変換する
-  static map_voice_setting(sample, out_min, out_max, in_min = 0, in_max = 200){
+  // 一応サンプルの範囲も制限するように
+  static map_voice_setting(in_sample, out_min, out_max, in_min = 0, in_max = 200){
+    let sample = Math.max(in_min, Math.min(in_sample, in_max));
     return (sample - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
   }
 
