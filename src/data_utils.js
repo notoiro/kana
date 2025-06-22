@@ -1,7 +1,7 @@
 const fs = require('fs');
 const log4js = require('log4js');
 
-const { SERVER_DIR, IS_PONKOTSU } = require('../config.json');
+const { SERVER_DIR, IS_PONKOTSU } = require('./config.js');
 
 module.exports = class DataUtils{
   #logger;

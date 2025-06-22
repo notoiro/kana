@@ -24,7 +24,7 @@ const print_info = require('./print_info.js');
 
 const SKIP_PREFIX = "s";
 
-const { TOKEN, PREFIX, IS_PONKOTSU } = require('../config.json');
+const { TOKEN, PREFIX, IS_PONKOTSU, check_deprecated } = require('./config.js');
 
 module.exports = class App{
   #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
@@ -34,6 +34,7 @@ module.exports = class App{
   }
 
   constructor(){
+    check_deprecated();
     this.yomi_parser = new YomiParser();
     this.logger = log4js.getLogger('main');
     this.client = new Client({

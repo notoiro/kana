@@ -1,0 +1,139 @@
+{
+  _meta: {
+    deprecated: [
+      { key: "VOICEVOX_ENGINE", reason: "VOICE_ENGINESに置き換えられました" },
+      { key: "TMP_DIR", reason: "一時ファイルが必要なくなったため廃止されました" },
+      { key: "OPUS_CONVERT", reason: "ほとんど意味がなかったため廃止されました" },
+      "EXTEND_PASS"
+    ],
+  },
+  TOKEN: {
+    type: "string",
+    required: true,
+    non_empty: true,
+    disallow: ["YOUR_DISCORD_TOKEN"],
+    example: "YOUR_DISCORD_TOKEN"
+  },
+  PREFIX: {
+    type: "string",
+    default: ";",
+    non_empty: true,
+    description: "その文字で始まる文章を読まなくする文字"
+  },
+  SERVER_DIR: {
+    type: "directory",
+    default: "./servers",
+    non_empty: true,
+    description: "ユーザーデータの保存先（ディレクトリ）"
+  },
+  // 形態素解析系は排他の部分があったりして定義での制御がだるいので適当にやる
+  KAGOME_HOST: {
+    type: "string",
+    description: "Kagome frontを利用する場合のホスト（使わないならnoneにする）",
+    must_be_url: true,
+    example: {
+      min: "none",
+      full: "http://127.0.0.1:2971/"
+    }
+  },
+  SUDACHI_HOST: {
+    type: "string",
+    description: "Sudachi frontを利用する場合のホスト（使わないならnoneにする）",
+    must_be_url: true,
+    example: {
+      min: "none",
+      full: "http://127.0.0.1:2971/"
+    }
+  },
+  // このフラグ、Boolじゃなくてstringにして名前tokenizer_typeにすればsudachi, kagome, noneで切り替えできそう
+  USE_SUDACHI: {
+    type: "boolean",
+    example: false
+  },
+  DICT_DIR: {
+    type: "directory",
+    description: "トークン単位の辞書の保存先",
+    default: "./dictionaries"
+  },
+  REMOTE_REPLACE_HOST: {
+    type: "string",
+    description: "ReplaceHttpを利用する場合のホスト（使わないならnoneにする）",
+    must_be_url: true,
+    example: {
+      min: "none",
+      full: "http://127.0.0.1:2972/"
+    }
+  },
+  IS_PONKOTSU: {
+    type: "boolean",
+    default: false,
+    description: "ポンコツ設定をデフォルトで有効にするか"
+  },
+  VOICE_ENGINES: {
+    type: "array",
+    description: [
+      "音声エンジンの設定の配列。用意したエンジンの数だけ以下の内容のオプジェクトを入れれば良い。",
+      "  name: エンジン名。これは内部で利用されるshortidに影響するため、互換性上標準的な名前をつけることが推奨される。（e.g. VOICEVOX, SHAREVOX, COEIROINKなど)",
+      "  type: エンジンタイプ。エンジンのAPIがVOICEVOX互換である場合はVOICEVOX、COEIROINK v2の場合はCOEIROINK_V2。",
+      "  server: エンジンのホスト。ここで指定されたポート通りにエンジンを起動する必要がある。",
+      "  credit_url: クレジットを表示したときに表示するエンジンの公式ページのURL。"
+    ],
+    required: true,
+    items: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          required: true,
+          unique: true,
+        },
+        type: {
+          type: "string",
+          required: true,
+        },
+        server: {
+          type: "string",
+          // 現状のエンジンラッパーはここURLしかないのでURLかをチェックする。パーサー次第では多分必要ないので増えたらこの制限は消す
+          must_be_url: true,
+          required: true,
+          unique: true,
+        },
+        credit_url: {
+          type: "string",
+          must_be_url: true,
+          required: true,
+        }
+      }
+    },
+    example: {
+      min: [
+        {
+          name: "VOICEVOX",
+          type: "VOICEVOX",
+          server: "http://127.0.0.1:50021",
+          credit_url: "https://voicevox.hiroshiba.jp"
+        }
+      ],
+      full: [
+        {
+          name: "VOICEVOX",
+          type: "VOICEVOX",
+          server: "http://127.0.0.1:2970",
+          credit_url: "https://voicevox.hiroshiba.jp"
+        },
+        {
+          name: "SHAREVOX",
+          type: "VOICEVOX",
+          server: "http://127.0.0.1:2980",
+          credit_url: "https://voicevox.hiroshiba.jp"
+        },
+        {
+          name: "VOICEVOX Song",
+          type: "VOICEVOX_SONG",
+          server: "http://127.0.0.1:50021",
+          credit_url:"https://voicevox.hiroshiba.jp"
+        }
+      ]
+    }
+  }
+}

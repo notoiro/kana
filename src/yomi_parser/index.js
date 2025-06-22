@@ -7,7 +7,7 @@ const log4js = require('log4js');
 const {
   IS_PONKOTSU,
   USE_SUDACHI
-} = require('../../config.json');
+} = require('../config.js');
 
 // INFO: YomiParserは旧fix_readingの範囲に責任を持つ。
 // 旧来のfix_readingと違う点はもし、形態素解析、大型辞書のどちらも利用できない場合に静的処理での読み改善を試す点である

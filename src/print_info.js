@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 
 const {
   SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST, SUDACHI_HOST, USE_SUDACHI
-} = require('../config.json');
+} = require('./config.js');
 
 const pkgjson = require("../package.json");
 

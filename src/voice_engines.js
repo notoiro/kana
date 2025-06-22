@@ -3,7 +3,7 @@ const log4js = require('log4js');
 
 const {
   VOICE_ENGINES
-} = require('../config.json');
+} = require('./config.js');
 
 const Voicevox = require('./engine_loaders/voicevox.js');
 const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
