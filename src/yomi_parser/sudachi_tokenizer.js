@@ -3,7 +3,7 @@ const { default: axios } = require('axios');
 
 const Utils = require('../utils.js');
 
-const { DICT_DIR } = require('../../config.json');
+const { DICT_DIR } = require('../config.js');
 
 module.exports = class SudachiTokenizer{
   #rpc;
@@ -13,7 +13,7 @@ module.exports = class SudachiTokenizer{
   #logger;
 
   constructor(logger){
-    const { SUDACHI_HOST } = require('../../config.json');
+    const { SUDACHI_HOST } = require('../config.js');
 
     if(SUDACHI_HOST !== "none" && SUDACHI_HOST !== undefined){
       this.#enabled = true;

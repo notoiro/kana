@@ -1,7 +1,9 @@
 /node_modules/
-/servers/
+/servers/*
 /dictionaries/*
 !/dictionaries/fix_neologd.json
 !/dictionaries/lite_neologd.json
 /config.json
+/config.json5
 /test.js
+!/servers/.gitkeep

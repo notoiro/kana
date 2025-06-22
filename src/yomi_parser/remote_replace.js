@@ -5,7 +5,7 @@ module.exports = class RemoteReplace{
   #enabled;
 
   constructor(){
-    const { REMOTE_REPLACE_HOST } = require('../../config.json');
+    const { REMOTE_REPLACE_HOST } = require('../config.js');
 
     if(REMOTE_REPLACE_HOST !== "none" && REMOTE_REPLACE_HOST !== undefined){
       this.#enabled = true;

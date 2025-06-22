@@ -1,7 +1,7 @@
 const os = require('os');
 const { EmbedBuilder } = require('discord.js');
 
-const { IS_PONKOTSU } = require('../config.json');
+const { IS_PONKOTSU } = require('../src/config.js');
 const app = require('../index.js');
 const { silentify, reply } = require('../src/silentify.js');
 

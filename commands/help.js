@@ -2,7 +2,7 @@ const { EmbedBuilder, ButtonStyle, MessageFlags } = require("discord.js");
 const { PaginationWrapper } = require('@notoiro/djs-button-pages');
 const { NextPageButton, PreviousPageButton } = require('@djs-button-pages/presets');
 const pkgjson = require("../package.json");
-const { PREFIX } = require('../config.json');
+const { PREFIX } = require('../src/config.js');
 const { silentify } = require('../src/silentify.js');
 
 const cyan = "\x1b[1;36m";

@@ -4,7 +4,7 @@ const { default: axios } = require('axios');
 
 const Utils = require('../utils.js');
 
-const { DICT_DIR } = require('../../config.json');
+const { DICT_DIR } = require('../config.js');
 
 module.exports = class KagomeTokenizer{
   #rpc;
@@ -14,7 +14,7 @@ module.exports = class KagomeTokenizer{
   #logger;
 
   constructor(logger){
-    const { KAGOME_HOST } = require('../../config.json');
+    const { KAGOME_HOST } = require('../config.js');
 
     if(KAGOME_HOST !== "none" && KAGOME_HOST !== undefined){
       this.#enabled = true;

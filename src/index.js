@@ -25,7 +25,7 @@ const print_info = require('./print_info.js');
 
 const SKIP_PREFIX = "s";
 
-const { TOKEN, PREFIX, IS_PONKOTSU } = require('../config.json');
+const { TOKEN, PREFIX, IS_PONKOTSU, check_deprecated } = require('./config.js');
 
 module.exports = class App{
   #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
@@ -35,6 +35,7 @@ module.exports = class App{
   }
 
   constructor(){
+    check_deprecated();
     this.yomi_parser = new YomiParser();
     this.logger = log4js.getLogger('main');
     this.client = new Client({
@@ -432,10 +433,12 @@ module.exports = class App{
       speed: Utils.map_voice_setting(((voice.speed > q.text_speed) ? voice.speed : q.text_speed), 0.5, 1.5),
       pitch: Utils.map_voice_setting(voice.pitch, -0.15, 0.15),
       intonation: Utils.map_voice_setting(voice.intonation, 0, 2),
-      volume: Utils.map_voice_setting((q.volume_order ?? voice.volume), 0, 1, 0, 100)
+      volume: 1
     };
 
     this.logger.debug(`voicedata: ${JSON.stringify(voice_data)}`);
+
+    const volume = Utils.map_voice_setting((q.volume_order ?? voice.volume), -35, 0, 0, 100);
 
     try{
       // console.time('generate');
@@ -443,7 +446,7 @@ module.exports = class App{
       // console.timeEnd('generate');
 
       // console.time('normalize');
-      const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27);
+      const normalize_wav = await this.normalizer.normalize_to_lufs(raw_wav, -27 + volume);
       // console.timeEnd('normalize');
 
       connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });

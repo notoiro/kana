@@ -3,7 +3,7 @@ const log4js = require('log4js');
 
 const {
   VOICE_ENGINES
-} = require('../config.json');
+} = require('./config.js');
 
 // VOICE
 const Voicevox = require('./engine_loaders/voicevox.js');
