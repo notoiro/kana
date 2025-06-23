@@ -4,6 +4,9 @@
       { key: "VOICEVOX_ENGINE", reason: "VOICE_ENGINESに置き換えられました" },
       { key: "TMP_DIR", reason: "一時ファイルが必要なくなったため廃止されました" },
       { key: "OPUS_CONVERT", reason: "ほとんど意味がなかったため廃止されました" },
+      { key: "KAGOME_HOST", reason: "TOKENIZER_HOSTに移行しました" },
+      { key: "SUDACHI_HOST", reason: "TOKENIZER_HOSTに移行しました" },
+      { key: "USE_SUDACHI", reason: "TOKENIZER_TYPEに移行しました" },
       "EXTEND_PASS"
     ],
   },
