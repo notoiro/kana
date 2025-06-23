@@ -1,7 +1,7 @@
 const { EmbedBuilder, MessageFlags } = require('discord.js');
 
-const ResurrectionSpell = require('./resurrection_spell.js');
-const app = require('../index.js');
+const ResurrectionSpell = require('../resurrection_spell.js');
+const app = require('../../index.js');
 
 module.exports = async (interaction, override_id = null, is_global_uservoice = false) => {
   const guild_id = interaction.guild.id;

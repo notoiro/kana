@@ -29,6 +29,9 @@ Discord.jsを利用した様々なエンジンを利用できる高性能なDisc
   - 読み解析をアホにする機能
 
 ## インストール
+### RTA向け
+https://github.com/notoiro/kana/blob/dev/docs/setup_lite.md
+
 ### Linux向け
 https://github.com/notoiro/kana/blob/master/docs/setup_linux.md
 

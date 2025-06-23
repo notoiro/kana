@@ -1,9 +1,10 @@
 const fs = require('fs');
 const { default: axios } = require('axios');
+const { isRomaji } = require('wanakana');
 
 const Utils = require('../utils.js');
 
-const { DICT_DIR } = require('../config.js');
+const { TOKENIZER_HOST, DICT_DIR } = require('../config.js');
 
 module.exports = class SudachiTokenizer{
   #rpc;
@@ -13,11 +14,9 @@ module.exports = class SudachiTokenizer{
   #logger;
 
   constructor(logger){
-    const { SUDACHI_HOST } = require('../config.js');
-
-    if(SUDACHI_HOST !== "none" && SUDACHI_HOST !== undefined){
+    if(TOKENIZER_HOST !== "none" && TOKENIZER_HOST !== undefined){
       this.#enabled = true;
-      this.#rpc = axios.create({baseURL: SUDACHI_HOST, proxy: false});
+      this.#rpc = axios.create({baseURL: TOKENIZER_HOST, proxy: false});
     }else{
       this.#enabled = false;
       this.#rpc = {};
@@ -44,7 +43,7 @@ module.exports = class SudachiTokenizer{
 
       available = true;
     }catch(e){
-      this.#logger.info(e);
+      this.#logger.info(Utils.handle_axios_error(e));
       available = false;
     }
 
@@ -108,7 +107,9 @@ module.exports = class SudachiTokenizer{
         continue;
       }
 
-      if(!token.is_oov && token.reading_form && token.pos[0] === "名詞"){
+      // とりあえずKagomeと同じように2文字弾きを実装してみる
+      // 辞書表現と実際の一致も見たいけど後々ってことで
+      if(!token.is_oov && token.reading_form && token.pos[0] === "名詞" && (!isRomaji(token.surface) || (isRomaji(token.surface) && (token.surface.length > 2)))){
         this.#logger.debug(`DICT: KNOWN AND READING: ${token.reading_form}`)
         result.push(token.reading_form);
       }else{
@@ -120,7 +121,7 @@ module.exports = class SudachiTokenizer{
     this.#logger.debug(`sudachi replace: ${result.join('')}`);
 
     return result.join("");
-}
+  }
 
   async _tokenize(text){
     if(!(this.#enabled)) return text;
@@ -140,6 +141,7 @@ module.exports = class SudachiTokenizer{
 
     return result;
   }
+
   old_tokenize(text){
     return this.tokenize(text);
   }

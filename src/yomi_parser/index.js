@@ -6,7 +6,7 @@ const log4js = require('log4js');
 
 const {
   IS_PONKOTSU,
-  USE_SUDACHI
+  TOKENIZER_TYPE
 } = require('../config.js');
 
 // INFO: YomiParserは旧fix_readingの範囲に責任を持つ。
@@ -17,12 +17,12 @@ module.exports = class YomiParser{
     this.logger.level = !(process.env.NODE_ENV === "production") ? 'debug' : 'info';
 
     this.remote_repalce = new RemoteReplace();
-    if(USE_SUDACHI){
-      this.tokenizer = new SudachiTokenizer(this.logger);
-    }else{
-      this.tokenizer = new KagomeTokenizer(this.logger);
-    }
 
+    if(TOKENIZER_TYPE.toUpperCase() === "KAGOME"){
+      this.tokenizer = new KagomeTokenizer(this.logger);
+    }else if(TOKENIZER_TYPE.toUpperCase() === "SUDACHI"){
+      this.tokenizer = new SudachiTokenizer(this.logger);
+    }
 
     this.remote_replace_available = false;
     this.tokenizer_available = false;
@@ -33,7 +33,7 @@ module.exports = class YomiParser{
   }
 
   async setup(){
-    this.tokenizer_available = await this.tokenizer.setup();
+    this.tokenizer_available = this.tokenizer ? await this.tokenizer.setup() : false;
     this.remote_replace_available = await this.remote_repalce.test_available(this.logger);
   }
 
@@ -43,11 +43,7 @@ module.exports = class YomiParser{
       if(this.tokenizer_available) result = await this.tokenizer.tokenize(result);
       if(this.remote_replace_available) result = await this.replace_http(result);
     }else{
-      if(USE_SUDACHI){
-        if(this.tokenizer_available) result = await this.tokenizer.tokenize(result);
-      }else{
-        if(this.tokenizer_available) result = await this.tokenizer.old_tokenize(result);
-      }
+      if(this.tokenizer_available) result = await this.tokenizer.old_tokenize(result);
     }
 
     return result;

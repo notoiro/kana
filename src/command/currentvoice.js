@@ -1,8 +1,8 @@
 const { EmbedBuilder } = require('discord.js');
 
-const ResurrectionSpell = require('./resurrection_spell.js');
-const app = require('../index.js');
-const { reply } = require('./silentify.js');
+const ResurrectionSpell = require('../resurrection_spell.js');
+const app = require('../../index.js');
+const { reply } = require('../silentify.js');
 
 module.exports = async (interaction, override_id = null) => {
   let member_id = override_id ?? interaction.member.id;

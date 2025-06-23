@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, KAGOME_HOST, SUDACHI_HOST, USE_SUDACHI
+  SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, TOKENIZER_HOST, TOKENIZER_TYPE
 } = require('./config.js');
 
 const pkgjson = require("../package.json");
@@ -94,10 +94,10 @@ module.exports = (app) => {
   console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
   console.log(`${indent}${fg_blue}dict directory:  ${fg_default}  ${DICT_DIR}`);
 
-  if(USE_SUDACHI){
-    console.log(`${indent}${fg_blue}sudachi host:    ${fg_default}  ${SUDACHI_HOST}`);
-  }else{
-    console.log(`${indent}${fg_blue}kagome host:     ${fg_default}  ${KAGOME_HOST}`);
+
+  console.log(`${indent}${fg_blue}tokenizer type:  ${fg_default}  ${TOKENIZER_TYPE.toUpperCase()}`);
+  if(TOKENIZER_TYPE !== "none"){
+    console.log(`${indent}${fg_blue}tokenizer host:  ${fg_default}  ${TOKENIZER_HOST}`);
   }
   console.log(`${indent}${fg_blue}replace host:    ${fg_default}  ${REMOTE_REPLACE_HOST}`);
   console.log(`${indent}${fg_blue}ponkotsu         ${fg_default}  ${ans(IS_PONKOTSU, "default", "option")}`);
@@ -108,11 +108,7 @@ module.exports = (app) => {
   console.log(`${indent}${fg_blue}server count:    ${fg_default}  ${app.status.connected_servers} servers`);
   console.log(`${indent}${fg_blue}voice count:     ${fg_default}  ${app.voice_list.length} voices`);
   console.log(`${indent}${fg_blue}dict word count: ${fg_default}  ${app.yomi_parser.tokenizer_dict_length}`);
-  if(USE_SUDACHI){
-    console.log(`${indent}${fg_blue}sudachi tokenizer:${fg_default} ${ans(app.yomi_parser.tokenizer_available, "available", "unavailable")}`);
-  }else{
-    console.log(`${indent}${fg_blue}kagome tokenizer:${fg_default}  ${ans(app.yomi_parser.tokenizer_available, "available", "unavailable")}`);
-  }
+  console.log(`${indent}${fg_blue}tokenizer:       ${fg_default}  ${ans(app.yomi_parser.tokenizer_available, "available", "unavailable")}`);
   console.log(`${indent}${fg_blue}remote replace:  ${fg_default}  ${ans(app.yomi_parser.remote_replace_available, "available", "unavailable")}`);
   console.log(`\n`);
 

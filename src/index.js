@@ -19,7 +19,7 @@ const YomiParser = require('./yomi_parser/index.js');
 const Utils = require('./utils.js');
 const BotUtils = require('./bot_utils.js');
 const DataUtils = require('./data_utils.js');
-const VoicepickController = require('./voicepick_controller.js');
+const VoicepickController = require('./command/voicepick_controller.js');
 const LoudnessNormalizer = require('./loudness_normalizer.js');
 const print_info = require('./print_info.js');
 
@@ -85,9 +85,9 @@ module.exports = class App{
 
     await this.yomi_parser.setup();
 
-    this.currentvoice = require('./currentvoice.js');
-    this.setvoiceall = require('./setvoiceall.js');
-    this.setvoice = require('./setvoice.js');
+    this.currentvoice = require('./command/currentvoice.js');
+    this.setvoiceall = require('./command/setvoiceall.js');
+    this.setvoice = require('./command/setvoice.js');
     this.setup_discord();
     this.setup_process();
 
