@@ -26,29 +26,20 @@
     non_empty: true,
     description: "ユーザーデータの保存先（ディレクトリ）"
   },
-  // 形態素解析系は排他の部分があったりして定義での制御がだるいので適当にやる
-  KAGOME_HOST: {
+  TOKENIZER_HOST: {
     type: "string",
-    description: "Kagome frontを利用する場合のホスト（使わないならnoneにする）",
+    description: "Kagome/Sudachiを利用する場合のホスト",
     must_be_url: true,
+    example: "http://127.0.0.1:2971/"
+  },
+  TOKENIZER_TYPE: {
+    type: "string",
+    default: "none",
     example: {
       min: "none",
-      full: "http://127.0.0.1:2971/"
-    }
-  },
-  SUDACHI_HOST: {
-    type: "string",
-    description: "Sudachi frontを利用する場合のホスト（使わないならnoneにする）",
-    must_be_url: true,
-    example: {
-      min: "none",
-      full: "http://127.0.0.1:2971/"
-    }
-  },
-  // このフラグ、Boolじゃなくてstringにして名前tokenizer_typeにすればsudachi, kagome, noneで切り替えできそう
-  USE_SUDACHI: {
-    type: "boolean",
-    example: false
+      full: "Kagome"
+    },
+    description: "読み解析の切り替え。[none, Kagome, Sudachi]から選択可能。"
   },
   DICT_DIR: {
     type: "directory",

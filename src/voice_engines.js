@@ -7,6 +7,7 @@ const {
 
 const Voicevox = require('./engine_loaders/voicevox.js');
 const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
+const Utils = require('./utils.js');
 
 module.exports = class VoiceEngines{
   #logger;
@@ -73,10 +74,17 @@ module.exports = class VoiceEngines{
     let shortid_voice = new Map();
 
     for(let e of this.#engines.values()){
-      await e.api.check_version();
-      e.version = e.api.version;
+      let list = null;
+      try{
+        await e.api.check_version();
+        e.version = e.api.version;
 
-      const list = await e.api.speakers();
+        list = await e.api.speakers();
+      }catch(e){
+        this.#logger.info(Utils.handle_axios_error(e));
+        // 設計的に終了を叩くべきではないけどエンジンなしの挙動を作ってない、かつ元々ここハンドルされてないエラーで落ちてたので普通に落としてあげる
+        process.exit(1);
+      }
 
       e.original_list = JSON.parse(JSON.stringify(list));
 
@@ -109,7 +117,7 @@ module.exports = class VoiceEngines{
 
         this.#logger.debug(`${e.name} OK`);
       }catch(e){
-        this.#logger.info(e);
+        this.#logger.info(Utils.handle_axios_error(e));
       }
     }
 

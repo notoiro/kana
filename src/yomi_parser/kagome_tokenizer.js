@@ -4,7 +4,7 @@ const { default: axios } = require('axios');
 
 const Utils = require('../utils.js');
 
-const { DICT_DIR } = require('../config.js');
+const { DICT_DIR, TOKENIZER_HOST } = require('../config.js');
 
 module.exports = class KagomeTokenizer{
   #rpc;
@@ -14,11 +14,9 @@ module.exports = class KagomeTokenizer{
   #logger;
 
   constructor(logger){
-    const { KAGOME_HOST } = require('../config.js');
-
-    if(KAGOME_HOST !== "none" && KAGOME_HOST !== undefined){
+    if(TOKENIZER_HOST !== "none" && TOKENIZER_HOST !== undefined){
       this.#enabled = true;
-      this.#rpc = axios.create({baseURL: KAGOME_HOST, proxy: false});
+      this.#rpc = axios.create({baseURL: TOKENIZER_HOST, proxy: false});
     }else{
       this.#enabled = false;
       this.#rpc = {};
@@ -45,7 +43,7 @@ module.exports = class KagomeTokenizer{
 
       available = true;
     }catch(e){
-      this.#logger.info(e);
+      this.#logger.info(Utils.handle_axios_error(e));
       available = false;
     }
 

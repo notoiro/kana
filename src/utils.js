@@ -1,5 +1,7 @@
 const emoji_regex = require('emoji-regex');
 
+const is_debug = !(process.env.NODE_ENV === "production");
+
 module.exports = class Utils{
   static replace_url(text){
     return text.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
@@ -36,5 +38,21 @@ module.exports = class Utils{
 
   static escape_regexp(str){
     return str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  static handle_axios_error(err){
+    if(err.response){
+      return {
+        data: err.response.data,
+        status: err.response.status,
+        headers: err.response.headers,
+        debug: is_debug ? err : null
+      }
+    }else{
+      return {
+        message: err.message,
+        debug: is_debug ? err : null
+      }
+    }
   }
 }
