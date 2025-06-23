@@ -1,4 +1,4 @@
-const app = require('../index.js');
+const app = require('../../index.js');
 const { MessageFlags } = require('discord.js');
 
 module.exports = async (interaction, type) => {
