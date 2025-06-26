@@ -118,7 +118,8 @@ module.exports = class VoiceEngines{
         if(result.status === 'fulfilled'){
           this.#logger.info(`✓ ${result.engine} (Version: ${result.version}) - Successfully initialized.`);
         }else{
-          this.#logger.error(`✗ ${result.engine} - Failed to initialize. Reason: ${result.reason}`);
+          const reason_str = typeof result.reason === 'object' ? JSON.stringify(result.reason, null, 2) : result.reason;
+          this.#logger.error(`✗ ${result.engine} - Failed to initialize. Reason: ${reason_str}`);
         }
       }
       this.#logger.info("----------------------------------------");
