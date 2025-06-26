@@ -69,22 +69,38 @@ module.exports = class App{
   }
 
   async setup_resources(){
-    this.logger.info("Setup resources...");
-    await this.voice_engines.init_engines();
+    console.log("Preparing resources...");
+    const { default: ora } = await import('ora');
+    const spinner = ora({ text: 'Initializing voice engines...', spinner: 'dots' }).start();
 
-    this.voice_list = this.voice_engines.speakers;
-    this.voice_liblary_list = this.voice_engines.liblarys;
+    try {
+      await this.voice_engines.init_engines();
+      spinner.succeed('Voice engines initialized.');
 
-    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
-    this.data_utils.init(this.voice_list[0].value);
-    this.voicepick_controller.init(this.voice_engines);
+      spinner.start('Initializing data utilities...');
+      this.voice_list = this.voice_engines.speakers;
+      this.voice_liblary_list = this.voice_engines.liblarys;
+      this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+      this.data_utils.init(this.voice_list[0].value);
+      this.voicepick_controller.init(this.voice_engines);
+      spinner.succeed('Data utilities initialized.');
 
-    await this.yomi_parser.setup();
+      spinner.start('Setting up Yomi parser...');
+      await this.yomi_parser.setup();
+      spinner.succeed('Yomi parser is ready.');
 
-    this.currentvoice = require('./command/currentvoice.js');
-    this.setvoiceall = require('./command/setvoiceall.js');
-    this.setvoice = require('./command/setvoice.js');
-    this.logger.info("Setup resources... Done!");
+      spinner.start('Loading commands...');
+      this.currentvoice = require('./command/currentvoice.js');
+      this.setvoiceall = require('./command/setvoiceall.js');
+      this.setvoice = require('./command/setvoice.js');
+      spinner.succeed('Commands loaded.');
+
+      console.log("All resources are ready!");
+    } catch (error) {
+      spinner.fail('Resource preparation failed.');
+      this.logger.fatal(error);
+      process.exit(1);
+    }
   }
 
   async start(){

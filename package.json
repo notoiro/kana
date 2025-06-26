@@ -20,6 +20,7 @@
     "json5": "^2.2.3",
     "log4js": "^6.9.1",
     "node-web-audio-api": "^1.0.4",
+    "ora": "^8.2.0",
     "shorthash-jp": "github:notoiro/node-shorthash",
     "sodium-native": "^5.0.6",
     "wanakana": "^5.3.1"
