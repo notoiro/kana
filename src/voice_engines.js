@@ -73,53 +73,60 @@ module.exports = class VoiceEngines{
   async init_engines(){
     let shortid_voice = new Map();
 
-    for(let e of this.#engines.values()){
-      let list = null;
-      try{
+    const engine_promises = Array.from(this.#engines.values()).map(async (e) => {
+      try {
         await e.api.check_version();
         e.version = e.api.version;
 
-        list = await e.api.speakers();
-      }catch(e){
-        this.#logger.info(Utils.handle_axios_error(e));
-        // 設計的に終了を叩くべきではないけどエンジンなしの挙動を作ってない、かつ元々ここハンドルされてないエラーで落ちてたので普通に落としてあげる
-        process.exit(1);
+        const list = await e.api.speakers();
+        e.original_list = JSON.parse(JSON.stringify(list));
+
+        for(let l of e.original_list){
+          l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
+        }
+
+        for(let sp of list){
+          e.voice_liblary_list.push(sp.name);
+
+          for(let v of sp.styles){
+            let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
+            let voice = v.id;
+
+            let speaker = { name: `${sp.name}(${v.name})`, value: short };
+
+            e.voice_list.push(speaker);
+            e.id_to_shortid_map.set(voice, short);
+            shortid_voice.set(short, { engine: e, id: voice });
+          }
+        }
+
+        const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+        await e.api.synthesis("テスト", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
+
+        return { status: 'fulfilled', engine: e.name, version: e.version };
+      } catch (err) {
+        return { status: 'rejected', engine: e.name, reason: Utils.handle_axios_error(err) };
       }
+    });
 
-      e.original_list = JSON.parse(JSON.stringify(list));
+    const results = await Promise.all(engine_promises);
+    const failed_engines = results.filter(r => r.status === 'rejected');
 
-      // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
-      for(let l of e.original_list){
-        l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
-      }
-
-      for(let sp of list){
-        e.voice_liblary_list.push(sp.name);
-
-        for(let v of sp.styles){
-          let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
-          let voice = v.id;
-
-          let speaker = { name: `${sp.name}(${v.name})`, value: short };
-
-          e.voice_list.push(speaker);
-          e.id_to_shortid_map.set(voice, short);
-          shortid_voice.set(short, { engine: e, id: voice });
+    if(failed_engines.length > 0) {
+      this.#logger.info("--- Voice Engine Initialization Report ---");
+      for(const result of results){
+        if(result.status === 'fulfilled'){
+          this.#logger.info(`✓ ${result.engine} (Version: ${result.version}) - Successfully initialized.`);
+        }else{
+          this.#logger.error(`✗ ${result.engine} - Failed to initialize. Reason: ${result.reason}`);
         }
       }
-
-      this.#short_id_map = shortid_voice;
-
-      const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-
-      try{
-        await e.api.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
-
-        this.#logger.debug(`${e.name} OK`);
-      }catch(e){
-        this.#logger.info(Utils.handle_axios_error(e));
-      }
+      this.#logger.info("----------------------------------------");
+      this.#logger.fatal("One or more voice engines failed to initialize. The application will now exit.");
+      process.exit(1);
     }
+
+    this.#short_id_map = shortid_voice;
 
     this.#engine_list = this._engines();
     this.#speakers = this._speakers();
