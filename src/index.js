@@ -61,15 +61,15 @@ module.exports = class App{
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
-      discord_username: "NAME"
+      discord_username: "NAME",
+      ready: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
   }
 
-  async start(){
-    this.setup_autojoin();
-    this.setup_uservoice_list();
+  async setup_resources(){
+    this.logger.info("Setup resources...");
     await this.voice_engines.init_engines();
 
     this.voice_list = this.voice_engines.speakers;
@@ -84,6 +84,12 @@ module.exports = class App{
     this.currentvoice = require('./command/currentvoice.js');
     this.setvoiceall = require('./command/setvoiceall.js');
     this.setvoice = require('./command/setvoice.js');
+    this.logger.info("Setup resources... Done!");
+  }
+
+  async start(){
+    this.setup_autojoin();
+    this.setup_uservoice_list();
     this.setup_discord();
     this.setup_process();
 
@@ -109,6 +115,8 @@ module.exports = class App{
     }
 
     this.client.on('ready', async () => {
+      await this.setup_resources();
+
       // コマンド登録
       let data = [];
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
@@ -121,11 +129,13 @@ module.exports = class App{
       print_info(this);
 
       this.update_status_text();
+      this.status.ready = true;
     });
 
     this.client.on('interactionCreate', this.onInteraction.bind(this));
 
     this.client.on('messageCreate', (msg) => {
+      if(!this.status.ready) return;
       if(!(msg.guild) || msg.author.bot) return;
 
       if(msg.content === SKIP_PREFIX){
@@ -138,7 +148,10 @@ module.exports = class App{
       }
     });
 
-    this.client.on('voiceStateUpdate', this.check_join_and_leave.bind(this));
+    this.client.on('voiceStateUpdate', (old_s, new_s) => {
+      if(!this.status.ready) return;
+      this.check_join_and_leave(old_s, new_s);
+    });
   }
 
   setup_process(){
@@ -153,6 +166,11 @@ module.exports = class App{
 
   async onInteraction(interaction){
     if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
+
+    if(!this.status.ready){
+      await interaction.reply({ content: 'まだ準備中だよ。しばらく待ってね。', flags: MessageFlags.Ephemeral });
+      return;
+    }
 
     this.logger.debug(interaction);
 
