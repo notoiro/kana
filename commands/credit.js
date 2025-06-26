@@ -15,7 +15,7 @@ module.exports = silentify({
     description: "このBotで利用可能な音声ライブラリのクレジット表記を生成します。"
   },
   async execute(interaction){
-    const lib_list = app.voice_engines.safe_liblarys;
+    const lib_list = app.voice_engines.safe_librarys;
     const credit_urls = app.voice_engines.credit_urls;
 
     const ems = [];

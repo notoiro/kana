@@ -12,15 +12,15 @@ const Utils = require('./utils.js');
 module.exports = class VoiceEngines{
   #logger;
   #engines;
-  #liblary_engine_map;
+  #library_engine_map;
   #speaker_engine_map;
 
   #engine_list;
   #short_id_map;
   #speakers;
   #safe_speakers;
-  #liblarys;
-  #safe_liblarys;
+  #libraries;
+  #safe_libraries;
   #credit_urls;
   #infos;
 
@@ -30,7 +30,7 @@ module.exports = class VoiceEngines{
 
     if(VOICE_ENGINES){
       this.#engines = new Map();
-      this.#liblary_engine_map = new Map();
+      this.#library_engine_map = new Map();
       this.#speaker_engine_map = new Map();
 
       this.load_engines();
@@ -47,7 +47,7 @@ module.exports = class VoiceEngines{
         version: "none",
         server: e.server,
         voice_list: [],
-        voice_liblary_list: [],
+        voice_library_list: [],
         id_to_shortid_map: new Map(),
         original_list: [],
         credit_url: e.credit_url,
@@ -86,7 +86,7 @@ module.exports = class VoiceEngines{
         }
 
         for(let sp of list){
-          e.voice_liblary_list.push(sp.name);
+          e.voice_library_list.push(sp.name);
 
           for(let v of sp.styles){
             let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
@@ -132,8 +132,8 @@ module.exports = class VoiceEngines{
     this.#engine_list = this._engines();
     this.#speakers = this._speakers();
     this.#safe_speakers = this._safe_speakers();
-    this.#liblarys = this._liblarys();
-    this.#safe_liblarys = this._safe_liblarys();
+    this.#libraries = this._libraries();
+    this.#safe_libraries = this._safe_libraries();
     this.#credit_urls = this._credit_urls();
     this.#infos = this._engine_infos();
 
@@ -156,12 +156,12 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(this.#safe_speakers));
   }
 
-  get liblarys(){
-    return JSON.parse(JSON.stringify(this.#liblarys));
+  get libraries(){
+    return JSON.parse(JSON.stringify(this.#libraries));
   }
 
-  get safe_liblarys(){
-    return JSON.parse(JSON.stringify(this.#safe_liblarys));
+  get safe_libraries(){
+    return JSON.parse(JSON.stringify(this.#safe_libraries));
   }
 
   get credit_urls(){
@@ -176,7 +176,7 @@ module.exports = class VoiceEngines{
     return this.#short_id_map.keys();
   }
 
-  get_engine_liblarys(engine_name){
+  get_engine_libraries(engine_name){
     const e = this.#engines.get(engine_name);
 
     if(!e) throw "Engine not found";
@@ -190,12 +190,12 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  get_liblary_speakers(liblary_id){
-    const e = this.#liblary_engine_map.get(liblary_id);
+  get_library_speakers(library_id){
+    const e = this.#library_engine_map.get(library_id);
 
     if(!e) throw "Engine not found";
 
-    const l = e.original_list.find(l => liblary_id === l.speaker_uuid);
+    const l = e.original_list.find(l => library_id === l.speaker_uuid);
 
     let result = [];
     for(let v of l.styles){
@@ -236,10 +236,10 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  _liblarys(){
+  _libraries(){
     let result = [];
     for(let e of this.#engines.values()){
-      let list = JSON.parse(JSON.stringify(e.voice_liblary_list));
+      let list = JSON.parse(JSON.stringify(e.voice_library_list));
       for(let v of list){
         if(!result.some(vv => vv === v)){
           result.push(v);
@@ -253,10 +253,10 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  _safe_liblarys(){
+  _safe_libraries(){
     let result = [];
     for(let e of this.#engines.values()){
-      let fix_lists = JSON.parse(JSON.stringify(e.voice_liblary_list)).map((v) => `${e.name}:${v}`);
+      let fix_lists = JSON.parse(JSON.stringify(e.voice_library_list)).map((v) => `${e.name}:${v}`);
       result = result.concat(fix_lists);
     }
 
@@ -304,7 +304,7 @@ module.exports = class VoiceEngines{
         this.#speaker_engine_map.set(v.value, e);
       }
       for(let l of e.original_list){
-        this.#liblary_engine_map.set(l.speaker_uuid, e);
+        this.#library_engine_map.set(l.speaker_uuid, e);
       }
     }
   }

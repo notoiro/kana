@@ -55,7 +55,7 @@ module.exports = class App{
     this.autojoin_map = new Map();
     this.uservoices_map = new Map();
     this.voice_list = [];
-    this.voice_liblary_list = [];
+    this.voice_library_list = [];
     this.commands = {};
 
     this.status = {
@@ -79,8 +79,8 @@ module.exports = class App{
 
       spinner.start('Initializing data utilities...');
       this.voice_list = this.voice_engines.speakers;
-      this.voice_liblary_list = this.voice_engines.liblarys;
-      this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list);
+      this.voice_library_list = this.voice_engines.libraries;
+      this.bot_utils.init_voicelist(this.voice_list, this.voice_library_list);
       this.data_utils.init(this.voice_list[0].value);
       this.voicepick_controller.init(this.voice_engines);
       spinner.succeed('Data utilities initialized.');
