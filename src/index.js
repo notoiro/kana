@@ -155,12 +155,31 @@ module.exports = class App{
   }
 
   setup_process(){
-    process.on('uncaughtExceptionMonitor', (_) => {
-      if(process.env.NODE_ENV === "production") this.client.destroy();
+    const cleanup = async (signal, exitCode) => {
+      this.logger.info(`Received ${signal}. Cleaning up...`);
+      // client.destroy()はログイン後にしか呼べないため、wsの状態で存在をチェックする
+      if (process.env.NODE_ENV === 'production' && this.client?.ws) {
+        await this.client.destroy();
+        this.logger.info('Discord client destroyed.');
+      }
+      process.exit(exitCode);
+    }
+
+    process.on('SIGINT', async () => {
+      await cleanup('SIGINT', 0);
     });
-    process.on("exit", _ => {
-      this.logger.info("Exit!");
-      if(process.env.NODE_ENV === "production") this.client.destroy();
+
+    process.on('SIGTERM', async () => {
+      await cleanup('SIGTERM', 0);
+    });
+
+    process.on('uncaughtException', async (err, origin) => {
+      this.logger.fatal(`Uncaught exception: ${err}, origin: ${origin}`);
+      await cleanup('uncaughtException', 1);
+    });
+
+    process.on("exit", code => {
+      this.logger.info(`Exiting with code: ${code}`);
     });
   }
 
