@@ -41,18 +41,38 @@ module.exports = class Utils{
   }
 
   static handle_axios_error(err){
-    if(err.response){
-      return {
-        data: err.response.data,
-        status: err.response.status,
-        headers: err.response.headers,
-        debug: is_debug ? err : null
-      }
-    }else{
-      return {
-        message: err.message,
-        debug: is_debug ? err : null
-      }
+    if (!err.isAxiosError) {
+      return err; // Axiosエラーでなければそのまま返す
     }
+
+    let report = {};
+    if (err.response) {
+      // サーバーからの応答があったが、ステータスコードが2xxの範囲外
+      report = {
+        message: `Request failed with status code ${err.response.status}`,
+        status: err.response.status,
+        data: err.response.data
+      };
+    } else if (err.request) {
+      // リクエストは行われたが、応答がなかった
+      report = {
+        message: 'No response was received from the server.',
+        code: err.code,
+        request_info: {
+          address: err.request._options.hostname,
+          port: err.request._options.port,
+          path: err.request._options.path
+        }
+      };
+    } else {
+      // リクエストの設定中に何かが発生した
+      report = { message: err.message };
+    }
+
+    if (is_debug && err.stack) {
+      report.debug_stack = err.stack.split('\n');
+    }
+
+    return report; // 整形したオブジェクトを返す
   }
 }

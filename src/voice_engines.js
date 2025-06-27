@@ -26,7 +26,7 @@ const Utils = require('./utils.js');
 module.exports = class VoiceEngines{
   #logger;
   #engines;
-  #liblary_engine_map;
+  #library_engine_map;
   #speaker_engine_map;
 
   #engine_list;
@@ -34,10 +34,10 @@ module.exports = class VoiceEngines{
   #short_id_song_map;
   #speakers;
   #safe_speakers;
-  #liblarys;
-  #safe_liblarys;
   #singers;
-  #sing_liblarys;
+  #sing_libraries;
+  #libraries;
+  #safe_libraries;
   #credit_urls;
   #infos;
 
@@ -47,7 +47,7 @@ module.exports = class VoiceEngines{
 
     if(VOICE_ENGINES){
       this.#engines = new Map();
-      this.#liblary_engine_map = new Map();
+      this.#library_engine_map = new Map();
       this.#speaker_engine_map = new Map();
 
       this.load_engines();
@@ -64,7 +64,7 @@ module.exports = class VoiceEngines{
         version: "none",
         server: e.server,
         voice_list: [],
-        voice_liblary_list: [],
+        voice_library_list: [],
         id_to_shortid_map: new Map(),
         original_list: [],
         credit_url: e.credit_url,
@@ -97,67 +97,76 @@ module.exports = class VoiceEngines{
     let shortid_voice = new Map();
     let shortid_sing = new Map();
 
-    for(let e of this.#engines.values()){
-      let list = null;
-      try{
+    const engine_promises = Array.from(this.#engines.values()).map(async (e) => {
+      try {
         await e.api.check_version();
         e.version = e.api.version;
 
-        list = await e.api.speakers();
-      }catch(e){
-        this.#logger.info(Utils.handle_axios_error(e));
-        // 設計的に終了を叩くべきではないけどエンジンなしの挙動を作ってない、かつ元々ここハンドルされてないエラーで落ちてたので普通に落としてあげる
-        process.exit(1);
-      }
+        const list = await e.api.speakers();
+        e.original_list = JSON.parse(JSON.stringify(list));
 
-      e.original_list = JSON.parse(JSON.stringify(list));
-
-      // NOTE: 多エンジン環境ではUUIDが一意ではないのでこちらで適当に一意にする（エンジンプラグイン側の実装はUUIDを別に持つので問題はない
-      for(let l of e.original_list){
-        l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
-      }
-
-      for(let sp of list){
-        e.voice_liblary_list.push(sp.name);
-
-        for(let v of sp.styles){
-          let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
-          let voice = v.id;
-
-          let speaker = { name: `${sp.name}(${v.name})`, value: short };
-
-          e.voice_list.push(speaker);
-          e.id_to_shortid_map.set(voice, short);
-          if(!e.is_song) shortid_voice.set(short, { engine: e, id: voice });
-          else shortid_sing.set(short, { engine: e, id: voice });
+        for(let l of e.original_list){
+          l.speaker_uuid = `${e.name}_${l.speaker_uuid}`;
         }
-      }
 
-      this.#short_id_map = shortid_voice;
-      this.#short_id_song_map = shortid_sing;
+        for(let sp of list){
+          e.voice_library_list.push(sp.name);
 
-      const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+          for(let v of sp.styles){
+            let short = shorthash.unique(`${e.name}+${sp.speaker_uuid}+${v.id}`);
+            let voice = v.id;
 
-      try{
+            let speaker = { name: `${sp.name}(${v.name})`, value: short };
+
+            e.voice_list.push(speaker);
+            e.id_to_shortid_map.set(voice, short);
+            if(!e.is_song) shortid_voice.set(short, { engine: e, id: voice });
+            else shortid_sing.set(short, { engine: e, id: voice });
+          }
+        }
+
+        const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
+
         if(e.is_song){
           await e.api.synthesis(TEST_SONG, shortid_sing.get(e.voice_list[0].value).id);
         }else{
           await e.api.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
         }
 
-        this.#logger.debug(`${e.name} OK`);
-      }catch(e){
-        this.#logger.info(Utils.handle_axios_error(e));
+        return { status: 'fulfilled', engine: e.name, version: e.version };
+      } catch (err) {
+        return { status: 'rejected', engine: e.name, reason: Utils.handle_axios_error(err) };
       }
+    });
+
+    const results = await Promise.all(engine_promises);
+    const failed_engines = results.filter(r => r.status === 'rejected');
+
+    if(failed_engines.length > 0) {
+      this.#logger.info("--- Voice Engine Initialization Report ---");
+      for(const result of results){
+        if(result.status === 'fulfilled'){
+          this.#logger.info(`✓ ${result.engine} (Version: ${result.version}) - Successfully initialized.`);
+        }else{
+          const reason_str = typeof result.reason === 'object' ? JSON.stringify(result.reason, null, 2) : result.reason;
+          this.#logger.error(`✗ ${result.engine} - Failed to initialize. Reason: ${reason_str}`);
+        }
+      }
+      this.#logger.info("----------------------------------------");
+      this.#logger.fatal("One or more voice engines failed to initialize. The application will now exit.");
+      process.exit(1);
     }
+
+    this.#short_id_map = shortid_voice;
+    this.#short_id_song_map = shortid_sing;
 
     this.#engine_list = this._engines();
     this.#speakers = this._speakers();
     this.#safe_speakers = this._safe_speakers();
-    this.#liblarys = this._liblarys();
-    this.#safe_liblarys = this._safe_liblarys();
     this.#singers = this._singers();
-    this.#sing_liblarys = this._sing_liblarys();
+    this.#sing_libraries = this._sing_libraries();
+    this.#libraries = this._libraries();
+    this.#safe_libraries = this._safe_libraries();
     this.#credit_urls = this._credit_urls();
     this.#infos = this._engine_infos();
 
@@ -180,20 +189,20 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(this.#safe_speakers));
   }
 
-  get liblarys(){
-    return JSON.parse(JSON.stringify(this.#liblarys));
+  get libraries(){
+    return JSON.parse(JSON.stringify(this.#libraries));
   }
 
-  get safe_liblarys(){
-    return JSON.parse(JSON.stringify(this.#safe_liblarys));
+  get safe_libraries(){
+    return JSON.parse(JSON.stringify(this.#safe_libraries));
   }
 
   get singers(){
     return JSON.parse(JSON.stringify(this.#singers));
   }
 
-  get sing_liblarys(){
-    return JSON.parse(JSON.stringify(this.#sing_liblarys));
+  get sing_libraries(){
+    return JSON.parse(JSON.stringify(this.#sing_libraries));
   }
 
   get credit_urls(){
@@ -208,7 +217,7 @@ module.exports = class VoiceEngines{
     return this.#short_id_map.keys();
   }
 
-  get_engine_liblarys(engine_name){
+  get_engine_libraries(engine_name){
     const e = this.#engines.get(engine_name);
 
     if(!e) throw "Engine not found";
@@ -222,12 +231,12 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  get_liblary_speakers(liblary_id){
-    const e = this.#liblary_engine_map.get(liblary_id);
+  get_library_speakers(library_id){
+    const e = this.#library_engine_map.get(library_id);
 
     if(!e) throw "Engine not found";
 
-    const l = e.original_list.find(l => liblary_id === l.speaker_uuid);
+    const l = e.original_list.find(l => library_id === l.speaker_uuid);
 
     let result = [];
     for(let v of l.styles){
@@ -270,11 +279,11 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  _liblarys(){
+  _libraries(){
     let result = [];
     for(let e of this.#engines.values()){
       if(e.is_song) continue;
-      let list = JSON.parse(JSON.stringify(e.voice_liblary_list));
+      let list = JSON.parse(JSON.stringify(e.voice_library_list));
       for(let v of list){
         if(!result.some(vv => vv === v)){
           result.push(v);
@@ -288,11 +297,11 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  _safe_liblarys(){
+  _safe_libraries(){
     let result = [];
     for(let e of this.#engines.values()){
       if(e.is_song) continue;
-      let fix_lists = JSON.parse(JSON.stringify(e.voice_liblary_list)).map((v) => `${e.name}:${v}`);
+      let fix_lists = JSON.parse(JSON.stringify(e.voice_library_list)).map((v) => `${e.name}:${v}`);
       result = result.concat(fix_lists);
     }
 
@@ -317,11 +326,11 @@ module.exports = class VoiceEngines{
     return JSON.parse(JSON.stringify(result));
   }
 
-  _sing_liblarys(){
+  _sing_libraries(){
     let result = [];
     for(let e of this.#engines.values()){
       if(!e.is_song) continue;
-      let list = JSON.parse(JSON.stringify(e.voice_liblary_list));
+      let list = JSON.parse(JSON.stringify(e.voice_library_list));
       for(let v of list){
         if(!result.some(vv => vv === v)){
           result.push(v);
@@ -378,7 +387,7 @@ module.exports = class VoiceEngines{
         this.#speaker_engine_map.set(v.value, e);
       }
       for(let l of e.original_list){
-        this.#liblary_engine_map.set(l.speaker_uuid, e);
+        this.#library_engine_map.set(l.speaker_uuid, e);
       }
     }
   }

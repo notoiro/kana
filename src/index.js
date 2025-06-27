@@ -56,38 +56,60 @@ module.exports = class App{
     this.autojoin_map = new Map();
     this.uservoices_map = new Map();
     this.voice_list = [];
-    this.voice_liblary_list = [];
+    this.voice_library_list = [];
     this.commands = {};
 
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
       connected_servers: 0,
-      discord_username: "NAME"
+      discord_username: "NAME",
+      ready: false
     };
 
     this.logger.level = this.status.debug ? 'debug' : 'info';
   }
 
+  async setup_resources(){
+    console.log("Preparing resources...");
+    const { default: ora } = await import('ora');
+    const spinner = ora({ text: 'Initializing voice engines...', spinner: 'dots' }).start();
+
+    try {
+      await this.voice_engines.init_engines();
+      spinner.succeed('Voice engines initialized.');
+
+      spinner.start('Initializing data utilities...');
+      this.voice_list = this.voice_engines.speakers;
+      this.voice_library_list = this.voice_engines.libraries;
+      this.singer_list = this.voice_engines.singers;
+      this.singer_library_list = this.voice_engines.sing_libraries;
+
+      this.bot_utils.init_voicelist(this.voice_list, this.voice_library_list, this.singer_list, this.singer_library_list);
+      this.data_utils.init(this.voice_list[0].value);
+      this.voicepick_controller.init(this.voice_engines);
+      spinner.succeed('Data utilities initialized.');
+
+      spinner.start('Setting up Yomi parser...');
+      await this.yomi_parser.setup();
+      spinner.succeed('Yomi parser is ready.');
+
+      spinner.start('Loading commands...');
+      this.currentvoice = require('./command/currentvoice.js');
+      this.setvoiceall = require('./command/setvoiceall.js');
+      this.setvoice = require('./command/setvoice.js');
+      spinner.succeed('Commands loaded.');
+
+      console.log("All resources are ready!");
+    } catch (error) {
+      spinner.fail('Resource preparation failed.');
+      this.logger.fatal(error);
+      process.exit(1);
+    }
+  }
+
   async start(){
     this.setup_autojoin();
     this.setup_uservoice_list();
-    await this.voice_engines.init_engines();
-
-    this.voice_list = this.voice_engines.speakers;
-    this.voice_liblary_list = this.voice_engines.liblarys;
-
-    this.singer_list = this.voice_engines.singers;
-    this.singer_liblary_list = this.voice_engines.sing_liblarys;
-
-    this.bot_utils.init_voicelist(this.voice_list, this.voice_liblary_list, this.singer_list, this.singer_liblary_list);
-    this.data_utils.init(this.voice_list[0].value);
-    this.voicepick_controller.init(this.voice_engines);
-
-    await this.yomi_parser.setup();
-
-    this.currentvoice = require('./command/currentvoice.js');
-    this.setvoiceall = require('./command/setvoiceall.js');
-    this.setvoice = require('./command/setvoice.js');
     this.setup_discord();
     this.setup_process();
 
@@ -113,6 +135,8 @@ module.exports = class App{
     }
 
     this.client.on('ready', async () => {
+      await this.setup_resources();
+
       // コマンド登録
       let data = [];
       for(const commandName in this.commands) data.push(this.commands[commandName].data);
@@ -125,11 +149,13 @@ module.exports = class App{
       print_info(this);
 
       this.update_status_text();
+      this.status.ready = true;
     });
 
     this.client.on('interactionCreate', this.onInteraction.bind(this));
 
     this.client.on('messageCreate', (msg) => {
+      if(!this.status.ready) return;
       if(!(msg.guild) || msg.author.bot) return;
 
       if(msg.content === SKIP_PREFIX){
@@ -142,21 +168,48 @@ module.exports = class App{
       }
     });
 
-    this.client.on('voiceStateUpdate', this.check_join_and_leave.bind(this));
+    this.client.on('voiceStateUpdate', (old_s, new_s) => {
+      if(!this.status.ready) return;
+      this.check_join_and_leave(old_s, new_s);
+    });
   }
 
   setup_process(){
-    process.on('uncaughtExceptionMonitor', (_) => {
-      if(process.env.NODE_ENV === "production") this.client.destroy();
+    const cleanup = async (signal, exitCode) => {
+      this.logger.info(`Received ${signal}. Cleaning up...`);
+      // client.destroy()はログイン後にしか呼べないため、wsの状態で存在をチェックする
+      if (process.env.NODE_ENV === 'production' && this.client?.ws) {
+        await this.client.destroy();
+        this.logger.info('Discord client destroyed.');
+      }
+      process.exit(exitCode);
+    }
+
+    process.on('SIGINT', async () => {
+      await cleanup('SIGINT', 0);
     });
-    process.on("exit", _ => {
-      this.logger.info("Exit!");
-      if(process.env.NODE_ENV === "production") this.client.destroy();
+
+    process.on('SIGTERM', async () => {
+      await cleanup('SIGTERM', 0);
+    });
+
+    process.on('uncaughtException', async (err, origin) => {
+      this.logger.fatal(`Uncaught exception: ${err}, origin: ${origin}`);
+      await cleanup('uncaughtException', 1);
+    });
+
+    process.on("exit", code => {
+      this.logger.info(`Exiting with code: ${code}`);
     });
   }
 
   async onInteraction(interaction){
     if(!(interaction.isChatInputCommand()) || !(interaction.inGuild())) return;
+
+    if(!this.status.ready){
+      await interaction.reply({ content: 'まだ準備中だよ。しばらく待ってね。', flags: MessageFlags.Ephemeral });
+      return;
+    }
 
     this.logger.debug(interaction);
 

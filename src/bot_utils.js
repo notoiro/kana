@@ -25,20 +25,20 @@ module.exports = class BotUtils{
     this.#VOICE_REGEXP_SPELL = new RegExp(`[${ResurrectionSpell.spell_chars()}]+`, 'g');
   }
 
-  init_voicelist(voice_list, voice_liblary_list, singer_list, singer_liblary_list){
+  init_voicelist(voice_list, voice_library_list, singer_list, singer_library_list){
     const list = voice_list.toSorted((a, b) => a.value - b.value);
     const list2 = singer_list.toSorted((a, b) => a.value - b.value);
 
     let add = [];
     let add2 = [];
 
-    for(let l of voice_liblary_list){
+    for(let l of voice_library_list){
       const r = new RegExp(escape_regexp_non_safe(l), 'g');
       const f = list.find(el => r.test(el.name));
       if(f) add.push({ name: l, value: f.value });
     }
 
-    for(let l of singer_liblary_list){
+    for(let l of singer_library_list){
       const r = new RegExp(escape_regexp_non_safe(l), 'g');
       const f = list2.find(el => r.test(el.name));
       if(f) add2.push({ name: l, value: f.value });

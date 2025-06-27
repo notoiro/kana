@@ -12,7 +12,7 @@ const TITLE = "ボイスピッカー";
 module.exports = class VoicepickController{
   #logger;
   #setting_list;
-  #engine;
+  #engines;
 
   constructor(){
     this.#logger = log4js.getLogger('voicepick_controller');
@@ -20,15 +20,15 @@ module.exports = class VoicepickController{
     this.#setting_list = new Map();
   }
 
-  init(engine){
-    this.#engine = engine;
+  init(engines){
+    this.#engines = engines;
   }
 
   // page = Number
-  // type = String("engine" | "liblary" | "style")
+  // type = String("engine" | "library" | "style")
   // hint? = Object
   //  engine? = string
-  //  liblary = string
+  //  library = string
   //  page? = Number
   // select_value = string
   // @ret = ActionRow
@@ -37,15 +37,15 @@ module.exports = class VoicepickController{
   get_split_selects(type, hint = {}, select_value = null){
     let list_sliced;
 
-    if(type === "engine") list_sliced = this.#engine.engines;
+    if(type === "engine") list_sliced = this.#engines.engines;
 
-    if(type === "liblary"){
+    if(type === "library"){
       const page = hint.page ? hint.page : 0;
       const start = page * VOICE_SPLIT_COUNT;
       const end = (page + 1) * VOICE_SPLIT_COUNT;
-      list_sliced = this.#engine.get_engine_liblarys(hint.engine).slice(start, end);
+      list_sliced = this.#engines.get_engine_libraries(hint.engine).slice(start, end);
     }
-    if(type === "style") list_sliced = this.#engine.get_liblary_speakers(hint.liblary);
+    if(type === "style") list_sliced = this.#engines.get_library_speakers(hint.library);
 
     for(let i = 0; i < list_sliced.length; i++){
       let value, name;
@@ -53,7 +53,7 @@ module.exports = class VoicepickController{
         value = list_sliced[i];
         name = list_sliced[i];
       }
-      if(type === "liblary" || type === "style"){
+      if(type === "library" || type === "style"){
         value = list_sliced[i].id;
         name = list_sliced[i].name;
       }
@@ -84,18 +84,13 @@ module.exports = class VoicepickController{
   }
 
   get_page_length(engine_id){
-    const list = this.#engine.get_engine_liblarys(engine_id);
+    const list = this.#engines.get_engine_libraries(engine_id);
 
     return Math.ceil(list.length/VOICE_SPLIT_COUNT);
   }
 
   async voicepick(interaction, setvoice){
-    const default_setting = {
-      page: 0,
-      engine: this.#engine.engines[0],
-      liblary: this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id,
-      style: this.#engine.get_liblary_speakers(this.#engine.get_engine_liblarys(this.#engine.engines[0])[0].id)[0].id,
-    }
+    const default_setting = this.#get_default_setting();
     this.#setting_list.set(interaction.member.id, default_setting);
 
     const em = new EmbedBuilder()
@@ -106,8 +101,8 @@ module.exports = class VoicepickController{
 
     const selects = [
       this.get_split_selects("engine", null, default_setting.engine),
-      this.get_split_selects("liblary", { engine: default_setting.engine, page: 0 }, default_setting.liblary),
-      this.get_split_selects("style", { liblary: default_setting.liblary }, default_setting.style)
+      this.get_split_selects("library", { engine: default_setting.engine, page: 0 }, default_setting.library),
+      this.get_split_selects("style", { library: default_setting.library }, default_setting.style)
     ];
 
     const res = await interaction.editReply({
@@ -125,96 +120,121 @@ module.exports = class VoicepickController{
         this.#logger.debug(c);
 
         if(c.customId === 'prev' || c.customId === 'next'){
-          let new_page;
-
-          if(c.customId === 'prev') new_page = page -1;
-          else new_page = page +1;
-
-          const buttons = this.get_buttons({
-            disable_prev: (new_page === 0),
-            disable_next: (new_page === this.get_page_length(setting.engine) - 1)
-          });
-
-          const new_liblary = this.#engine.get_engine_liblarys(setting.engine)[new_page * VOICE_SPLIT_COUNT].id;
-          const new_style = this.#engine.get_liblary_speakers(new_liblary)[0].id;
-
-          const new_setting = {
-            page: new_page,
-            engine: setting.engine,
-            liblary: new_liblary,
-            style: new_style,
-          }
-
-          const selects = [
-            this.get_split_selects("engine", null, new_setting.engine),
-            this.get_split_selects("liblary", { engine: new_setting.engine, page: new_page }, new_setting.liblary),
-            this.get_split_selects("style", { liblary: new_setting.liblary }, new_style)
-          ];
-
-          await c.update({
-            embeds: [
-              new EmbedBuilder().setTitle(`${TITLE}(${new_page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
-            ],
-            components: [...selects, buttons]
-          });
-
-          this.#setting_list.set(c.user.id, new_setting);
+          await this.#handle_page_change(c, setting, page);
         }else if(c.customId.startsWith('voicepick_')){
-          const id = c.customId;
-
-          let new_setting = {
-            page: page,
-            engine: setting.engine,
-            liblary: setting.liblary,
-            style: setting.style,
-          };
-          if(id === 'voicepick_engine'){
-            new_setting.page = 0;
-            new_setting.engine = c.values[0];
-            new_setting.liblary = this.#engine.get_engine_liblarys(new_setting.engine)[0].id;
-            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
-          }else if(id === 'voicepick_liblary'){
-            new_setting.liblary = c.values[0];
-            new_setting.style = this.#engine.get_liblary_speakers(new_setting.liblary)[0].id
-          }else if(id === 'voicepick_style'){
-            new_setting.style = c.values[0];
-          }
-
-          this.#setting_list.set(c.user.id, new_setting);
-
-          const buttons = this.get_buttons({
-            disable_prev: (new_setting.page === 0),
-            disable_next: (new_setting.page === this.get_page_length(new_setting.engine) - 1)
-          });
-
-          const selects = [
-            this.get_split_selects("engine", null, new_setting.engine),
-            this.get_split_selects("liblary", { engine: new_setting.engine, page: new_setting.page }, new_setting.liblary),
-            this.get_split_selects("style", { liblary: new_setting.liblary }, new_setting.style)
-          ];
-
-          await c.update({
-            embeds: [
-              new EmbedBuilder().setTitle(`${TITLE}(${new_setting.page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
-            ],
-            components: [...selects, buttons]
-          });
+          await this.#handle_select_change(c, setting, page);
         }else if(c.customId === 'confirm'){
-          const call_obj = {
-            guild: { id: c.guild.id },
-            member: { id: c.user.id },
-            options: new Map(),
-            reply: async (body) => {
-              await c.update({ content: body.content, components: [], embeds: [] });
-            }
-          }
-          call_obj.options.set("voice", { value: setting.style });
-
-          await setvoice(call_obj, "voice");
+          await this.#handle_confirm(c, setting, setvoice);
         }
       }catch(e){
         this.#logger.info(JSON.stringify(e));
       }
     })
+  }
+
+  #get_default_setting() {
+    const default_engine = this.#engines.engines[0];
+    const default_library = this.#engines.get_engine_libraries(default_engine)[0].id;
+    const default_style = this.#engines.get_library_speakers(default_library)[0].id;
+
+    return {
+      page: 0,
+      engine: default_engine,
+      library: default_library,
+      style: default_style,
+    };
+  }
+
+  async #handle_page_change(c, setting, page) {
+    let new_page;
+
+    if(c.customId === 'prev') new_page = page -1;
+    else new_page = page +1;
+
+    const buttons = this.get_buttons({
+      disable_prev: (new_page === 0),
+      disable_next: (new_page === this.get_page_length(setting.engine) - 1)
+    });
+
+    const new_library = this.#engines.get_engine_libraries(setting.engine)[new_page * VOICE_SPLIT_COUNT].id;
+    const new_style = this.#engines.get_library_speakers(new_library)[0].id;
+
+    const new_setting = {
+      page: new_page,
+      engine: setting.engine,
+      library: new_library,
+      style: new_style,
+    }
+
+    const selects = [
+      this.get_split_selects("engine", null, new_setting.engine),
+      this.get_split_selects("library", { engine: new_setting.engine, page: new_page }, new_setting.library),
+      this.get_split_selects("style", { library: new_setting.library }, new_style)
+    ];
+
+    await c.update({
+      embeds: [
+        new EmbedBuilder().setTitle(`${TITLE}(${new_page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
+      ],
+      components: [...selects, buttons]
+    });
+
+    this.#setting_list.set(c.user.id, new_setting);
+  }
+
+  async #handle_select_change(c, setting, page) {
+    const id = c.customId;
+
+    let new_setting = {
+      page: page,
+      engine: setting.engine,
+      library: setting.library,
+      style: setting.style,
+    };
+    if(id === 'voicepick_engine'){
+      new_setting.page = 0;
+      new_setting.engine = c.values[0];
+      new_setting.library = this.#engines.get_engine_libraries(new_setting.engine)[0].id;
+      new_setting.style = this.#engines.get_library_speakers(new_setting.library)[0].id
+    }else if(id === 'voicepick_library'){
+      new_setting.library = c.values[0];
+      new_setting.style = this.#engines.get_library_speakers(new_setting.library)[0].id
+    }else if(id === 'voicepick_style'){
+      new_setting.style = c.values[0];
+    }
+
+    this.#setting_list.set(c.user.id, new_setting);
+
+    const buttons = this.get_buttons({
+      disable_prev: (new_setting.page === 0),
+      disable_next: (new_setting.page === this.get_page_length(new_setting.engine) - 1)
+    });
+
+    const selects = [
+      this.get_split_selects("engine", null, new_setting.engine),
+      this.get_split_selects("library", { engine: new_setting.engine, page: new_setting.page }, new_setting.library),
+      this.get_split_selects("style", { library: new_setting.library }, new_setting.style)
+    ];
+
+    await c.update({
+      embeds: [
+        new EmbedBuilder().setTitle(`${TITLE}(${new_setting.page + 1}/${this.get_page_length(new_setting.engine)})`).setDescription(DESCRIPTION)
+      ],
+      components: [...selects, buttons]
+    });
+  }
+
+  async #handle_confirm(c, setting, setvoice) {
+    const call_obj = {
+      guild: { id: c.guild.id },
+      member: { id: c.user.id },
+      options: new Map(),
+      reply: async (body) => {
+        await c.update({ content: body.content, components: [], embeds: [] });
+      }
+    }
+    call_obj.options.set("voice", { value: setting.style });
+
+    await setvoice(call_obj, "voice");
   }
 }

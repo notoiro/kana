@@ -29,6 +29,7 @@ module.exports = class YomiParser{
   }
 
   get tokenizer_dict_length(){
+    if(!this.tokenizer) return 0;
     return this.tokenizer.dict_length;
   }
 
