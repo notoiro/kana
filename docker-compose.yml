@@ -18,7 +18,7 @@ services:
       - kana-network
 
   voicevox:
-    image: voicevox/voicevox_engine:cpu-ubuntu-latest
+    image: voicevox/voicevox_engine:cpu-latest
     container_name: voicevox_engine
     restart: unless-stopped
     # GPUを使いたい場合は、以下のコメントアウトを解除し、上のimageを適切なGPU版イメージに変更してください
@@ -35,7 +35,7 @@ services:
       - kana-network
 
   sharevox:
-    image: sharevox/sharevox_engine:cpu-ubuntu-latest
+    image: sharevox/sharevox_engine:cpu-latest
     container_name: sharevox_engine
     restart: unless-stopped
     # GPUを使いたい場合は、以下のコメントアウトを解除し、上のimageを適切なGPU版イメージに変更してください
