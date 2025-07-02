@@ -1,0 +1,37 @@
+{
+  // Discord Botのトークン
+  TOKEN: 'ここにDiscordボットのトークンを貼り付け',
+
+  // この文字で始まる文章を読まない
+  PREFIX: ';',
+
+  // ユーザーデータの保存先
+  SERVER_DIR: './servers',
+
+  // Kagome frontのホスト (Dockerサービス名を指定)
+  KAGOME_HOST: 'http://kagome:2971',
+
+  // トークン単位の辞書の保存先
+  DICT_DIR: './dictionaries',
+
+  // ポンコツ設定をデフォルトで有効にするか
+  IS_PONKOTSU: false,
+
+  // 音声エンジンの設定
+  VOICE_ENGINES: [
+    {
+      name: 'VOICEVOX',
+      type: 'VOICEVOX',
+      // Dockerサービス名を指定
+      server: 'http://voicevox:50021',
+      credit_url: 'https://voicevox.hiroshiba.jp/',
+    },
+    {
+      name: 'SHAREVOX',
+      type: 'VOICEVOX',
+      server: 'http://sharevox:50025',
+      credit_url: 'https://www.sharevox.app/',
+    },
+    // 他のエンジンも同様に追加可能
+  ],
+}
