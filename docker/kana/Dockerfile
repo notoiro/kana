@@ -5,6 +5,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # pnpmのインストール
+RUN apt-get update && apt-get install -y libasound2-dev && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm
 
 # package.jsonとpnpm-lock.yamlをコピー
