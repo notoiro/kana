@@ -13,6 +13,7 @@ services:
       - ./dictionaries:/app/dictionaries
     depends_on:
       - voicevox
+      - sharevox
       - kagome
     networks:
       - kana-network
@@ -35,7 +36,9 @@ services:
       - kana-network
 
   sharevox:
-    image: sharevox/sharevox_engine:cpu-latest
+    build:
+      context: .
+      dockerfile: ./docker/sharevox/Dockerfile
     container_name: sharevox_engine
     restart: unless-stopped
     # GPUを使いたい場合は、以下のコメントアウトを解除し、上のimageを適切なGPU版イメージに変更してください
