@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 必要なパッケージをインストール
 RUN apt-get update && \
-    apt-get install -y wget && \
+    apt-get install -y wget libsndfile1 && \
     rm -rf /var/lib/apt/lists/*
 
 # SHAREVOXエンジンをダウンロード (バージョンは安定のため固定、必要に応じて変更してください)
@@ -22,4 +22,4 @@ RUN chmod +x ./SHAREVOX/run
 EXPOSE 50025
 
 # コンテナ起動時にエンジンを実行
-CMD ["./SHAREVOX/run"]
+CMD ["./SHAREVOX/run", "--host", "0.0.0.0"]
