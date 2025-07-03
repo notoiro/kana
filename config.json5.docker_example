@@ -8,8 +8,9 @@
   // ユーザーデータの保存先
   SERVER_DIR: './servers',
 
+  TOKENIZER_TYPE: "Kagome",
   // Kagome frontのホスト (Dockerサービス名を指定)
-  KAGOME_HOST: 'http://kagome:2971',
+  TOKENIZER_HOST: 'http://kagome:2971',
 
   // トークン単位の辞書の保存先
   DICT_DIR: './dictionaries',
