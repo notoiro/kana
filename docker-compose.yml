@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  kana:
+    build:
+      context: .
+      dockerfile: ./docker/kana/Dockerfile
+    container_name: kana
+    restart: unless-stopped
+    volumes:
+      - ./config.json5:/app/config.json5
+      - ./servers:/app/servers
+      - ./dictionaries:/app/dictionaries
+    depends_on:
+      - voicevox
+      - sharevox
+      - kagome
+    networks:
+      - kana-network
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-latest
+    container_name: voicevox_engine
+    restart: unless-stopped
+    # GPUを使いたい場合は、以下のコメントアウトを解除し、上のimageを適切なGPU版イメージに変更してください
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    ports:
+      - "50021:50021"
+    networks:
+      - kana-network
+
+  sharevox:
+    build:
+      context: .
+      dockerfile: ./docker/sharevox/Dockerfile
+    container_name: sharevox_engine
+    restart: unless-stopped
+    # GPUを使いたい場合は、以下のコメントアウトを解除し、上のimageを適切なGPU版イメージに変更してください
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    ports:
+      - "50025:50025"
+    networks:
+      - kana-network
+
+  kagome:
+    build:
+      context: .
+      dockerfile: ./docker/kagome/Dockerfile
+    container_name: kagome_front
+    restart: unless-stopped
+    ports:
+      - "2971:2971"
+    networks:
+      - kana-network
+
+networks:
+  kana-network:
+    driver: bridge

@@ -9,7 +9,6 @@
     "production": "env NODE_ENV=production node index.js"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
     "@djs-button-pages/presets": "^1.0.0",
     "@notoiro/djs-button-pages": "^4.0.2",
@@ -17,9 +16,11 @@
     "axios": "^1.10.0",
     "discord.js": "^14.20.0",
     "emoji-regex": "^10.4.0",
+    "ffmpeg-static": "^5.2.0",
     "json5": "^2.2.3",
     "log4js": "^6.9.1",
     "node-web-audio-api": "^1.0.4",
+    "opusscript": "^0.1.1",
     "ora": "^8.2.0",
     "shorthash-jp": "github:notoiro/node-shorthash",
     "sodium-native": "^5.0.6",
@@ -29,5 +30,11 @@
     "@eslint/js": "^9.29.0",
     "eslint": "^9.29.0",
     "globals": "^16.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@discordjs/opus",
+      "ffmpeg-static"
+    ]
   }
 }
