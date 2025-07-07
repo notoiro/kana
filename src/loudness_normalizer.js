@@ -20,8 +20,64 @@ class LoudnessNormalizer {
   }
 
   async load_audio_file(buffer) {
+    if(buffer instanceof AudioBuffer){
+      return buffer;
+    }
+
     const context = new OfflineAudioContext(2, 44100, 44100);
     return await context.decodeAudioData(buffer);
+  }
+
+  // 音声の長さを判定
+  classify_audio_length(buffer) {
+    const duration = buffer.length / buffer.sampleRate;
+    if (duration < 1.0) {
+      return 'very_short'; // 1秒未満
+    } else if (duration < 3.0) {
+      return 'short'; // 3秒未満
+    } else {
+      return 'long'; // 3秒以上
+    }
+  }
+
+  // 音声の種類を推定（簡易版）
+  estimate_audio_type(buffer) {
+    const duration = buffer.length / buffer.sampleRate;
+
+    // 基本的な音響特性を分析
+    let totalEnergy = 0;
+    let peakCount = 0;
+    const channels = buffer.numberOfChannels;
+
+    for (let channel = 0; channel < channels; channel++) {
+      const data = buffer.getChannelData(channel);
+
+      // エネルギー計算
+      for (let i = 0; i < data.length; i++) {
+        totalEnergy += data[i] * data[i];
+      }
+
+      // ピーク検出（簡易版）
+      for (let i = 1; i < data.length - 1; i++) {
+        if (Math.abs(data[i]) > Math.abs(data[i-1]) &&
+            Math.abs(data[i]) > Math.abs(data[i+1]) &&
+            Math.abs(data[i]) > 0.1) {
+          peakCount++;
+        }
+      }
+    }
+
+    const avgEnergy = totalEnergy / (buffer.length * channels);
+    const peakDensity = peakCount / duration;
+
+    // 簡易的な判定ロジック
+    if (duration < 2.0 && avgEnergy > 0.01) {
+      return 'speech'; // 短くてエネルギーが高い = 音声
+    } else if (duration > 10.0 && peakDensity > 5) {
+      return 'music'; // 長くてピークが多い = 音楽
+    } else {
+      return 'unknown';
+    }
   }
 
   // K-weightingフィルタの適用（簡易版）
@@ -61,11 +117,57 @@ class LoudnessNormalizer {
     return filtered;
   }
 
-  // より正確な統合ラウドネス計算
+  // 短い音声用のラウドネス計算
+  calculate_short_audio_loudness(buffer) {
+    const channels = buffer.numberOfChannels;
+    const length = buffer.length;
+    const sampleRate = buffer.sampleRate;
+    const duration = length / sampleRate;
+
+    // 短い音声の場合は全体を一つのブロックとして処理
+    let sumSquares = 0;
+    let channelCount = 0;
+
+    for (let channel = 0; channel < channels; channel++) {
+      const channelData = buffer.getChannelData(channel);
+      const filtered = this.applyKWeighting(channelData);
+
+      const weight = channels > 1 ? 1.0 : 1.0;
+
+      let blockSum = 0;
+      for (let i = 0; i < filtered.length; i++) {
+        blockSum += filtered[i] * filtered[i];
+      }
+
+      sumSquares += blockSum * weight;
+      channelCount += weight;
+    }
+
+    const meanSquare = sumSquares / (length * channelCount);
+    const loudness = -0.691 + 10 * Math.log10(meanSquare);
+
+    // 短い音声の場合は補正係数を適用
+    // 音声が短いほど実際よりも大きく測定される傾向があるため
+    const durationFactor = Math.min(1.0, duration / 0.4); // 400ms基準
+    const correctedLoudness = loudness + (1 - durationFactor) * 3; // 最大3dB補正
+
+    this.logger.debug(`短い音声の補正: ${loudness.toFixed(2)} → ${correctedLoudness.toFixed(2)} LUFS`);
+    this.logger.debug(`継続時間: ${duration.toFixed(3)}s, 補正係数: ${durationFactor.toFixed(3)}`);
+
+    return correctedLoudness;
+  }
+
+  // 標準的な統合ラウドネス計算
   calculate_integrated_loudness(buffer) {
     const channels = buffer.numberOfChannels;
     const length = buffer.length;
     const sampleRate = buffer.sampleRate;
+    const duration = length / sampleRate;
+
+    // 短い音声の場合は特別な処理を使用
+    if (duration < 1.0) {
+      return this.calculate_short_audio_loudness(buffer);
+    }
 
     // 400ms blocks for gating
     const blockSize = Math.floor(sampleRate * 0.4);
@@ -82,7 +184,6 @@ class LoudnessNormalizer {
         const channelData = buffer.getChannelData(channel);
         const filtered = this.applyKWeighting(channelData.slice(start, start + blockSize));
 
-        // Channel weighting (mono/stereo)
         const weight = channels > 1 ? 1.0 : 1.0;
 
         let blockSum = 0;
@@ -97,20 +198,25 @@ class LoudnessNormalizer {
       const meanSquare = sumSquares / (blockSize * channelCount);
       const loudness = -0.691 + 10 * Math.log10(meanSquare);
 
-      if (loudness > -70) { // Absolute threshold
+      if (loudness > -70) {
         blocks.push(loudness);
       }
     }
 
     if (blocks.length === 0) {
-      return -70; // Silence
+      return -70;
     }
 
-    // Relative threshold (10 LU below mean)
+    // 短い音声の場合はゲーティングを緩和
+    if (duration < 3.0 && blocks.length < 5) {
+      const meanLoudness = blocks.reduce((sum, l) => sum + Math.pow(10, l / 10), 0) / blocks.length;
+      return -0.691 + 10 * Math.log10(meanLoudness);
+    }
+
+    // 標準的なゲーティング処理
     const meanLoudness = blocks.reduce((sum, l) => sum + Math.pow(10, l / 10), 0) / blocks.length;
     const relativeThreshold = -0.691 + 10 * Math.log10(meanLoudness) - 10;
 
-    // Final calculation with relative gating
     const gatedBlocks = blocks.filter(l => l > relativeThreshold);
 
     if (gatedBlocks.length === 0) {
@@ -197,28 +303,71 @@ class LoudnessNormalizer {
     return off_ctx.startRendering();
   }
 
+  // 適応的なゲイン制限
+  calculate_adaptive_gain_limit(buffer, audioType, lengthClass) {
+    const duration = buffer.length / buffer.sampleRate;
+
+    let maxGainDb = 12; // デフォルト最大ゲイン
+
+    // 音声の種類による調整
+    if (audioType === 'speech') {
+      if (lengthClass === 'very_short') {
+        maxGainDb = 6; // 非常に短い音声は6dBまで
+      } else if (lengthClass === 'short') {
+        maxGainDb = 9; // 短い音声は9dBまで
+      }
+    } else if (audioType === 'music') {
+      maxGainDb = 15; // 音楽は少し大きめのゲインを許可
+    }
+
+    // 継続時間による微調整
+    if (duration < 0.5) {
+      maxGainDb = Math.min(maxGainDb, 4); // 0.5秒未満は4dBまで
+    } else if (duration < 1.0) {
+      maxGainDb = Math.min(maxGainDb, 8); // 1秒未満は8dBまで
+    }
+
+    return maxGainDb;
+  }
+
   async normalize_loudness(audio_buffer, target_lufs, maxTruePeak = -1.0) {
     const current_lufs = this.calculate_integrated_loudness(audio_buffer);
     const current_peak = this.calculate_true_peak(audio_buffer);
 
+    // 音声の特性を分析
+    const lengthClass = this.classify_audio_length(audio_buffer);
+    const audioType = this.estimate_audio_type(audio_buffer);
+
+    // 適応的なゲイン制限を計算
+    const maxGainDb = this.calculate_adaptive_gain_limit(audio_buffer, audioType, lengthClass);
+
     // Calculate required gain
     let gain = Math.pow(10, (target_lufs - current_lufs) / 20);
+    let gainDb = 20 * Math.log10(gain);
 
-    // Check if gain would cause clipping
-    const predicted_peak = current_peak + 20 * Math.log10(gain);
-    if (predicted_peak > maxTruePeak) {
-      // Reduce gain to prevent clipping
-      const max_gain = Math.pow(10, (maxTruePeak - current_peak) / 20);
-      gain = Math.min(gain, max_gain);
-
-      this.logger.warn(`ゲインを制限しました: ${(20 * Math.log10(gain)).toFixed(2)} dB`);
-      this.logger.warn(`予想されるピーク: ${predicted_peak.toFixed(2)} dBTP`);
+    // 適応的なゲイン制限を適用
+    if (gainDb > maxGainDb) {
+      gainDb = maxGainDb;
+      gain = Math.pow(10, gainDb / 20);
+      this.logger.warn(`ゲインを${audioType}(${lengthClass})に適した値に制限: ${gainDb.toFixed(2)} dB`);
     }
 
+    // Check if gain would cause clipping
+    const predicted_peak = current_peak + gainDb;
+    if (predicted_peak > maxTruePeak) {
+      const max_gain_db = maxTruePeak - current_peak;
+      if (max_gain_db < gainDb) {
+        gainDb = max_gain_db;
+        gain = Math.pow(10, gainDb / 20);
+        this.logger.warn(`クリッピング防止のためゲインを制限: ${gainDb.toFixed(2)} dB`);
+      }
+    }
+
+    this.logger.debug(`音声分析結果: ${audioType} (${lengthClass})`);
     this.logger.debug(`現在のラウドネス: ${current_lufs.toFixed(2)} LUFS`);
     this.logger.debug(`現在のピーク: ${current_peak.toFixed(2)} dBTP`);
     this.logger.debug(`ターゲットラウドネス: ${target_lufs.toFixed(2)} LUFS`);
-    this.logger.debug(`適用するゲイン: ${(20 * Math.log10(gain)).toFixed(2)} dB`);
+    this.logger.debug(`適用するゲイン: ${gainDb.toFixed(2)} dB (最大: ${maxGainDb} dB)`);
 
     return this.adjust_volume_with_limiting(audio_buffer, gain, maxTruePeak);
   }
