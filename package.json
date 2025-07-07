@@ -22,8 +22,8 @@
     "node-web-audio-api": "^1.0.4",
     "ora": "^8.2.0",
     "shorthash-jp": "github:notoiro/node-shorthash",
-    "vml": "github:notoiro/vml",
     "sodium-native": "^5.0.6",
+    "vml": "github:notoiro/vml",
     "wanakana": "^5.3.1"
   },
   "devDependencies": {

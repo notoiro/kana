@@ -52,7 +52,7 @@ importers:
         version: 5.0.6
       vml:
         specifier: github:notoiro/vml
-        version: https://codeload.github.com/notoiro/vml/tar.gz/db4041d0b46f18042886faf6f1a1a6ea84dcacdb
+        version: https://codeload.github.com/notoiro/vml/tar.gz/676fafb34dc3d2e380873f9a318ce238cefbdb44
       wanakana:
         specifier: ^5.3.1
         version: 5.3.1
@@ -1012,9 +1012,9 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  vml@https://codeload.github.com/notoiro/vml/tar.gz/db4041d0b46f18042886faf6f1a1a6ea84dcacdb:
-    resolution: {tarball: https://codeload.github.com/notoiro/vml/tar.gz/db4041d0b46f18042886faf6f1a1a6ea84dcacdb}
-    version: 1.0.0
+  vml@https://codeload.github.com/notoiro/vml/tar.gz/676fafb34dc3d2e380873f9a318ce238cefbdb44:
+    resolution: {tarball: https://codeload.github.com/notoiro/vml/tar.gz/676fafb34dc3d2e380873f9a318ce238cefbdb44}
+    version: 1.0.1
 
   wanakana@5.3.1:
     resolution: {integrity: sha512-OSDqupzTlzl2LGyqTdhcXcl6ezMiFhcUwLBP8YKaBIbMYW1wAwDvupw2T9G9oVaKT9RmaSpyTXjxddFPUcFFIw==}
@@ -2038,7 +2038,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  vml@https://codeload.github.com/notoiro/vml/tar.gz/db4041d0b46f18042886faf6f1a1a6ea84dcacdb: {}
+  vml@https://codeload.github.com/notoiro/vml/tar.gz/676fafb34dc3d2e380873f9a318ce238cefbdb44: {}
 
   wanakana@5.3.1: {}
 

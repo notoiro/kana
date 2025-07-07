@@ -10,7 +10,7 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
-const { VMLError } = require('vml');
+const { VMLError, VMLParseError } = require('vml');
 const { Readable } = require('stream');
 const crypto = require("crypto");
 
@@ -470,11 +470,13 @@ module.exports = class App{
         this.generate_queue_start(guild_id);
         this.play(guild_id);
       }catch(e){
-        this.logger.info(e);
+        this.logger.debug(e);
 
         if(!q.system){
           if(e instanceof VMLError){
-            q.msg.reply(`VMLにエラーがあります: ${e.message}`);
+            let error_text = `VMLにエラーがあります: \n${e.message}\n  position ${e.position}`;
+            if(e instanceof VMLParseError && e.lineText) error_text += `\n  line: ${e.lineText}`;
+            q.msg.reply(error_text);
           }else{
             q.msg.reply('生成に失敗しました');
           }
