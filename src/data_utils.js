@@ -85,7 +85,7 @@ module.exports = class DataUtils{
 
       result = json;
     }catch(e){
-      this.#logger.info(e);
+      //this.#logger.info(e);
       result = {};
     }
 
@@ -112,7 +112,7 @@ module.exports = class DataUtils{
 
       result = json;
     }catch(e){
-      this.#logger.info(e);
+      //this.#logger.info(e);
       result = {};
     }
 
