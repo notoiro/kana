@@ -23,6 +23,17 @@
     non_empty: true,
     description: "その文字で始まる文章を読まなくする文字"
   },
+  HIDDEN_COMMAND_PREFIX: {
+    type: "string",
+    default: "!/",
+    non_empty: true,
+    description: "管理者/開発用隠しコマンドのプレフィックス"
+  },
+  ADMIN_SERVER_ID: {
+    type: "string",
+    default: "",
+    description: "特定の隠しコマンドが利用できるサーバー"
+  },
   SERVER_DIR: {
     type: "directory",
     default: "./servers",

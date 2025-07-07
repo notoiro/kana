@@ -24,7 +24,7 @@ const print_info = require('./print_info.js');
 
 const SKIP_PREFIX = "s";
 
-const { TOKEN, PREFIX, IS_PONKOTSU, check_deprecated } = require('./config.js');
+const { TOKEN, PREFIX, IS_PONKOTSU, HIDDEN_COMMAND_PREFIX, check_deprecated } = require('./config.js');
 
 module.exports = class App{
   #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
@@ -57,6 +57,7 @@ module.exports = class App{
     this.voice_list = [];
     this.voice_library_list = [];
     this.commands = {};
+    this.hidden_commands = {};
 
     this.status = {
       debug: !(process.env.NODE_ENV === "production"),
@@ -130,6 +131,12 @@ module.exports = class App{
       this.commands[command.data.name] = command;
     }
 
+    const hiddenCommandFiles = fs.readdirSync('./hidden_commands').filter(file => file.endsWith('.js'));
+    for (const file of hiddenCommandFiles) {
+      const command = require(`../hidden_commands/${file}`);
+      this.hidden_commands[command.data.name] = command;
+    }
+
     this.client.on('ready', async () => {
       await this.setup_resources();
 
@@ -150,9 +157,20 @@ module.exports = class App{
 
     this.client.on('interactionCreate', this.onInteraction.bind(this));
 
-    this.client.on('messageCreate', (msg) => {
+    this.client.on('messageCreate', async (msg) => {
       if(!this.status.ready) return;
-      if(!(msg.guild) || msg.author.bot) return;
+      if(!msg.guild || msg.author.bot) return;
+
+      const command = this.search_hiddein_command(msg.cleanContent);
+
+      if(command){
+        try {
+          await this.hidden_commands[command.name].execute(msg, command.args);
+        } catch (error) {
+          this.logger.error(error);
+        }
+        return;
+      }
 
       if(msg.content === SKIP_PREFIX){
         this.skip_current_text(msg.guild.id);
@@ -170,11 +188,25 @@ module.exports = class App{
     });
   }
 
+  search_hiddein_command(input){
+    if(!input.startsWith(HIDDEN_COMMAND_PREFIX)) return null;
+
+    const trimmed = input.slice(HIDDEN_COMMAND_PREFIX.length).trim();
+    const [cmd, ...args] = trimmed.split(/\s+/);
+
+    if(!Object.keys(this.hidden_commands).includes(cmd)) return null;
+
+    return {
+      name: cmd,
+      args: args
+    };
+  }
+
   setup_process(){
     const cleanup = async (signal, exitCode) => {
       this.logger.info(`Received ${signal}. Cleaning up...`);
       // client.destroy()はログイン後にしか呼べないため、wsの状態で存在をチェックする
-      if (process.env.NODE_ENV === 'production' && this.client?.ws) {
+      if(this.client?.ws){
         await this.client.destroy();
         this.logger.info('Discord client destroyed.');
       }
@@ -504,6 +536,7 @@ module.exports = class App{
       is_play: false,
       is_generate: false,
       system_mute_counter: 0,
+      start_time: new Date(),
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
