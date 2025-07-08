@@ -294,24 +294,18 @@ module.exports = class App{
 
     // ソングのチェック
     if(this.bot_utils.is_song(text)){
-      let song;
-      let ok = true;
       try{
-        song = this.bot_utils.parse_song(text);
-      }catch(e){
-        this.logger.debug(e);
-        ok = false;
-      }
+        const song = this.bot_utils.parse_song(text);
 
-      if(ok){
-        const q = { song: song, system: true };
+        const q = { song: song, system: true, queue_id: crypto.randomUUID() };
         connection.generate_queue.push(q);
 
         this.generate_queue_start(guild_id);
-        return;
-      }else{
-        return;
+      }catch(e){
+        this.logger.debug(e);
       }
+
+      return;
     }
 
     let volume_order = this.bot_utils.get_command_volume(text);
@@ -372,19 +366,18 @@ module.exports = class App{
     // 2
     // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
     if(this.bot_utils.is_song(content)){
-      let song;
       try{
-        song = this.bot_utils.parse_song(content);
+        const song = this.bot_utils.parse_song(content);
+
+        const q = { song: song, queue_id: `${msg.id}`, msg: msg };
+        connection.generate_queue.push(q);
+
+        this.generate_queue_start(msg.guild.id);
       }catch(e){
         if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
         else msg.reply('なんかのエラー');
-        return;
       }
 
-      const q = { song: song, queue_id: `${msg.id}`, msg: msg };
-      connection.generate_queue.push(q);
-
-      this.generate_queue_start(msg.guild.id);
       return;
     }
 
