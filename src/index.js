@@ -598,7 +598,7 @@ module.exports = class App{
     for(let p = 0; p < 5; p++){
       const tmp_dict = connection.dict.filter(word => word[2] === p);
 
-      for(let d of tmp_dict) result = result.replace(new RegExp(Utils.escape_regexp(d[0]), "g"), d[1]);
+      for(let d of tmp_dict) result = result.replace(new RegExp(Utils.escape_regexp(d[0]), "gi"), d[1]);
     }
 
     return result;
