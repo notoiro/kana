@@ -299,14 +299,15 @@ module.exports = class App{
       try{
         song = this.bot_utils.parse_song(text);
       }catch(e){
+        this.logger.debug(e);
         ok = false;
       }
 
       if(ok){
         const q = { song: song, system: true };
-        connection.queue.push(q);
+        connection.generate_queue.push(q);
 
-        this.play(guild_id);
+        this.generate_queue_start(guild_id);
         return;
       }else{
         return;
@@ -377,6 +378,7 @@ module.exports = class App{
       }catch(e){
         if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
         else msg.reply('なんかのエラー');
+        return;
       }
 
       const q = { song: song, queue_id: `${msg.id}`, msg: msg };
