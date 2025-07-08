@@ -60,7 +60,7 @@ module.exports = silentify({
     let exist = false;
 
     for(let d of dict){
-      if(d[0] === target){
+      if(d[0].toUpperCase() === target.toUpperCase()){
         exist = true;
         break;
       }
@@ -73,7 +73,7 @@ module.exports = silentify({
 
     dict = dict.map(val => {
       let result = val;
-      if(val[0] === target) result[2] = order;
+      if(val[0].toUpperCase() === target.toUpperCase()) result[2] = order;
 
       return result;
     });

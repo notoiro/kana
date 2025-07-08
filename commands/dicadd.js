@@ -36,7 +36,7 @@ module.exports = {
     const word_to = interaction.options.get("to").value;
 
     for(let d of dict){
-      if(d[0] === word_from){
+      if(d[0].toUpperCase() === word_from.toUpperCase()){
         await interaction.reply({ content: "既に登録されています！" });
         return;
       }

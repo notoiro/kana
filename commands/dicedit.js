@@ -38,7 +38,7 @@ module.exports = {
     let exist = false;
 
     for(let d of dict){
-      if(d[0] === word_from){
+      if(d[0].toUpperCase() === word_from.toUpperCase()){
         exist = true;
         break;
       }
@@ -51,7 +51,7 @@ module.exports = {
 
     dict = dict.map(val => {
       let result = val;
-      if(val[0] === word_from) result[1] = word_to;
+      if(val[0].toUpperCase() === word_from.toUpperCase()) result[1] = word_to;
 
       return result;
     });

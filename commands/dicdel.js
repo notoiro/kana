@@ -30,7 +30,7 @@ module.exports = {
     let exist = false;
 
     for(let d of dict){
-      if(d[0] === target){
+      if(d[0].toUpperCase() === target.toUpperCase()){
         exist = true;
         break;
       }
@@ -41,7 +41,7 @@ module.exports = {
       return;
     }
 
-    dict = dict.filter(word => word[0] !== target);
+    dict = dict.filter(word => word[0].toUpperCase() !== target.toUpperCase());
 
     app.data_utils.write_serverinfo(guild_id, server_file, { dict: dict });
 
