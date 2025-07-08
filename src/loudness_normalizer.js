@@ -1,4 +1,4 @@
-const { OfflineAudioContext } = require('node-web-audio-api');
+const { OfflineAudioContext, AudioBuffer } = require('node-web-audio-api');
 const toWav = require('audiobuffer-to-wav');
 const log4js = require('log4js');
 
