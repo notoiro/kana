@@ -34,6 +34,11 @@
     default: "",
     description: "特定の隠しコマンドが利用できるサーバー"
   },
+  DIC_BLACKLIST_PATH: {
+    type: "file",
+    default: "./resources/dic_blacklist.json5",
+    description: "サーバー辞書のブラックリスト"
+  },
   SERVER_DIR: {
     type: "directory",
     default: "./servers",
