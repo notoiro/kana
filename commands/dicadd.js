@@ -1,6 +1,22 @@
 const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
+const JSON5 = require('json5');
+const fs = require('fs')
 
 const app = require('../index.js');
+const { DIC_BLACKLIST_PATH } = require('../src/config.js');
+
+let dic_blacklist = [];
+
+try{
+  const raw = fs.readFileSync(DIC_BLACKLIST_PATH, 'utf8');
+  const parsed = JSON5.parse(raw);
+
+  const blacklist = parsed.blacklist;
+  if(!Array.isArray(blacklist)) return;
+
+  dic_blacklist = blacklist;
+}catch(e){
+}
 
 module.exports = {
   data: {
@@ -34,6 +50,19 @@ module.exports = {
 
     const word_from = interaction.options.get("from").value;
     const word_to = interaction.options.get("to").value;
+
+    for(const entry of dic_blacklist){
+      if(typeof entry === 'object'){
+        if(!('key' in entry) || !('reason' in entry)) continue;
+
+        const r = new RegExp(entry.key, 'ig');
+
+        if(r.test(word_from.trim())){
+          await interaction.reply({ content: `この単語は設定で登録が制限されています: **${entry.reason}**` });
+          return;
+        }
+      }
+    }
 
     for(let d of dict){
       if(d[0].toUpperCase() === word_from.toUpperCase()){

@@ -2,7 +2,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const {
-  SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, TOKENIZER_HOST, TOKENIZER_TYPE
+  SERVER_DIR, REMOTE_REPLACE_HOST, DICT_DIR, IS_PONKOTSU, TOKENIZER_HOST, TOKENIZER_TYPE, DIC_BLACKLIST_PATH
 } = require('./config.js');
 
 const pkgjson = require("../package.json");
@@ -92,6 +92,7 @@ module.exports = (app) => {
   console.log("");
 
   console.log(`${indent}${fg_blue}data directory:  ${fg_default}  ${SERVER_DIR}`);
+  console.log(`${indent}${fg_blue}dicadd blacklist:${fg_default}  ${DIC_BLACKLIST_PATH}`);
   if(TOKENIZER_TYPE !== "none") console.log(`${indent}${fg_blue}dict directory:  ${fg_default}  ${DICT_DIR}`);
 
 

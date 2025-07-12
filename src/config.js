@@ -26,6 +26,15 @@ const is_directory = (value) => {
   }
 };
 
+const is_file = (value) => {
+  try{
+    const stat = fs.statSync(value);
+    return stat.isFile();
+  }catch(e){
+    return false;
+  }
+};
+
 const loadJSON5 = (filePath) => {
   try{
     const raw = fs.readFileSync(filePath, 'utf8');
@@ -52,9 +61,15 @@ const validate_and_apply_defaults = (config, schema) => {
         if(typeof value !== 'string' || !is_directory(value)){
           logger.info(`config warning: ${fg_yellow}${path}${fg_default}はディレクトリであることが期待されますが、「${fg_yellow}${value}${fg_default}」はディレクトリではありません！`);
         }
+      }else if(rule.type === 'file'){
+        if(typeof value !== "string" || !is_file(value)){
+          critical(`config error: ${fg_yellow}${path}${fg_default}はファイルであることが期待されますが、「${fg_yellow}${value}${fg_default}」はファイルではありません！`);
+        }
       }else if(actualType !== rule.type){
         critical(`config error: ${fg_yellow}${path}${fg_default}は${fg_yellow}${rule.type}${fg_default}型である必要があります（実際: ${fg_yellow}${actualType}${fg_default}）`);
       }
+
+
 
       if(rule.disallow && Array.isArray(rule.disallow)){
         if(rule.disallow.includes(value)){
