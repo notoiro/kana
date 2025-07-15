@@ -3,6 +3,23 @@ const log4js = require('log4js');
 
 const { SERVER_DIR, IS_PONKOTSU } = require('./config.js');
 
+function replacer(key, value) {
+  if (value instanceof Map) {
+    return {
+      __type: 'Map',
+      entries: Array.from(value.entries())
+    };
+  }
+  return value;
+}
+
+function reviver(key, value) {
+  if (value && value.__type === 'Map') {
+    return new Map(value.entries);
+  }
+  return value;
+}
+
 module.exports = class DataUtils{
   #logger;
   #autojoin_cache;
@@ -13,6 +30,7 @@ module.exports = class DataUtils{
       DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100, is_force_server: false }
     },
     dict: [["Discord", "でぃすこーど", 2], ["さんが退出しました", "さんが射出されました", 2]],
+    songstore: new Map(),
     is_ponkotsu: !!IS_PONKOTSU,
     song_volume: -10
   }
@@ -38,7 +56,7 @@ module.exports = class DataUtils{
 
     if(fs.existsSync(`${SERVER_DIR}/${guild_id}.json`)){
       try{
-        let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`));
+        let json = JSON.parse(fs.readFileSync(`${SERVER_DIR}/${guild_id}.json`), reviver);
 
         for(let l of this.#SETTING_LISTS){
           if(json[l] === undefined){
@@ -49,14 +67,16 @@ module.exports = class DataUtils{
 
         result = json;
 
-        this.#logger.debug(`loaded server conf: ${JSON.stringify(result, null, "  ")}`);
+        this.#logger.debug(`loaded server conf: ${JSON.stringify(result, replacer, "  ")}`);
       }catch(e){
         this.#logger.info(e);
         result = this.#DEFAULT_SETTING;
       }
     }
 
-    return JSON.parse(JSON.stringify(result));
+    result = JSON.parse(JSON.stringify(result, replacer), reviver);
+
+    return result;
   }
 
   write_serverinfo(guild_id, from, update){
@@ -68,7 +88,7 @@ module.exports = class DataUtils{
     }
 
     try{
-      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(result, null, "  "));
+      fs.writeFileSync(`${SERVER_DIR}/${guild_id}.json`, JSON.stringify(result, replacer, "  "));
     }catch(e){
       this.#logger.info(e);
     }
