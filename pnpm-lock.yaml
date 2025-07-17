@@ -44,6 +44,9 @@ importers:
       ora:
         specifier: ^8.2.0
         version: 8.2.0
+      semver:
+        specifier: ^7.7.2
+        version: 7.7.2
       shorthash-jp:
         specifier: github:notoiro/node-shorthash
         version: https://codeload.github.com/notoiro/node-shorthash/tar.gz/afe58a20e73cda4b480855e9ceb4dd0d067aa98b

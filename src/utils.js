@@ -36,10 +36,6 @@ module.exports = class Utils{
     return ((a || b) && !(a && b));
   }
 
-  static escape_regexp(str){
-    return str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
-  }
-
   static handle_axios_error(err){
     if (!err.isAxiosError) {
       return err; // Axiosエラーでなければそのまま返す

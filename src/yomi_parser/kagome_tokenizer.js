@@ -71,7 +71,7 @@ module.exports = class KagomeTokenizer{
     this.#dictionaries = result;
 
     if(this.#dictionaries.length){
-      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => Utils.escape_regexp(d[0])).join("|")}$`, 'g');
+      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => RegExp.escape(d[0])).join("|")}$`, 'g');
     }
 
     if(!this.#enabled) available = false;
