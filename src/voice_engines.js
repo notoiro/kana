@@ -57,6 +57,11 @@ module.exports = class VoiceEngines{
   }
 
   load_engines(){
+    if(VOICE_ENGINES.length < 1){
+      this.#logger.error('構成エラー: 音声エンジンが1つも存在しません！');
+      process.exit(1);
+    }
+
     for(let e of VOICE_ENGINES){
       const engine_obj = {
         name: e.name,
@@ -154,6 +159,11 @@ module.exports = class VoiceEngines{
       }
       this.#logger.info("----------------------------------------");
       this.#logger.fatal("One or more voice engines failed to initialize. The application will now exit.");
+      process.exit(1);
+    }
+
+    if(!this.#engines.values().some(eng => !eng.is_song)){
+      this.#logger.fatal('構成エラー: ボイス用エンジンが1つもありません！（エンジンがソングエンジンしか存在しないことって本当にあるんですか？）');
       process.exit(1);
     }
 
