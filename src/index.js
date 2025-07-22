@@ -531,6 +531,7 @@ module.exports = class App{
 
     if(q.song){
       try{
+        this.logger.debug(`song: ${JSON.stringify(q.song, null, "  ")}`);
         const buffer = await this.voice_engines.vml_synthesis(q.song);
 
         const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27 + connection.song_volume);
