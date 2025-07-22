@@ -139,6 +139,9 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
 
 :magic_wand:${resolve_command_text(interaction, "removeautojoin")}
 　 自動接続を解除（管理者のみ）
+
+:magic_wand:${resolve_command_text(interaction, "setsongvolume")}
+　 ソングの音量設定（-27 LUFSに加算される相対値、管理者のみ）
           `,
         },
       ),
@@ -146,7 +149,6 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
         {
           name: "情報表示系",
           value: `
-
 :magic_wand:${resolve_command_text(interaction, "credit")}
 　 このBotが利用している音声ライブラリのクレジットを生成する。
 

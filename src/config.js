@@ -69,8 +69,6 @@ const validate_and_apply_defaults = (config, schema) => {
         critical(`config error: ${fg_yellow}${path}${fg_default}は${fg_yellow}${rule.type}${fg_default}型である必要があります（実際: ${fg_yellow}${actualType}${fg_default}）`);
       }
 
-
-
       if(rule.disallow && Array.isArray(rule.disallow)){
         if(rule.disallow.includes(value)){
           critical(`config error: ${fg_yellow}${path}${fg_default}の値「${fg_yellow}${value}${fg_default}」は許可されていない文字列です`);

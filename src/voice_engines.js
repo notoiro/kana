@@ -5,8 +5,22 @@ const {
   VOICE_ENGINES
 } = require('./config.js');
 
+// VOICE
 const Voicevox = require('./engine_loaders/voicevox.js');
 const COEIROINKV2 = require('./engine_loaders/coeiroink_v2.js');
+// VOCAL
+const VoicevoxSong = require('./engine_loaders/voicevox_song.js');
+
+const MixUtils = require('./mix_utils.js');
+
+const TEST_SONG = `
+こころにきざんだきみのいろ:t172,o4,f+4,e8,e4,d+4,e4.,g+4,f+4,e4,f+4,g+8,f+4,e4,g+4.;
+きみといきたきおくわわたしのたからもの:r4,e4,e4,b4,b8,b4,b4,b4.,g+4,f+4,e4,f+4,e8,f+4,g+4,a4.,b4,g+8,g+8,f+8;
+かなたえたびだつきみえのうた:r8,f+4,e8,e4,d+4,e4.,g+4,f+4,e4,f+4,g+8,f+4,e8,e8,g+4.;
+きみとすごしたひびにたくさんの:r4,e4,e4,b4,b8,b4,b4,b4.,g+4,f+4,e4,f+4,e8,f+4,g+4,a4;
+ありがとお:r8,b4,g+4,f+4,f+4.,e1^4.;
+たいせつなきみえ:r4,b4,a4,a4,g+4,f+4,r4,e4,d+4,e1^1;
+`;
 const Utils = require('./utils.js');
 
 module.exports = class VoiceEngines{
@@ -17,8 +31,11 @@ module.exports = class VoiceEngines{
 
   #engine_list;
   #short_id_map;
+  #short_id_song_map;
   #speakers;
   #safe_speakers;
+  #singers;
+  #sing_libraries;
   #libraries;
   #safe_libraries;
   #credit_urls;
@@ -40,6 +57,11 @@ module.exports = class VoiceEngines{
   }
 
   load_engines(){
+    if(VOICE_ENGINES.length < 1){
+      this.#logger.error('構成エラー: 音声エンジンが1つも存在しません！');
+      process.exit(1);
+    }
+
     for(let e of VOICE_ENGINES){
       const engine_obj = {
         name: e.name,
@@ -52,16 +74,22 @@ module.exports = class VoiceEngines{
         original_list: [],
         credit_url: e.credit_url,
         queue: [],
-        lock: false
+        lock: false,
+        is_song: false
       }
 
       switch(e.type){
         case "VOICEVOX":
           engine_obj.api = new Voicevox(e.server);
+          engine_obj.is_song = false;
           break;
         case "COEIROINK_V2":
           engine_obj.api = new COEIROINKV2(e.server);
+          engine_obj.is_song = false;
           break;
+        case "VOICEVOX_SONG":
+          engine_obj.api = new VoicevoxSong(e.server);
+          engine_obj.is_song = true;
       }
 
       this.#logger.debug(JSON.stringify(engine_obj, null, "  "));
@@ -72,6 +100,7 @@ module.exports = class VoiceEngines{
 
   async init_engines(){
     let shortid_voice = new Map();
+    let shortid_sing = new Map();
 
     const engine_promises = Array.from(this.#engines.values()).map(async (e) => {
       try {
@@ -96,12 +125,18 @@ module.exports = class VoiceEngines{
 
             e.voice_list.push(speaker);
             e.id_to_shortid_map.set(voice, short);
-            shortid_voice.set(short, { engine: e, id: voice });
+            if(!e.is_song) shortid_voice.set(short, { engine: e, id: voice });
+            else shortid_sing.set(short, { engine: e, id: voice });
           }
         }
 
         const tmp_voice = { speed: 1, pitch: 0, intonation: 1, volume: 1 };
-        await e.api.synthesis("テスト", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
+
+        if(e.is_song){
+          await e.api.synthesis(TEST_SONG, shortid_sing.get(e.voice_list[0].value).id);
+        }else{
+          await e.api.synthesis("略して「帝国憲法」、明治に発布されたことから俗称として「明治憲法」とも。また、現行の日本国憲法との対比で旧憲法（きゅうけんぽう）とも呼ばれる。", shortid_voice.get(e.voice_list[0].value).id, tmp_voice);
+        }
 
         return { status: 'fulfilled', engine: e.name, version: e.version };
       } catch (err) {
@@ -127,11 +162,19 @@ module.exports = class VoiceEngines{
       process.exit(1);
     }
 
+    if(!this.#engines.values().some(eng => !eng.is_song)){
+      this.#logger.fatal('構成エラー: ボイス用エンジンが1つもありません！（エンジンがソングエンジンしか存在しないことって本当にあるんですか？）');
+      process.exit(1);
+    }
+
     this.#short_id_map = shortid_voice;
+    this.#short_id_song_map = shortid_sing;
 
     this.#engine_list = this._engines();
     this.#speakers = this._speakers();
     this.#safe_speakers = this._safe_speakers();
+    this.#singers = this._singers();
+    this.#sing_libraries = this._sing_libraries();
     this.#libraries = this._libraries();
     this.#safe_libraries = this._safe_libraries();
     this.#credit_urls = this._credit_urls();
@@ -162,6 +205,14 @@ module.exports = class VoiceEngines{
 
   get safe_libraries(){
     return JSON.parse(JSON.stringify(this.#safe_libraries));
+  }
+
+  get singers(){
+    return JSON.parse(JSON.stringify(this.#singers));
+  }
+
+  get sing_libraries(){
+    return JSON.parse(JSON.stringify(this.#sing_libraries));
   }
 
   get credit_urls(){
@@ -209,6 +260,7 @@ module.exports = class VoiceEngines{
   _speakers(){
     let result = [];
     for(let e of this.#engines.values()){
+      if(e.is_song) continue;
       let list = JSON.parse(JSON.stringify(e.voice_list));
       for(let v of list){
         if(!result.some(vv => vv.name === v.name)){
@@ -226,6 +278,7 @@ module.exports = class VoiceEngines{
   _safe_speakers(){
     let result = [];
     for(let e of this.#engines.values()){
+      if(e.is_song) continue;
       let fix_lists = JSON.parse(JSON.stringify(e.voice_list)).map((v) => {
         v.name = `${e.name}:${v.name}`;
         return v;
@@ -239,6 +292,7 @@ module.exports = class VoiceEngines{
   _libraries(){
     let result = [];
     for(let e of this.#engines.values()){
+      if(e.is_song) continue;
       let list = JSON.parse(JSON.stringify(e.voice_library_list));
       for(let v of list){
         if(!result.some(vv => vv === v)){
@@ -256,8 +310,45 @@ module.exports = class VoiceEngines{
   _safe_libraries(){
     let result = [];
     for(let e of this.#engines.values()){
+      if(e.is_song) continue;
       let fix_lists = JSON.parse(JSON.stringify(e.voice_library_list)).map((v) => `${e.name}:${v}`);
       result = result.concat(fix_lists);
+    }
+
+    return JSON.parse(JSON.stringify(result));
+  }
+
+  _singers(){
+    let result = [];
+    for(let e of this.#engines.values()){
+      if(!e.is_song) continue;
+      let list = JSON.parse(JSON.stringify(e.voice_list));
+      for(let v of list){
+        if(!result.some(vv => vv.name === v.name)){
+          result.push(v);
+        }else{
+          v.name = `${e.name}:${v.name}`;
+          result.push(v);
+        }
+      }
+    }
+
+    return JSON.parse(JSON.stringify(result));
+  }
+
+  _sing_libraries(){
+    let result = [];
+    for(let e of this.#engines.values()){
+      if(!e.is_song) continue;
+      let list = JSON.parse(JSON.stringify(e.voice_library_list));
+      for(let v of list){
+        if(!result.some(vv => vv === v)){
+          result.push(v);
+        }else{
+          v = `${e.name}:${v}`;
+          result.push(v);
+        }
+      }
     }
 
     return JSON.parse(JSON.stringify(result));
@@ -266,6 +357,7 @@ module.exports = class VoiceEngines{
   _engines(){
     let result = [];
     for(let e of this.#engines.values()){
+      if(e.is_song) continue;
       result.push(e.name);
     }
 
@@ -292,6 +384,7 @@ module.exports = class VoiceEngines{
         version: e.version,
         server: e.server,
         credit_url: e.credit_url,
+        song: e.is_song
       })
     }
 
@@ -313,6 +406,7 @@ module.exports = class VoiceEngines{
   synthesis(text, voice_id, param){
     const engine = this.#speaker_engine_map.get(voice_id);
     if(engine === undefined) throw "Unknown Engine or Voice";
+    if(engine.is_song) throw "I'm a talk engine";
 
     return new Promise((resolve, reject) => {
         const queue = {
@@ -346,5 +440,80 @@ module.exports = class VoiceEngines{
 
     engine.lock = false;
     this.queue_start(engine);
+  }
+
+  // TODO: no_file_use
+  // voice_idはshortidである
+  song_synthesis(text, voice_id){
+    const engine = this.#speaker_engine_map.get(voice_id);
+    if(engine === undefined) throw "Unknown Engine or Voice";
+    if(!engine.is_song) throw "I'm a sing engine";
+
+    return new Promise((resolve, reject) => {
+        const queue = {
+          text,
+          voice_id,
+          resolve,
+          reject
+        };
+
+        engine.queue.push(queue);
+        this.song_queue_start(engine);
+    });
+  }
+
+  async song_queue_start(engine){
+    if(!engine || engine.lock || engine.queue.length === 0) return;
+
+    engine.lock = true;
+
+    const q = engine.queue.shift();
+
+    try{
+      const result = await this._song_synthesis(engine, q.text, q.voice_id);
+      q.resolve(result);
+    }catch(e){
+      q.reject(e);
+    }
+
+    engine.lock = false;
+    this.song_queue_start(engine);
+  }
+
+  // voice_idはshortidである
+  async _song_synthesis(engine, text, voice_id){
+    const id = this.#short_id_song_map.get(voice_id).id;
+
+    try{
+      const v = engine.api.synthesis(text, id);
+
+      return await v;
+    }catch(e){
+      throw e;
+    }
+  }
+
+  async vml_synthesis(song){
+    let buffer = null;
+
+    try{
+      if(song.length === 1){
+        buffer = await this.song_synthesis(song[0].score, song[0].singer);
+      }else{
+        // マルチトラックの場合
+        let tracks = [];
+        for(let s of song){
+          const buffer = await this.song_synthesis(s.score, s.singer);
+
+          tracks.push({ buffer, gain: s.gain });
+        }
+
+        buffer = await MixUtils.mix(tracks);
+      }
+    }catch(e){
+      throw e;
+    }
+
+    return buffer;
   }
 }

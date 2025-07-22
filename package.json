@@ -21,13 +21,18 @@
     "log4js": "^6.9.1",
     "node-web-audio-api": "^1.0.4",
     "ora": "^8.2.0",
+    "semver": "^7.7.2",
     "shorthash-jp": "github:notoiro/node-shorthash",
     "sodium-native": "^5.0.6",
+    "vml": "github:notoiro/vml",
     "wanakana": "^5.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "eslint": "^9.29.0",
     "globals": "^16.2.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

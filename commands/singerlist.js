@@ -9,21 +9,21 @@ const VOICE_SPLIT_COUNT = 30;
 
 module.exports = silentify({
   data: {
-    name: "voicelist",
-    description: "利用可能なボイス一覧。"
+    name: "singerlist",
+    description: "利用可能なシンガー一覧。"
   },
   async execute(interaction){
     const ems = [];
+
     let ep = !!interaction.options.get("silent")?.value;
 
-    const list = Array.from(app.voice_engines.safe_speakers).map(v => v.name);
+    const list = Array.from(app.voice_engines.singers).map(v => v.name);
 
-    // これがtrueになるケースはあってはならない気はします
     if(list.length === 0){
       if(ep){
-        await interaction.reply('使用可能な話者はありません！', { flags: MessageFlags.Ephemeral });
+        await interaction.reply('使用可能なシンガーはありません！', { flags: MessageFlags.Ephemeral });
       }else{
-        await interaction.reply('使用可能な話者はありません！');
+        await interaction.reply('使用可能なシンガーはありません！');
       }
 
       return;
@@ -36,7 +36,7 @@ module.exports = silentify({
       const end = (i + 1) * VOICE_SPLIT_COUNT;
 
       const em = new EmbedBuilder()
-        .setTitle(`利用可能なボイス一覧(${i+1}/${page_count})`)
+        .setTitle(`利用可能なシンガー一覧(${i+1}/${page_count})`)
         .addFields(
           { name: "一覧", value: list.slice(start, end).join("\n") }
         )
@@ -56,5 +56,6 @@ module.exports = silentify({
     }else{
       await page.interactionReply(interaction);
     }
+
   }
 })

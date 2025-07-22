@@ -10,6 +10,7 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const log4js = require('log4js');
+const { VMLError, VMLParseError } = require('vml');
 const { Readable } = require('stream');
 const crypto = require("crypto");
 
@@ -81,7 +82,10 @@ module.exports = class App{
       spinner.start('Initializing data utilities...');
       this.voice_list = this.voice_engines.speakers;
       this.voice_library_list = this.voice_engines.libraries;
-      this.bot_utils.init_voicelist(this.voice_list, this.voice_library_list);
+      this.singer_list = this.voice_engines.singers;
+      this.singer_library_list = this.voice_engines.sing_libraries;
+
+      this.bot_utils.init_voicelist(this.voice_list, this.voice_library_list, this.singer_list, this.singer_library_list);
       this.data_utils.init(this.voice_list[0].value);
       this.voicepick_controller.init(this.voice_engines);
       spinner.succeed('Data utilities initialized.');
@@ -94,6 +98,8 @@ module.exports = class App{
       this.currentvoice = require('./command/currentvoice.js');
       this.setvoiceall = require('./command/setvoiceall.js');
       this.setvoice = require('./command/setvoice.js');
+      this.songstoreadd = require('./command/songstoreadd.js');
+      this.songstoreedit = require('./command/songstoreedit.js');
       spinner.succeed('Commands loaded.');
 
       console.log("All resources are ready!");
@@ -221,8 +227,8 @@ module.exports = class App{
       await cleanup('SIGTERM', 0);
     });
 
-    process.on('uncaughtException', async (err, origin) => {
-      this.logger.fatal(`Uncaught exception: ${err}, origin: ${origin}`);
+    process.on('uncaughtException', async (err) => {
+      this.logger.fatal(`Uncaught exception: ${err.stack}`);
       await cleanup('uncaughtException', 1);
     });
 
@@ -277,18 +283,73 @@ module.exports = class App{
       return;
     }
 
-    text = Utils.replace_url(text);
+    const is_song = this.bot_utils.is_song(text);
 
-    // 辞書と記号処理だけはやる
-    // clean_messageに記号処理っぽいものしか残ってなかったのでそれを使う
-    text = this.replace_at_dict(text, guild_id);
-    this.logger.debug(`text(replace dict): ${text}`);
+    if(!is_song){
+      text = Utils.replace_url(text);
 
-    let volume_order = this.bot_utils.get_command_volume(text);
-    if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
+      // 辞書と記号処理だけはやる
+      // clean_messageに記号処理っぽいものしか残ってなかったのでそれを使う
+      text = this.replace_at_dict(text, guild_id);
+      this.logger.debug(`text(replace dict): ${text}`);
+    }
 
-    let voice_override = this.bot_utils.get_spell_voice(text);
-    if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
+    // ソングのチェック
+    if(this.bot_utils.is_song(text)){
+      try{
+        const song = this.bot_utils.parse_song(text);
+
+        const q = { song: song, system: true, queue_id: crypto.randomUUID() };
+        connection.generate_queue.push(q);
+
+        this.generate_queue_start(guild_id);
+      }catch(e){
+        this.logger.debug(e);
+      }
+
+      return;
+    }
+
+    const parsed_text = this.bot_utils.parse_text(text);
+    this.logger.info(parsed_text);
+
+    let volume_order = null;
+    let voice_override = null;
+
+    let result_text = "";
+
+    for(let t of parsed_text){
+      if(typeof t === "string") result_text += t;
+      else{
+        if(t.text) result_text += t.text;
+
+        if(t.type === 'voice') voice_override = t.voice;
+        if(t.type === 'volume') volume_order = t.volume;
+        if(t.type === 'song'){
+          try{
+            let song_name = t.song;
+            let song = connection.songstore.get(song_name);
+
+            if(!song){
+              return;
+            }
+
+            song = this.bot_utils.parse_song(song.song);
+
+            const q = { song: song, system: true, queue_id: crypto.randomUUID() };
+            connection.generate_queue.push(q);
+
+            this.generate_queue_start(guild_id);
+          }catch(e){
+            this.logger.debug(e);
+          }
+
+          return;
+        }
+      }
+    }
+
+    text = result_text.join("");
 
     text = Utils.clean_message(text);
 
@@ -309,15 +370,20 @@ module.exports = class App{
     this.logger.debug(`content(from): `);
     this.logger.debug(msg);
 
+    // この時点でソングか1回判定する
+    // もしこの段階でソングだった場合には0, 1番の処理をしない。
+    const is_song = this.bot_utils.is_song(content);
+
     // テキストの処理順
     // 0. テキスト追加系
     // 1. 辞書の変換
-    // 2. ボイス、音量の変換
-    // 3. 問題のある文字列の処理
-    // 4. sudachiで固有名詞などの読みを正常化、英単語の日本語化
+    // 2. ソングのチェック
+    // 3. ボイス、音量の変換
+    // 4. 問題のある文字列の処理
+    // 5. kagomeで固有名詞などの読みを正常化、英単語の日本語化
 
     // 0
-    if(!skip_discord_features){
+    if(!(skip_discord_features || is_song)){
       if(msg.attachments.size !== 0) content = `添付ファイル、${content}`;
 
       if(msg.stickers.size !== 0){
@@ -325,39 +391,101 @@ module.exports = class App{
       }
     }
 
-    content = Utils.replace_url(content);
+    // URLと衝突事故しないように
+    if(!is_song){
+      content = Utils.replace_url(content);
 
-    // 1
-    content = this.replace_at_dict(content, msg.guild.id);
-    this.logger.debug(`content(replace dict): ${content}`);
+      // 1
+      content = this.replace_at_dict(content, msg.guild.id);
+      this.logger.debug(`content(replace dict): ${content}`);
+    }
 
+    // 2
+    // この時点でもう1回ソングか判定する。ソングになってた場合にはソングとして処理されるしそうでなければテキストは変わってない
+    if(this.bot_utils.is_song(content)){
+      try{
+        const song = this.bot_utils.parse_song(content);
+
+        const q = { song: song, queue_id: `${msg.id}`, msg: msg };
+        connection.generate_queue.push(q);
+
+        this.generate_queue_start(msg.guild.id);
+      }catch(e){
+        if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
+        else msg.reply('なんかのエラー');
+      }
+
+      return;
+    }
+
+    // 3
     const text_speed = this.bot_utils.get_text_speed(content);
 
-    let texts = content.split(/[。\n「」『』]{1}/);
+    const parsed_text = this.bot_utils.parse_text(content);
+    let volume_order = null;
+
     let text_queues = [];
 
-    for(let text of texts){
-      // 2
-      let volume_order = this.bot_utils.get_command_volume(text);
-      if(volume_order !== null) text = this.bot_utils.replace_volume_command(text);
+    for(let text_chunk of parsed_text){
+      let t = "";
+      let voice_override = null;
 
-      let voice_override = this.bot_utils.get_spell_voice(text);
-      if(voice_override !== null) text = this.bot_utils.replace_voice_spell(text);
+      if(typeof text_chunk === "string") t = text_chunk;
+      else{
+        if(typeof text_chunk !== "object") continue;
 
-      // 3
-      text = Utils.clean_message(text);
-      this.logger.debug(`content(clean): ${text}`);
-      // 4
-      text = await this.yomi_parser.fix_reading(text, connection.is_ponkotsu);
-      this.logger.debug(`content(fix reading): ${text}`);
+        if(text_chunk.type === 'voice') voice_override = text_chunk.voice;
+        if(text_chunk.type === 'volume') volume_order = text_chunk.volume;
+        if(text_chunk.type === 'song'){
+          try{
+            let song_name = text_chunk.song;
+            let song = connection.songstore.get(song_name);
 
-      const q = { str: text, id: msg.member.id, volume_order: volume_order, queue_id: `${msg.id}` };
+            this.logger.debug(song);
 
-      if(voice_override) q.voice_override = voice_override;
-      q.text_speed = text_speed;
+            if(!song){
+              msg.reply('指定されたソングはないよ');
+              return;
+            }
 
-      text_queues.push(q);
+            song = this.bot_utils.parse_song(song.song);
+
+            const q = { song: song, queue_id: `${msg.id}`, msg: msg };
+            text_queues.push(q);
+          }catch(e){
+            this.logger.debug(e);
+            if(e === 'singer not found') msg.reply('指定されたシンガーが見つかりません！');
+            else msg.reply('なんかのエラー');
+            return;
+          }
+
+          continue;
+        }
+
+        if(text_chunk.text) t = text_chunk.text;
+        else continue;
+      }
+
+      let texts = t.split(/[。\n「」『』]{1}/);
+
+      for(let text of texts){
+        text = Utils.clean_message(text);
+        this.logger.debug(`content(clean): ${text}`);
+
+        text = await this.yomi_parser.fix_reading(text, connection.is_ponkotsu);
+        this.logger.debug(`content(fix reading): ${text}`);
+
+        if(!text) continue;
+        const q = { str: text, id: msg.member.id, volume_order: volume_order, queue_id: `${msg.id}` };
+
+        if(voice_override) q.voice_override = voice_override;
+        q.text_speed = text_speed;
+
+        text_queues.push(q);
+      }
     }
+
+    this.logger.debug(`queue_list: ${JSON.stringify(text_queues, null, "  ")}`);
 
     let count = 0;
     let result_queue = [];
@@ -400,6 +528,41 @@ module.exports = class App{
     this.logger.debug(`generate start`);
 
     const q = connection.generate_queue.shift();
+
+    if(q.song){
+      try{
+        this.logger.debug(`song: ${JSON.stringify(q.song, null, "  ")}`);
+        const buffer = await this.voice_engines.vml_synthesis(q.song);
+
+        const normalize_wav = await this.normalizer.normalize_to_lufs(buffer, -27 + connection.song_volume);
+
+        connection.play_queue.push({ wav: normalize_wav, queue_id: q.queue_id });
+
+        connection.is_generate = false;
+
+        this.generate_queue_start(guild_id);
+        this.play(guild_id);
+      }catch(e){
+        this.logger.debug(e);
+
+        if(!q.system){
+          if(e instanceof VMLError){
+            let error_text = `VMLにエラーがあります: \n${e.message}\n  position ${e.position}`;
+            if(e instanceof VMLParseError && e.lineText) error_text += `\n  line: ${e.lineText}`;
+            q.msg.reply(error_text);
+          }else{
+            q.msg.reply('生成に失敗しました');
+          }
+        }
+
+        connection.is_generate = false;
+
+        this.generate_queue_start(guild_id);
+      }
+
+      return;
+    }
+
     // 何もないなら次へ
     if(!(q.str) || q.str.trim().length === 0){
       connection.is_generate = false;
@@ -513,7 +676,7 @@ module.exports = class App{
     for(let p = 0; p < 5; p++){
       const tmp_dict = connection.dict.filter(word => word[2] === p);
 
-      for(let d of tmp_dict) result = result.replace(new RegExp(Utils.escape_regexp(d[0]), "gi"), d[1]);
+      for(let d of tmp_dict) result = result.replace(new RegExp(RegExp.escape(d[0]), "gi"), d[1]);
     }
 
     return result;
@@ -536,11 +699,13 @@ module.exports = class App{
       is_play: false,
       is_generate: false,
       system_mute_counter: 0,
+      song_volume: -10,
       start_time: new Date(),
       user_voices: {
         DEFAULT: { voice: 1, speed: 100, pitch: 100, intonation: 100, volume: 100 }
       },
       dict: [["Discord", "でぃすこーど", 2]],
+      songstore: new Map(),
       is_ponkotsu: !!IS_PONKOTSU
     };
 
@@ -549,6 +714,8 @@ module.exports = class App{
     connectinfo.user_voices = server_file.user_voices;
     connectinfo.dict = server_file.dict;
     connectinfo.is_ponkotsu = server_file.is_ponkotsu;
+    connectinfo.song_volume = server_file.song_volume;
+    connectinfo.songstore = server_file.songstore;
 
     const connection = await this.join_voice_channel_wapper({
       guildId: guild_id,

@@ -67,7 +67,7 @@ module.exports = {
 
     let exist = [];
 
-    const query_regexp = new RegExp(Utils.escape_regexp(query), 'i');
+    const query_regexp = new RegExp(RegExp.escape(query), 'i');
 
     for(let d of dict){
       if(command_type === 'all'){
@@ -81,7 +81,7 @@ module.exports = {
       }
     }
 
-    if(!exist.length){
+    if(exist.length < 0){
       await reply(interaction, { content: "ないよ" });
       return;
     }

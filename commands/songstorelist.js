@@ -7,21 +7,20 @@ const { silentify } = require('../src/silentify.js');
 
 module.exports = silentify({
   data: {
-    name: "diclist",
-    description: "辞書の単語一覧。",
+    name: "songstorelist",
+    description: "ソングの一覧。",
   },
 
   async execute(interaction){
     const server_file = app.data_utils.get_server_file(interaction.guild.id);
-    let dict = server_file.dict;
-
+    let songstore = server_file.songstore;
     let ep = !!interaction.options.get("silent")?.value;
 
-    if(dict.length === 0){
+    if(songstore.size === 0){
       if(ep){
-        await interaction.reply('辞書は1件もありません！', { flags: MessageFlags.Ephemeral });
+        await interaction.reply('登録されたソングはありません！', { flags: MessageFlags.Ephemeral });
       }else{
-        await interaction.reply('辞書は1件もありません！');
+        await interaction.reply('登録されたソングはありません！');
       }
 
       return;
@@ -29,16 +28,10 @@ module.exports = silentify({
 
     let list = [];
 
-    // 優先度で分割
-    for(let p = 0; p < 5; p++){
-      const tmp_dict = dict.filter(word => word[2] === p);
-
-      if(tmp_dict.length > 0) list.push(`**${app.priority_list[p]}**\n`);
-
-      for(let d of tmp_dict){
-        const s = `${d[0]} → ${d[1]}\n`;
-        list.push(s);
-      }
+    for(let [key, val] of songstore){
+      const name = (await interaction.guild.members.fetch(val.member_id))?.displayName ?? "Unknown";
+      const s = `${name} / ${key}\n`;
+      list.push(s);
     }
 
     const list_texts = [];
@@ -64,7 +57,7 @@ module.exports = silentify({
 
     for(let l of list_texts){
       const em = new EmbedBuilder()
-        .setTitle(`登録されている辞書の一覧です。(${counter + 1}/${list_texts.length})`)
+        .setTitle(`登録されているソングの一覧です。(${counter + 1}/${list_texts.length})`)
         .addFields(
           { name: "一覧", value: l }
         );
