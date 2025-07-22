@@ -28,7 +28,7 @@ module.exports = silentify({
   },
   async execute(interaction) {
     const ems = [
-      new EmbedBuilder().setTitle("Help(1/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(1/7)").setDescription("使い方。").addFields(
         {
           name: "接続",
           value: `
@@ -47,7 +47,7 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           `,
         },
       ),
-      new EmbedBuilder().setTitle("Help(2/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(2/7)").setDescription("使い方。").addFields(
         {
           name: "ボイス",
           value: `
@@ -84,7 +84,7 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           `,
         },
       ),
-      new EmbedBuilder().setTitle("Help(3/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(3/7)").setDescription("使い方。").addFields(
         {
           name: "辞書設定",
           value: `
@@ -106,7 +106,29 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           `,
         },
       ),
-      new EmbedBuilder().setTitle("Help(4/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(4/7)").setDescription("使い方。").addFields(
+        {
+          name: "ソングストア",
+          value: `
+
+:magic_wand:${resolve_command_text(interaction, "songstoreadd")}
+　 ソングストアに登録。
+
+:magic_wand:${resolve_command_text(interaction, "songstoredel")}
+　 ソングストアから削除。
+
+:magic_wand:${resolve_command_text(interaction, "songstoreedit")}
+　 ソングストアの曲を編集。
+
+:magic_wand:${resolve_command_text(interaction, "songstoreget")}
+　 ソングストアの曲をテキストで表示。
+
+:magic_wand:${resolve_command_text(interaction, "songstorelist")}
+　 ソングストアの曲のテキストで表示。
+          `,
+        },
+      ),
+      new EmbedBuilder().setTitle("Help(5/7)").setDescription("使い方。").addFields(
         {
           name: "変な機能",
           value: `
@@ -145,7 +167,7 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           `,
         },
       ),
-      new EmbedBuilder().setTitle("Help(5/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(6/7)").setDescription("使い方。").addFields(
         {
           name: "情報表示系",
           value: `
@@ -160,7 +182,7 @@ ${green}Tips${reset}: ${blue}/${reset}から始まるリンクをクリックす
           `,
         },
       ),
-      new EmbedBuilder().setTitle("Help(6/6)").setDescription("使い方。").addFields(
+      new EmbedBuilder().setTitle("Help(7/7)").setDescription("使い方。").addFields(
         {
           name: "その他機能など",
           value: `
