@@ -15,7 +15,19 @@ module.exports = silentify({
   async execute(interaction){
     const ems = [];
 
+    let ep = !!interaction.options.get("silent")?.value;
+
     const list = Array.from(app.voice_engines.singers).map(v => v.name);
+
+    if(list.length === 0){
+      if(ep){
+        await interaction.reply('使用可能なシンガーはありません！', { flags: MessageFlags.Ephemeral });
+      }else{
+        await interaction.reply('使用可能なシンガーはありません！');
+      }
+
+      return;
+    }
 
     const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
 
@@ -38,8 +50,6 @@ module.exports = silentify({
     ];
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    let ep = !!interaction.options.get("silent")?.value;
 
     if(ep){
       await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });

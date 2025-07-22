@@ -14,6 +14,17 @@ module.exports = silentify({
   async execute(interaction){
     const server_file = app.data_utils.get_server_file(interaction.guild.id);
     let songstore = server_file.songstore;
+    let ep = !!interaction.options.get("silent")?.value;
+
+    if(songstore.size === 0){
+      if(ep){
+        await interaction.reply('登録されたソングはありません！', { flags: MessageFlags.Ephemeral });
+      }else{
+        await interaction.reply('登録されたソングはありません！');
+      }
+
+      return;
+    }
 
     let list = [];
 
@@ -62,8 +73,6 @@ module.exports = silentify({
     ];
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    let ep = !!interaction.options.get("silent")?.value;
 
     if(ep){
       await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });

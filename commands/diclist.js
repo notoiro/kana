@@ -15,6 +15,18 @@ module.exports = silentify({
     const server_file = app.data_utils.get_server_file(interaction.guild.id);
     let dict = server_file.dict;
 
+    let ep = !!interaction.options.get("silent")?.value;
+
+    if(dict.length === 0){
+      if(ep){
+        await interaction.reply('辞書は1件もありません！', { flags: MessageFlags.Ephemeral });
+      }else{
+        await interaction.reply('辞書は1件もありません！');
+      }
+
+      return;
+    }
+
     let list = [];
 
     // 優先度で分割
@@ -68,8 +80,6 @@ module.exports = silentify({
     ];
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    let ep = !!interaction.options.get("silent")?.value;
 
     if(ep){
       await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });

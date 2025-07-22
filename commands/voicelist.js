@@ -14,8 +14,20 @@ module.exports = silentify({
   },
   async execute(interaction){
     const ems = [];
+    let ep = !!interaction.options.get("silent")?.value;
 
     const list = Array.from(app.voice_engines.safe_speakers).map(v => v.name);
+
+    // これがtrueになるケースはあってはならない気はします
+    if(list.length === 0){
+      if(ep){
+        await interaction.reply('使用可能な話者はありません！', { flags: MessageFlags.Ephemeral });
+      }else{
+        await interaction.reply('使用可能な話者はありません！');
+      }
+
+      return;
+    }
 
     const page_count = Math.ceil(list.length/VOICE_SPLIT_COUNT);
 
@@ -38,8 +50,6 @@ module.exports = silentify({
     ];
 
     const page = new PaginationWrapper().setButtons(buttons).setEmbeds(ems).setTime(60000 * 10, true);
-
-    let ep = !!interaction.options.get("silent")?.value;
 
     if(ep){
       await page.interactionReply(interaction, { flags: MessageFlags.Ephemeral });
