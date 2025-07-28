@@ -349,7 +349,7 @@ module.exports = class App{
       }
     }
 
-    text = result_text.join("");
+    text = result_text;
 
     text = Utils.clean_message(text);
 
