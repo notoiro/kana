@@ -311,7 +311,7 @@ module.exports = class App{
     }
 
     const parsed_text = this.bot_utils.parse_text(text);
-    this.logger.info(parsed_text);
+    this.logger.debug(parsed_text);
 
     let volume_order = null;
     let voice_override = null;
