@@ -492,6 +492,7 @@ module.exports = class App{
 
     if(!this.status.debug){
       for(let q of text_queues){
+        if(!(q.str)) continue;
         const text = q.str;
         this.logger.debug(`text count: ${count}`);
         this.logger.debug(`text count + length: ${count + text.length}`);
