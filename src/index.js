@@ -143,7 +143,7 @@ module.exports = class App{
       this.hidden_commands[command.data.name] = command;
     }
 
-    this.client.on('ready', async () => {
+    this.client.on('clientReady', async () => {
       await this.setup_resources();
 
       // コマンド登録
