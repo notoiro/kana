@@ -30,12 +30,13 @@
 
 以下の物を入れる。説明はArchだけど適宜自分のLinuxと読み替えてインストールすること。
 - Git
+- ffmpeg
 - Node.js
 - pnpm
 
 Git, ffmpegはバージョンあんまり気にしなくて良いのでパッケージマネージャで。
 ```bash
-sudo pacman -S git
+sudo pacman -S git ffmpeg
 ```
 
 Node.jsはあんまり古いと動かないので[n](https://www.npmjs.com/package/n )で入れる。（Archならパッケージマネージャからでもいい。）
@@ -310,32 +311,14 @@ cd kana
 ```
 
 ### 6.2 コンフィグを調整する
+
+テンプレートから設定ファイルを生成するスクリプトがあるのでそれを使って生成します。
+
 ```bash
-cp sample.json config.json
-nano config.json # vimでもnvimでもkwriteでもいい
+node scripts/generate_config.js > config.json5
+nano config.json5 # vimでもnvimでもkwriteでもいい
 ```
-
-`config.json`を以下を参考に編集する。主に調整すべき物には`TOKEN`, `SERVER_DIR`, `KAGOME_HOST`, `REMOTE_REPLACE_HOST`, `VOICE_ENGINES`。
-
-| 項目名 | 意味 |
-| ------------- | ------------- |
-| `TOKEN`  | 2.1で生成したDiscord Botのトークン |
-| `PREFIX` | その文字で始まる文章を読まなくする文字 |
-| `SERVER_DIR` | ユーザーデータの保存先。こっちはディスク上推奨。 |
-| `KAGOME_HOST` | Kagome frontを利用する場合のホスト。使わないなら`none`にする。 |
-| `REMOTE_REPLACE_HOST` | ReplaceHttpを利用する場合のホスト。使わないなら`none`にする。 |
-| `DICT_DIR` | トークン単位の辞書の保存先。 |
-| `IS_PONKOTSU` | ポンコツ設定をデフォルトで有効にするか |
-
-
-`VOICE_ENGINES`は音声エンジンの設定。用意したエンジンの数だけ以下の内容のオプジェクトを入れれば良い。
-
-| 項目名 | 内容 |
-| ------ | ---- |
-| `name` | エンジン名。これは内部で利用されるshortidに影響するため、互換性上標準的な名前をつけることが推奨される。（e.g. `VOICEVOX`, `SHAREVOX`, `COEIROINK`など) |
-| `type` | エンジンタイプ。エンジンのAPIがVOICEVOX互換である場合は`VOICEVOX`、COEIROINK v2の場合は`COEIROINK_V2`。 |
-| `server` | エンジンのホスト。ここで指定されたポート通りにエンジンを起動する必要がある。 |
-| `credit_url` | クレジットを表示したときに表示するエンジンの公式ページのURL。 |
+各設定の説明は一応ファイル内にあります。わからなければ`node scripts/generate_config.js --min`で最小構成用の設定を作ることもできます。
 
 ### 6.3 依存関係のインストール
 ```bash
