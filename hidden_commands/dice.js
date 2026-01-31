@@ -56,7 +56,6 @@ module.exports = {
 
       await msg.channel.send(`${dice_result.code} → ${dice_result.finalTotal}[${dice_result.rolls.join(',')}]`);
     }catch(e){
-      console.log(e)
     }
   }
 }
