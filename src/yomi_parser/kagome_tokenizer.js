@@ -71,7 +71,7 @@ module.exports = class KagomeTokenizer{
     this.#dictionaries = result;
 
     if(this.#dictionaries.length){
-      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => RegExp.escape(d[0])).join("|")}$`, 'g');
+      this.#dict_regexp = new RegExp(`^${this.#dictionaries.map(d => RegExp.escape(d[0])).join("|")}$`);
     }
 
     if(!this.#enabled) available = false;
@@ -95,7 +95,10 @@ module.exports = class KagomeTokenizer{
     for(let token of tokens){
       let t = token.surface;
 
+      this.#logger.debug(`SURFACE: ${token.surface}`);
+
       if(this.#dict_regexp && this.#dict_regexp.test(token.surface)){
+        this.#logger.debug(`DICT CATCH: ${token.surface}`);
         for(let d of this.#dictionaries){
           t = t.replace(d[0], d[1]);
           if(t !== token.surface) break;
