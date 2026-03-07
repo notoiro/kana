@@ -13,25 +13,25 @@
     "@discordjs/voice": "^0.19.0",
     "@djs-button-pages/presets": "^1.0.0",
     "@notoiro/djs-button-pages": "^4.0.2",
-    "@snazzah/davey": "^0.1.9",
+    "@snazzah/davey": "^0.1.10",
     "audiobuffer-to-wav": "^1.0.0",
-    "axios": "^1.13.4",
+    "axios": "^1.13.6",
     "discord.js": "^14.25.1",
     "emoji-regex": "^10.6.0",
     "json5": "^2.2.3",
     "log4js": "^6.9.1",
-    "node-web-audio-api": "^1.0.7",
-    "ora": "^9.1.0",
-    "semver": "^7.7.3",
+    "node-web-audio-api": "^1.0.8",
+    "ora": "^9.3.0",
+    "semver": "^7.7.4",
     "shorthash-jp": "github:notoiro/node-shorthash",
-    "sodium-native": "^5.0.10",
+    "sodium-native": "^5.1.0",
     "vml": "github:notoiro/vml",
     "wanakana": "^5.3.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "eslint": "^9.39.2",
-    "globals": "^17.3.0"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0"
   },
   "engines": {
     "node": ">=24.0.0"
