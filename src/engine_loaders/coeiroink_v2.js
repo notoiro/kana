@@ -1,13 +1,12 @@
-const { default: axios } = require('axios');
-const { AxiosError } = require('axios');
+const Utils = require('../utils.js');
 
 module.exports = class COEIROINKV2{
-  #rpc;
   #voice_map;
   #version;
+  #host;
 
   constructor(host){
-    this.#rpc = axios.create({baseURL: host, proxy: false});
+    this.#host = host;
     this.#version = "Unknown";
 
     this.#voice_map = new Map();
@@ -19,8 +18,8 @@ module.exports = class COEIROINKV2{
 
   async check_version(){
     try{
-      this.#version = await this.#rpc.get('v1/engine_info');
-      this.#version = this.#version.data.version;
+      const version = await Utils.fetch_get(this.#host, '/v1/engine_info', {}, {}, { is_json: true });
+      this.#version = `${version.version}(${version.device})`;
     }catch(e){
       throw e;
     }
@@ -29,9 +28,9 @@ module.exports = class COEIROINKV2{
   async speakers(){
     let result;
     try{
-      result = await this.#rpc.get('v1/speakers', {headers: { 'accept': 'application/json' }});
+      result = await Utils.fetch_get(this.#host, '/v1/speakers', {}, {}, { is_json: true });
 
-      this._voice_list = this._create_voicevox_speakers(result.data);
+      this._voice_list = this._create_voicevox_speakers(result);
     }catch(e){
       throw e;
     }
@@ -73,18 +72,33 @@ module.exports = class COEIROINKV2{
   //   volume: Num
   async synthesis(text, style_id, param){
     try{
-      const query = await this.#rpc.post(`v1/estimate_prosody`, JSON.stringify({text: text}), { headers: { 'Content-Type': 'application/json' }});
+      const query = await Utils.fetch_post(this.#host, '/v1/estimate_prosody', {text: text}, {}, { timeout: 20000 });
 
-      const q = query.data;
+      const predict_body = {
+        speakerUuid: this.#voice_map.get(style_id),
+        styleId: style_id,
+        text: text,
+        prosodyDetail: query.detail,
+        speedScale: param.speed
+      };
+
+      const predict = await Utils.fetch_post(this.#host, '/v1/predict_with_duration', predict_body, {}, { timeout: 120000 });
 
       const query_data = {
         text: "",
-        prosodyDetail: q.detail,
+        prosodyDetail: query.detail,
         speakerUuid: this.#voice_map.get(style_id),
         styleId: style_id,
         prePhonemeLength: 0.1,
         postPhonemeLength: 0.1,
-        outputSamplingRate: 44100
+        outputSamplingRate: 41100,
+        sampledIntervalValue: 3,
+        processingAlgorithm: "world",
+        startTrimBuffer: predict.startTrimBuffer,
+        endTrimBuffer: predict.endTrimBuffer,
+        pauseLength: 0.1,
+        wavBase64: predict.wavBase64,
+        moraDurations: predict.moraDurations
       };
 
       query_data.speedScale = param.speed;
@@ -92,19 +106,10 @@ module.exports = class COEIROINKV2{
       query_data.intonationScale = param.intonation;
       query_data.volumeScale = param.volume;
 
-      const synth = await this.#rpc.post(`v1/synthesis`, JSON.stringify(query_data), {
-        responseType: 'arraybuffer',
-        headers: {
-          "accept": "audio/wav",
-          "Content-Type": "application/json"
-        }
-      });
+      const synth = await Utils.fetch_post(this.#host, '/v1/process', query_data, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 120000 });
 
-      return new Uint8Array(synth.data).buffer;
+      return new Uint8Array(synth).buffer;
     }catch(e){
-      if(e instanceof AxiosError){
-        console.log(JSON.stringify(e.response?.data, null, "  "));
-      }
       throw e;
     }
   }
