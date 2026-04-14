@@ -140,7 +140,7 @@ module.exports = class VoiceEngines{
 
         return { status: 'fulfilled', engine: e.name, version: e.version };
       } catch (err) {
-        return { status: 'rejected', engine: e.name, reason: Utils.handle_axios_error(err) };
+        return { status: 'rejected', engine: e.name, reason: err };
       }
     });
 

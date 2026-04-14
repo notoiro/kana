@@ -1,6 +1,6 @@
 const { VML } = require('vml');
-const { default: axios } = require('axios');
 const { OfflineAudioContext } = require('node-web-audio-api');
+const Utils = require('../utils.js');
 
 const linear_interpolation = (x1, y1, x2, y2, x,) => {
   return y1 + ((y2 - y1) * (x - x1)) / (x2 - x1);
@@ -24,12 +24,12 @@ const fadeout = (query, score, length) => {
 }
 
 module.exports = class VoicevoxSong{
-  #rpc;
+  #host;
   #version;
   #vml;
 
   constructor(host){
-    this.#rpc = axios.create({baseURL: host, proxy: false});
+    this.#host = host;
     this.#vml = new VML(); // TODO: フレームレートを取得して入れる
     this.#version = "Unknown";
   }
@@ -40,8 +40,8 @@ module.exports = class VoicevoxSong{
 
   async check_version(){
     try{
-      this.#version = await this.#rpc.get('version');
-      this.#version = this.#version.data;
+      const version = await Utils.fetch_get(this.#host, '/version');
+      this.#version = version.replace(/"/g, "");
     }catch(e){
       throw e;
     }
@@ -50,26 +50,19 @@ module.exports = class VoicevoxSong{
   async speakers(){
     let result;
     try{
-      result = await this.#rpc.get('singers', {headers: { 'accept': 'application/json' }});
+      result = await Utils.fetch_get(this.#host, '/singers', {}, {}, { is_json: true });
     }catch(e){
       throw e;
     }
 
-    return result.data;
+    return result;
   }
 
   async query(score){
     let result;
     try{
       // クエリー用のスピーカーは使えるやつ限られてるのでとりま固定
-      const query = await this.#rpc.post(`sing_frame_audio_query?speaker=6000`, JSON.stringify(score), {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      result = (await query).data;
+      result = await Utils.fetch_post(this.#host, `/sing_frame_audio_query?speaker=6000`, score);
     }catch(e){
       throw e;
     }
@@ -80,14 +73,8 @@ module.exports = class VoicevoxSong{
   async sing(query, id){
     let result;
     try{
-      const synth = await this.#rpc.post(`frame_synthesis?speaker=${id}`, JSON.stringify(query), {
-        responseType: 'arraybuffer',
-        headers: {
-          Accept: 'audio/wav',
-          "Content-Type": 'application/json'
-        }
-      });
-      result = new Uint8Array(synth.data).buffer;
+      const synth = await Utils.fetch_post(this.#host, `/frame_synthesis?speaker=${id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 300000 });
+      result = new Uint8Array(synth).buffer;
     }catch(e){
       throw e;
     }

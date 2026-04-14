@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { default: axios } = require('axios');
 const { isRomaji } = require('wanakana');
 
 const Utils = require('../utils.js');
@@ -16,10 +15,8 @@ module.exports = class SudachiTokenizer{
   constructor(logger){
     if(TOKENIZER_HOST !== "none" && TOKENIZER_HOST !== undefined){
       this.#enabled = true;
-      this.#rpc = axios.create({baseURL: TOKENIZER_HOST, proxy: false});
     }else{
       this.#enabled = false;
-      this.#rpc = {};
     }
 
     this.#dictionaries = [];
@@ -43,7 +40,7 @@ module.exports = class SudachiTokenizer{
 
       available = true;
     }catch(e){
-      this.#logger.info(Utils.handle_axios_error(e));
+      this.#logger.info(e);
       available = false;
     }
 
@@ -133,8 +130,8 @@ module.exports = class SudachiTokenizer{
         text: text
       };
 
-      result = await this.#rpc.post('tokenize', JSON.stringify(body), {headers: { "Content-Type": "application/json" }});
-      result = result.data;
+      result = await Utils.fetch_post(TOKENIZER_HOST, '/tokenize', body);
+      result = result;
     }catch(e){
       throw e;
     }

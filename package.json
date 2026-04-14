@@ -15,7 +15,6 @@
     "@notoiro/djs-button-pages": "^4.0.2",
     "@snazzah/davey": "^0.1.10",
     "audiobuffer-to-wav": "^1.0.0",
-    "axios": "^1.13.6",
     "discord.js": "^14.25.1",
     "emoji-regex": "^10.6.0",
     "json5": "^2.2.3",

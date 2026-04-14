@@ -2,6 +2,17 @@ const emoji_regex = require('emoji-regex');
 
 const is_debug = !(process.env.NODE_ENV === "production");
 
+class HTTPError extends Error{
+  constructor(status, data, url){
+    super(`HTTP Error: ${status}`);
+
+    this.status = status;
+    this.data = data;
+    this.url = url;
+    this.name = "HTTPError";
+  }
+}
+
 module.exports = class Utils{
   static replace_url(text){
     return text.replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi, 'ゆーあーるえる省略');
@@ -36,39 +47,74 @@ module.exports = class Utils{
     return ((a || b) && !(a && b));
   }
 
-  static handle_axios_error(err){
-    if (!err.isAxiosError) {
-      return err; // Axiosエラーでなければそのまま返す
+  static async fetch_post(base, path, body, headers = {}, options = {}){
+    const url = URL.parse(path, base);
+
+    const { responseType = 'json', timeout = 10000, ...fetch_options } = options;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: JSON.stringify(body),
+      ...fetch_options,
+      signal: AbortSignal.timeout(options.timeout || 5000)
+    });
+
+    if(!res.ok){
+      const text = await res.text().catch(() => 'No response body');
+      throw new HTTPError(res.status, text, url);
     }
 
-    let report = {};
-    if (err.response) {
-      // サーバーからの応答があったが、ステータスコードが2xxの範囲外
-      report = {
-        message: `Request failed with status code ${err.response.status}`,
-        status: err.response.status,
-        data: err.response.data
-      };
-    } else if (err.request) {
-      // リクエストは行われたが、応答がなかった
-      report = {
-        message: 'No response was received from the server.',
-        code: err.code,
-        request_info: {
-          address: err.request._options.hostname,
-          port: err.request._options.port,
-          path: err.request._options.path
-        }
-      };
-    } else {
-      // リクエストの設定中に何かが発生した
-      report = { message: err.message };
+    if(res.status === 204) return null;
+
+    let result = null;
+
+    switch(responseType){
+      case 'text':
+        result = res.text();
+        break;
+      case 'arraybuffer':
+        result = res.arrayBuffer();
+        break;
+      case 'json':
+        result = res.json();
+        break;
+      default:
+        result = res.text();
+        break;
     }
 
-    if (is_debug && err.stack) {
-      report.debug_stack = err.stack.split('\n');
+    return result;
+  }
+
+  static async fetch_get(base, path, params = {}, headers = {}, options = {}){
+    const url = URL.parse(path, base);
+
+    const { is_json = false, timeout = 5000, ...fetch_options } = options;
+
+
+    const query = new URLSearchParams(params).toString();
+    const r_url = query ? `${url}?${query}` : url;
+
+    if(is_json) headers['Accept'] = 'application/json';
+
+    const res = await fetch(r_url, {
+      method: 'GET',
+      headers: headers,
+      ...fetch_options,
+      signal: AbortSignal.timeout(timeout)
+    });
+
+    if(!res.ok){
+      const text = await res.text().catch(() => 'No response body');
+      throw new HTTPError(res.status, text, r_url);
     }
 
-    return report; // 整形したオブジェクトを返す
+    if(res.status === 204) return null;
+
+    return is_json ? res.json() : res.text();
   }
 }

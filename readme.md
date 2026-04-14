@@ -67,7 +67,6 @@ Discord.jsを利用した高性能なDiscord読み上げボット
 - [Discord.js](https://discord.js.org ) v14
 - [Node Web Audio API](https://github.com/ircam-ismm/node-web-audio-api )
 - [JSON5](https://json5.org )
-- [axios](https://github.com/axios/axios )
 
 ## ライセンス
 

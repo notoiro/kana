@@ -1,6 +1,5 @@
 const { isRomaji, toKana } = require('wanakana');
 const fs = require('fs');
-const { default: axios } = require('axios');
 
 const Utils = require('../utils.js');
 
@@ -16,10 +15,8 @@ module.exports = class KagomeTokenizer{
   constructor(logger){
     if(TOKENIZER_HOST !== "none" && TOKENIZER_HOST !== undefined){
       this.#enabled = true;
-      this.#rpc = axios.create({baseURL: TOKENIZER_HOST, proxy: false});
     }else{
       this.#enabled = false;
-      this.#rpc = {};
     }
 
     this.#dictionaries = [];
@@ -43,7 +40,7 @@ module.exports = class KagomeTokenizer{
 
       available = true;
     }catch(e){
-      this.#logger.info(Utils.handle_axios_error(e));
+      this.#logger.info(e);
       available = false;
     }
 
@@ -209,8 +206,8 @@ module.exports = class KagomeTokenizer{
         text: text
       };
 
-      result = await this.#rpc.post('tokenize', JSON.stringify(body), {headers: { "Content-Type": "application/json" }});
-      result = result.data.tokens;
+      result = await Utils.fetch_post(TOKENIZER_HOST, '/tokenize', body, {}, { timeout: 50000 });
+      result = result.tokens;
     }catch(e){
       throw e;
     }

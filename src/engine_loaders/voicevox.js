@@ -1,11 +1,11 @@
-const { default: axios } = require('axios');
+const Utils = require('../utils.js');
 
 module.exports = class Voicevox{
-  #rpc;
+  #host;
   #version;
 
   constructor(host){
-    this.#rpc = axios.create({baseURL: host, proxy: false});
+    this.#host = host;
     this.#version = "Unknown";
   }
 
@@ -15,8 +15,8 @@ module.exports = class Voicevox{
 
   async check_version(){
     try{
-      this.#version = await this.#rpc.get('version');
-      this.#version = this.#version.data;
+      const version = await Utils.fetch_get(this.#host, '/version');
+      this.#version = version.replace(/"/g, "");
     }catch(e){
       throw e;
     }
@@ -25,12 +25,12 @@ module.exports = class Voicevox{
   async speakers(){
     let result;
     try{
-      result = await this.#rpc.get('speakers', {headers: { 'accept': 'application/json' }});
+      result = await Utils.fetch_get(this.#host, '/speakers', {}, {}, { is_json: true });
     }catch(e){
       throw e;
     }
 
-    return result.data;
+    return result;
   }
 
   // param: Object
@@ -40,24 +40,16 @@ module.exports = class Voicevox{
   //   volume: Num
   async synthesis(text, voice_id, param){
     try{
-      const query = await this.#rpc.post(`audio_query?text=${encodeURIComponent(text)}&speaker=${voice_id}`, {headers: { 'accept': 'application/json' }});
+      const query = await Utils.fetch_post(this.#host, `/audio_query?text=${encodeURIComponent(text)}&speaker=${voice_id}`);
 
-      const query_data = query.data;
+      query.speedScale = param.speed;
+      query.pitchScale = param.pitch;
+      query.intonationScale = param.intonation;
+      query.volumeScale = param.volume;
 
-      query_data.speedScale = param.speed;
-      query_data.pitchScale = param.pitch;
-      query_data.intonationScale = param.intonation;
-      query_data.volumeScale = param.volume;
+      const synth = await Utils.fetch_post(this.#host, `/synthesis?speaker=${voice_id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 120000 });
 
-      const synth = await this.#rpc.post(`synthesis?speaker=${voice_id}`, JSON.stringify(query_data), {
-        responseType: 'arraybuffer',
-        headers: {
-          "accept": "audio/wav",
-          "Content-Type": "application/json"
-        }
-      });
-
-      return new Uint8Array(synth.data).buffer;
+      return new Uint8Array(synth).buffer;
     }catch(e){
       throw e;
     }
