@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "@discordjs/opus": "^0.10.0",
-    "@discordjs/voice": "^0.19.0",
+    "@discordjs/voice": "^0.19.2",
     "@djs-button-pages/presets": "^1.0.0",
     "@notoiro/djs-button-pages": "^4.0.2",
-    "@snazzah/davey": "^0.1.10",
+    "@snazzah/davey": "^0.1.11",
     "audiobuffer-to-wav": "^1.0.0",
-    "discord.js": "^14.25.1",
+    "discord.js": "^14.26.3",
     "emoji-regex": "^10.6.0",
     "json5": "^2.2.3",
     "log4js": "^6.9.1",
-    "node-web-audio-api": "^1.0.8",
+    "node-web-audio-api": "^1.0.9",
     "ora": "^9.3.0",
     "semver": "^7.7.4",
     "shorthash-jp": "github:notoiro/node-shorthash",
@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0"
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0"
   },
   "engines": {
     "node": ">=24.0.0"
