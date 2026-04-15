@@ -68,6 +68,7 @@ module.exports = class VoiceEngines{
         api: null,
         version: "none",
         server: e.server,
+        timeout: e.timeout,
         voice_list: [],
         voice_library_list: [],
         id_to_shortid_map: new Map(),
@@ -80,15 +81,15 @@ module.exports = class VoiceEngines{
 
       switch(e.type){
         case "VOICEVOX":
-          engine_obj.api = new Voicevox(e.server);
+          engine_obj.api = new Voicevox(e.server, e.timeout);
           engine_obj.is_song = false;
           break;
         case "COEIROINK_V2":
-          engine_obj.api = new COEIROINKV2(e.server);
+          engine_obj.api = new COEIROINKV2(e.server, e.timeout);
           engine_obj.is_song = false;
           break;
         case "VOICEVOX_SONG":
-          engine_obj.api = new VoicevoxSong(e.server);
+          engine_obj.api = new VoicevoxSong(e.server, e.timeout);
           engine_obj.is_song = true;
       }
 
@@ -383,6 +384,7 @@ module.exports = class VoiceEngines{
         name: e.name,
         version: e.version,
         server: e.server,
+        timeout: e.timeout,
         credit_url: e.credit_url,
         song: e.is_song
       })

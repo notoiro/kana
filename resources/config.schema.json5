@@ -86,7 +86,8 @@
       "  name: エンジン名。これは内部で利用されるshortidに影響するため、互換性上標準的な名前をつけることが推奨される。（e.g. VOICEVOX, SHAREVOX, COEIROINKなど)",
       "  type: エンジンタイプ。エンジンのAPIがVOICEVOX互換である場合はVOICEVOX、COEIROINK v2の場合はCOEIROINK_V2。",
       "  server: エンジンのホスト。ここで指定されたポート通りにエンジンを起動する必要がある。",
-      "  credit_url: クレジットを表示したときに表示するエンジンの公式ページのURL。"
+      "  timeout: 生成のタイムアウト。（ミリ秒）",
+      "  credit_url: クレジットを表示したときに表示するエンジンの公式ページのURL。",
     ],
     required: true,
     items: {
@@ -108,11 +109,16 @@
           required: true,
           unique: true,
         },
+        timeout: {
+          type: "number",
+          required: true,
+          default: 30000,
+        },
         credit_url: {
           type: "string",
           must_be_url: true,
           required: true,
-        }
+        },
       }
     },
     example: {
@@ -121,7 +127,8 @@
           name: "VOICEVOX",
           type: "VOICEVOX",
           server: "http://127.0.0.1:50021",
-          credit_url: "https://voicevox.hiroshiba.jp"
+          timeout: 30000,
+          credit_url: "https://voicevox.hiroshiba.jp",
         }
       ],
       full: [
@@ -129,19 +136,22 @@
           name: "VOICEVOX",
           type: "VOICEVOX",
           server: "http://127.0.0.1:2970",
-          credit_url: "https://voicevox.hiroshiba.jp"
+          timeout: 30000,
+          credit_url: "https://voicevox.hiroshiba.jp",
         },
         {
           name: "SHAREVOX",
           type: "VOICEVOX",
           server: "http://127.0.0.1:2980",
-          credit_url: "https://voicevox.hiroshiba.jp"
+          timeout: 30000,
+          credit_url: "https://voicevox.hiroshiba.jp",
         },
         {
           name: "VOICEVOX Song",
           type: "VOICEVOX_SONG",
           server: "http://127.0.0.1:50021",
-          credit_url:"https://voicevox.hiroshiba.jp"
+          timeout: 120000,
+          credit_url:"https://voicevox.hiroshiba.jp",
         }
       ]
     }

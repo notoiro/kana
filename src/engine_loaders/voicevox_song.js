@@ -27,11 +27,13 @@ module.exports = class VoicevoxSong{
   #host;
   #version;
   #vml;
+  #timeout; 
 
-  constructor(host){
+  constructor(host, timeout){
     this.#host = host;
     this.#vml = new VML(); // TODO: フレームレートを取得して入れる
     this.#version = "Unknown";
+    this.#timeout = timeout;
   }
 
   get version(){
@@ -73,7 +75,7 @@ module.exports = class VoicevoxSong{
   async sing(query, id){
     let result;
     try{
-      const synth = await Utils.fetch_post(this.#host, `/frame_synthesis?speaker=${id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 300000 });
+      const synth = await Utils.fetch_post(this.#host, `/frame_synthesis?speaker=${id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: this.#timeout });
       result = new Uint8Array(synth).buffer;
     }catch(e){
       throw e;

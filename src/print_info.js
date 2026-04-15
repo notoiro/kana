@@ -87,6 +87,7 @@ module.exports = (app) => {
     console.log(`${indent}${fg_blue}  ${e.name}:${fg_default}`);
     console.log(`${indent}${fg_blue}    version:     ${fg_default}  ${e.version}`);
     console.log(`${indent}${fg_blue}    server:      ${fg_default}  ${e.server}`);
+    console.log(`${indent}${fg_blue}    timeout:     ${fg_default}  ${e.timeout / 1000} s`);
   }
 
   console.log("");

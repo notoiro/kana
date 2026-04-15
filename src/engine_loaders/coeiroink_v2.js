@@ -4,9 +4,11 @@ module.exports = class COEIROINKV2{
   #voice_map;
   #version;
   #host;
+  #timeout;
 
-  constructor(host){
+  constructor(host, timeout){
     this.#host = host;
+    this.#timeout = timeout;
     this.#version = "Unknown";
 
     this.#voice_map = new Map();
@@ -72,7 +74,7 @@ module.exports = class COEIROINKV2{
   //   volume: Num
   async synthesis(text, style_id, param){
     try{
-      const query = await Utils.fetch_post(this.#host, '/v1/estimate_prosody', {text: text}, {}, { timeout: 20000 });
+      const query = await Utils.fetch_post(this.#host, '/v1/estimate_prosody', {text: text}, {}, { timeout: 5000 });
 
       const predict_body = {
         speakerUuid: this.#voice_map.get(style_id),
@@ -82,7 +84,7 @@ module.exports = class COEIROINKV2{
         speedScale: param.speed
       };
 
-      const predict = await Utils.fetch_post(this.#host, '/v1/predict_with_duration', predict_body, {}, { timeout: 120000 });
+      const predict = await Utils.fetch_post(this.#host, '/v1/predict_with_duration', predict_body, {}, { timeout: this.#timeout });
 
       const query_data = {
         text: "",
@@ -106,7 +108,7 @@ module.exports = class COEIROINKV2{
       query_data.intonationScale = param.intonation;
       query_data.volumeScale = param.volume;
 
-      const synth = await Utils.fetch_post(this.#host, '/v1/process', query_data, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 120000 });
+      const synth = await Utils.fetch_post(this.#host, '/v1/process', query_data, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: this.#timeout });
 
       return new Uint8Array(synth).buffer;
     }catch(e){

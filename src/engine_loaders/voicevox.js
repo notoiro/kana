@@ -3,9 +3,11 @@ const Utils = require('../utils.js');
 module.exports = class Voicevox{
   #host;
   #version;
+  #timeout;
 
-  constructor(host){
+  constructor(host, timeout){
     this.#host = host;
+    this.#timeout = timeout;
     this.#version = "Unknown";
   }
 
@@ -47,7 +49,7 @@ module.exports = class Voicevox{
       query.intonationScale = param.intonation;
       query.volumeScale = param.volume;
 
-      const synth = await Utils.fetch_post(this.#host, `/synthesis?speaker=${voice_id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: 120000 });
+      const synth = await Utils.fetch_post(this.#host, `/synthesis?speaker=${voice_id}`, query, { 'Accept': 'audio/wav' }, { responseType: 'arraybuffer', timeout: this.#timeout });
 
       return new Uint8Array(synth).buffer;
     }catch(e){
