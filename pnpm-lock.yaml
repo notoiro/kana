@@ -27,8 +27,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       discord.js:
-        specifier: ^14.26.3
-        version: 14.26.3
+        specifier: ^14.26.4
+        version: 14.26.4
       emoji-regex:
         specifier: ^10.6.0
         version: 10.6.0
@@ -39,14 +39,14 @@ importers:
         specifier: ^6.9.1
         version: 6.9.1
       node-web-audio-api:
-        specifier: ^1.0.9
-        version: 1.0.9
+        specifier: ^2.0.0
+        version: 2.0.0
       ora:
-        specifier: ^9.3.0
-        version: 9.3.0
+        specifier: ^9.4.0
+        version: 9.4.0
       semver:
-        specifier: ^7.7.4
-        version: 7.7.4
+        specifier: ^7.8.1
+        version: 7.8.1
       shorthash-jp:
         specifier: github:notoiro/node-shorthash
         version: https://codeload.github.com/notoiro/node-shorthash/tar.gz/afe58a20e73cda4b480855e9ceb4dd0d067aa98b
@@ -62,13 +62,13 @@ importers:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
-        version: 10.0.1(eslint@10.2.0)
+        version: 10.0.1(eslint@10.4.1)
       eslint:
-        specifier: ^10.2.0
-        version: 10.2.0
+        specifier: ^10.4.1
+        version: 10.4.1
       globals:
-        specifier: ^17.5.0
-        version: 17.5.0
+        specifier: ^17.6.0
+        version: 17.6.0
 
 packages:
 
@@ -143,8 +143,8 @@ packages:
     resolution: {integrity: sha512-Y3kKLvC1dvTOT+oGlqNQ1XLqK6D1HU2YXPc52NmAlJZbMMWDzGYXMiPRJ8TYD39muD/OTjlZmNJ4ib7dvSrMBA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@eslint/config-helpers@0.5.5':
-    resolution: {integrity: sha512-eIJYKTCECbP/nsKaaruF6LW967mtbQbsw4JTtSVkUQc9MneSkbrgPJAbKl9nWr0ZeowV8BfsarBmPpBzGelA2w==}
+  '@eslint/config-helpers@0.6.0':
+    resolution: {integrity: sha512-ii6Bw9jJ2zi2cWA2Z+9/QZ/+3DX6kwaV5Q986D/CdP3Lap3w/pgQZ373FV7byY/i7L4IRH/G43I5dz1ClsCbpA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   '@eslint/core@1.2.1':
@@ -164,8 +164,8 @@ packages:
     resolution: {integrity: sha512-vqTaUEgxzm+YDSdElad6PiRoX4t8VGDjCtt05zn4nU810UIx/uNEV7/lZJ6KwFThKZOzOxzXy48da+No7HZaMw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@eslint/plugin-kit@0.7.1':
-    resolution: {integrity: sha512-rZAP3aVgB9ds9KOeUSL+zZ21hPmo8dh6fnIFwRQj5EAZl9gzR7wxYbYXYysAM8CTqGmUGyp2S4kUdV17MnGuWQ==}
+  '@eslint/plugin-kit@0.7.2':
+    resolution: {integrity: sha512-+CNAzxglkrpNf/kKywqQfk74QjtceuOE7Qm+AF8miRvPF/wmmK5+OJOgVh3AVTT3RP2mH3+FOaxlE5v72owk0A==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   '@humanfs/core@0.19.1':
@@ -528,8 +528,8 @@ packages:
   discord-api-types@0.38.46:
     resolution: {integrity: sha512-Ae7NcagMG+FPxwuQxGCPEHmLCKMm8YBMPWEuF5J3L+KWrlH4XGR3UoVo4Ne8bwhhHXbpf+DxDqOeW2jBFupXCQ==}
 
-  discord.js@14.26.3:
-    resolution: {integrity: sha512-XEKtYn28YFsiJ5l4fLRyikdbo6RD5oFyqfVHQlvXz2104JhH/E8slN28dbky05w3DCrJcNVWvhVvcJCTSl/KIg==}
+  discord.js@14.26.4:
+    resolution: {integrity: sha512-4oBp8tc6Kf8IDBwAHhbsMaAqx1b5fob9SNasZT7V6yyyUydoO5i5fGuX7TmvRtR+q/WgKRnRViRoAWnG7fNyvA==}
     engines: {node: '>=18'}
 
   djs-button-pages@4.0.1:
@@ -564,8 +564,8 @@ packages:
     resolution: {integrity: sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  eslint@10.2.0:
-    resolution: {integrity: sha512-+L0vBFYGIpSNIt/KWTpFonPrqYvgKw1eUI5Vn7mEogrQcWtWYtNQ7dNqC+px/J0idT3BAkiWrhfS7k+Tum8TUA==}
+  eslint@10.4.1:
+    resolution: {integrity: sha512-AyIKhnOBuOAdueD7RB3xB+YeAWScb9jHsJBgH2Hcde8InP5JYhqrRR6iTMHyTEwgENK54Cp44e4v8BwNhsuHuw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     hasBin: true
     peerDependencies:
@@ -664,8 +664,8 @@ packages:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
     deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-  globals@17.5.0:
-    resolution: {integrity: sha512-qoV+HK2yFl/366t2/Cb3+xxPUo5BuMynomoDmiaZBIdbs+0pYbjfZU+twLhGKp4uCZ/+NbtpVepH5bGCxRyy2g==}
+  globals@17.6.0:
+    resolution: {integrity: sha512-sepffkT8stwnIYbsMBpoCHJuJM5l98FUF2AnE07hfvE0m/qp3R586hw4jF4uadbhvg1ooIdzuu7CsfD2jzCaNA==}
     engines: {node: '>=18'}
 
   graceful-fs@4.2.11:
@@ -824,9 +824,9 @@ packages:
     resolution: {integrity: sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
-  node-web-audio-api@1.0.9:
-    resolution: {integrity: sha512-udyabeRtRcnxUx4XWvvSAvwTqsAUHAawiVWg0IHFSUAPD8m+5cAAL6RPXgF7BOHxPmJq2s77ceBF4tlG45K0/Q==}
-    engines: {node: '>= 14'}
+  node-web-audio-api@2.0.0:
+    resolution: {integrity: sha512-I8r10N26N4ssu7KbL70ywWZIVu5F6eSas/DO1wHWwLjiBSo7TKSOXgCVd0mfEvrewDY5vkmqGCUL3ix/iMr4yA==}
+    engines: {node: '>= 22'}
 
   nopt@5.0.0:
     resolution: {integrity: sha512-Tbj67rffqceeLpcRXrT7vKAN8CwfPeIBgM7E6iBkmKLV7bEMwpGgYLGv0jACUsECaa/vuxP0IjEont6umdMgtQ==}
@@ -852,8 +852,8 @@ packages:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
 
-  ora@9.3.0:
-    resolution: {integrity: sha512-lBX72MWFduWEf7v7uWf5DHp9Jn5BI8bNPGuFgtXMmr2uDz2Gz2749y3am3agSDdkhHPHYmmxEGSKH85ZLGzgXw==}
+  ora@9.4.0:
+    resolution: {integrity: sha512-84cglkRILFxdtA8hAvLNdMrtBpPNBTrQ9/ulg0FA7xLMnD6mifv+enAIeRmvtv+WgdCE+LPGOfQmtJRrVaIVhQ==}
     engines: {node: '>=20'}
 
   p-limit@3.1.0:
@@ -935,8 +935,8 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
-  semver@7.7.4:
-    resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
+  semver@7.8.1:
+    resolution: {integrity: sha512-rkVq3IXh+4FDGch+KwzX3aV9W3kO54GyEgpvBzSyctDA6Xtd7RJQV1xmXbeQp5v7+VzLOfVqiutSE6GICgPFvg==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -1055,9 +1055,9 @@ packages:
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
-  webidl-conversions@7.0.0:
-    resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
-    engines: {node: '>=12'}
+  webidl-conversions@8.0.1:
+    resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
+    engines: {node: '>=20'}
 
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
@@ -1140,7 +1140,7 @@ snapshots:
       nopt: 5.0.0
       npmlog: 5.0.1
       rimraf: 3.0.2
-      semver: 7.7.4
+      semver: 7.8.1
       tar: 6.2.1
     transitivePeerDependencies:
       - encoding
@@ -1205,7 +1205,7 @@ snapshots:
 
   '@djs-button-pages/presets@1.0.0':
     dependencies:
-      discord.js: 14.26.3
+      discord.js: 14.26.4
       djs-button-pages: 4.0.1(@djs-button-pages/presets@1.0.0)
     transitivePeerDependencies:
       - bufferutil
@@ -1227,9 +1227,9 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@eslint-community/eslint-utils@4.9.1(eslint@10.2.0)':
+  '@eslint-community/eslint-utils@4.9.1(eslint@10.4.1)':
     dependencies:
-      eslint: 10.2.0
+      eslint: 10.4.1
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
@@ -1242,7 +1242,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@eslint/config-helpers@0.5.5':
+  '@eslint/config-helpers@0.6.0':
     dependencies:
       '@eslint/core': 1.2.1
 
@@ -1250,13 +1250,13 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
-  '@eslint/js@10.0.1(eslint@10.2.0)':
+  '@eslint/js@10.0.1(eslint@10.4.1)':
     optionalDependencies:
-      eslint: 10.2.0
+      eslint: 10.4.1
 
   '@eslint/object-schema@3.0.5': {}
 
-  '@eslint/plugin-kit@0.7.1':
+  '@eslint/plugin-kit@0.7.2':
     dependencies:
       '@eslint/core': 1.2.1
       levn: 0.4.1
@@ -1282,7 +1282,7 @@ snapshots:
   '@notoiro/djs-button-pages@4.0.2(@djs-button-pages/presets@1.0.0)':
     dependencies:
       '@djs-button-pages/presets': 1.0.0
-      discord.js: 14.26.3
+      discord.js: 14.26.4
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -1560,7 +1560,7 @@ snapshots:
 
   discord-api-types@0.38.46: {}
 
-  discord.js@14.26.3:
+  discord.js@14.26.4:
     dependencies:
       '@discordjs/builders': 1.14.1
       '@discordjs/collection': 1.5.3
@@ -1582,7 +1582,7 @@ snapshots:
   djs-button-pages@4.0.1(@djs-button-pages/presets@1.0.0):
     dependencies:
       '@djs-button-pages/presets': 1.0.0
-      discord.js: 14.26.3
+      discord.js: 14.26.4
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -1607,14 +1607,14 @@ snapshots:
 
   eslint-visitor-keys@5.0.1: {}
 
-  eslint@10.2.0:
+  eslint@10.4.1:
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@10.2.0)
+      '@eslint-community/eslint-utils': 4.9.1(eslint@10.4.1)
       '@eslint-community/regexpp': 4.12.2
       '@eslint/config-array': 0.23.5
-      '@eslint/config-helpers': 0.5.5
+      '@eslint/config-helpers': 0.6.0
       '@eslint/core': 1.2.1
-      '@eslint/plugin-kit': 0.7.1
+      '@eslint/plugin-kit': 0.7.2
       '@humanfs/node': 0.16.7
       '@humanwhocodes/module-importer': 1.0.1
       '@humanwhocodes/retry': 0.4.3
@@ -1748,7 +1748,7 @@ snapshots:
       once: 1.4.0
       path-is-absolute: 1.0.1
 
-  globals@17.5.0: {}
+  globals@17.6.0: {}
 
   graceful-fs@4.2.11: {}
 
@@ -1882,11 +1882,11 @@ snapshots:
       fetch-blob: 3.2.0
       formdata-polyfill: 4.0.10
 
-  node-web-audio-api@1.0.9:
+  node-web-audio-api@2.0.0:
     dependencies:
       caller: 1.1.0
       node-fetch: 3.3.2
-      webidl-conversions: 7.0.0
+      webidl-conversions: 8.0.1
 
   nopt@5.0.0:
     dependencies:
@@ -1918,7 +1918,7 @@ snapshots:
       type-check: 0.4.0
       word-wrap: 1.2.5
 
-  ora@9.3.0:
+  ora@9.4.0:
     dependencies:
       chalk: 5.6.2
       cli-cursor: 5.0.0
@@ -1985,7 +1985,7 @@ snapshots:
 
   semver@6.3.1: {}
 
-  semver@7.7.4: {}
+  semver@7.8.1: {}
 
   set-blocking@2.0.0: {}
 
@@ -2110,7 +2110,7 @@ snapshots:
 
   webidl-conversions@3.0.1: {}
 
-  webidl-conversions@7.0.0: {}
+  webidl-conversions@8.0.1: {}
 
   whatwg-url@5.0.0:
     dependencies:
