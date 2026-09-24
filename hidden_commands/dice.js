@@ -1,5 +1,19 @@
 const app = require('../index.js');
+const crypto = require("crypto");
 
+function secureRoll(sides) {
+  const max = 0x100000000; // 2^32
+  const limit = max - (max % sides); // sides の倍数に収まる上限
+  const buf = new Uint32Array(1);
+
+  let x;
+  do {
+    crypto.getRandomValues(buf);
+    x = buf[0];
+  } while (x >= limit); // 偏りが出る範囲は捨てて振り直す
+
+  return (x % sides) + 1;
+}
 
 // 例: "1d6", "2d8+3", "3d6-1" などに対応
 function rollDiceCode(code) {
@@ -24,7 +38,7 @@ function rollDiceCode(code) {
   let total = 0;
 
   for (let i = 0; i < count; i++) {
-    const roll = Math.floor(Math.random() * sides) + 1;
+    const roll = secureRoll(sides);
     rolls.push(roll);
     total += roll;
   }
