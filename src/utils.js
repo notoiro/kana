@@ -1,4 +1,4 @@
-const emoji_regex = require('emoji-regex');
+const emoji_regex = require('emoji-regex').default;
 
 const is_debug = !(process.env.NODE_ENV === "production");
 
