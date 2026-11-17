@@ -28,6 +28,14 @@ const SKIP_PREFIX = "s";
 
 const { TOKEN, PREFIX, IS_PONKOTSU, HIDDEN_COMMAND_PREFIX, check_deprecated } = require('./config.js');
 
+const count_humans = (channel) => channel?.members.filter(m => !m.user.bot).size ?? 0;
+async function resolve_text_ids(guild, id){
+  const ch = await guild.channels.fetch(id).catch(() => null);
+  if(!ch) return null;
+  if(ch.type !== ChannelType.GuildCategory) return [id];
+  return [...ch.children.cache.filter(c => c.type === ChannelType.GuildText).keys()];
+}
+
 module.exports = class App{
   #priority_list = [ "最初", "普通より前", "普通", "普通より後", "最後" ];
 
@@ -792,103 +800,59 @@ module.exports = class App{
     this.autojoin_check(old_s, new_s);
   }
 
+  
   join_or_leave_announc(old_s, new_s){
     const guild_id = new_s.guild.id;
     // 接続ないなら抜ける
     const connection = this.connections_map.get(guild_id);
     if(!connection) return;
 
+    // ミュート等のチャンネル移動なしの更新は無視
+    if(old_s.channelId === new_s.channelId) return;
+
+    const is_join = new_s.channelId === connection.voice;
+    const is_leave = old_s.channelId === connection.voice;
+    if(!is_join && !is_leave) return; // 監視対象外
+
     const member = new_s.member;
-    // NOTE: ボットが最後に抜けた場合や、ボットだけVCに残ってる状態に対応できていない
-    if(member.user.bot) return;
+    if(member.user.bot) return; // 自分を含むボットは無視
 
-    const new_voice_id = new_s.channelId;
-    const old_voice_id = old_s.channelId;
-
-    // 現在の監視対象じゃないなら抜ける
-    if((connection.voice !== new_voice_id) && (connection.voice !== old_voice_id) && (old_voice_id === new_voice_id)) return;
-
-    const is_join = (new_s.channelId === connection.voice);
-    const is_leave = (old_s.channelId === connection.voice);
-
-    if(is_leave && old_s.channel && old_s.channel.members && old_s.channel.members.size === 1){
-      const d_connection = getVoiceConnection(guild_id);
-      d_connection.destroy();
-
+    // 人間が誰もいなくなった(ボットだけ残った)ら切断
+    if(is_leave && count_humans(old_s.channel) === 0){
+      getVoiceConnection(guild_id)?.destroy();
       return;
     }
 
-    if(!Utils.xor(is_join, is_leave)) return;
-
-    let text = "にゃーん";
-    if(is_join){
-      text = `${this.get_username(guild_id, member.id, member)}さんが入室しました`;
-    }else if(is_leave){
-      text = `${this.get_username(guild_id, member.id, member)}さんが退出しました`;
-    }
-
-    this.add_system_message(text, guild_id, member.id);
+    const name = this.get_username(guild_id, member.id, member);
+    this.add_system_message(`${name}さんが${is_join ? "入室" : "退出"}しました`, guild_id, member.id);
   }
 
   async autojoin_check(old_s, new_s){
     this.logger.debug('state change');
     const guild_id = new_s.guild.id;
 
-    // 設定の登録がない場合は抜ける
-    const autojoin_conf = this.autojoin_map.get(guild_id);
-    if(!autojoin_conf) return;
-    // 接続あるなら抜ける
-    const connection = this.connections_map.get(guild_id);
-    if(connection) return;
+    // 設定がない / すでに接続中 / ボットなら抜ける
+    const conf = this.autojoin_map.get(guild_id);
+    if(!conf) return;
+    if(this.connections_map.has(guild_id)) return;
+    if(new_s.member.user.bot) return;
 
-    const member = new_s.member;
-    if(member.user.bot) return;
+    // どこのVCにもいない状態からの入室のみ対象
+    const voice_id = new_s.channelId;
+    if(old_s.channelId || !voice_id) return;
 
-    const new_voice_id = new_s.channelId;
-    const old_voice_id = old_s.channelId;
-
-    // 接続先が設定に含まれていなければ抜ける
-    if(!Object.keys(autojoin_conf).find(v => v === new_voice_id)) return;
-
-    // 1人目だったら参加する
-
-    if(new_voice_id === old_voice_id) return;
-
-    if(!(!old_s.channel && new_s.channel && new_s.channel.members && new_s.channel.members.size === 1)){
-      return;
-    }
+    // 接続先が設定に含まれていて、1人目のときだけ参加する
+    if(!Object.hasOwn(conf, voice_id)) return;
+    if(count_humans(new_s.channel) !== 1) return;
 
     // TODO: 接続できない場合のなんらかの意思表示
-    if(!new_s.channel.joinable) return;
-    if(!new_s.channel.speakable) return;
+    if(!new_s.channel.joinable || !new_s.channel.speakable) return;
 
-    const connect_id = autojoin_conf[new_voice_id];
-
-    let connect_channel;
-    try{
-      connect_channel = await new_s.guild.channels.fetch(connect_id);
-    }catch(e){
-      return;
-    }
-
-    let texts = [];
-    if(connect_channel.type === ChannelType.GuildCategory){
-      for(let c of connect_channel.children.valueOf()){
-        let val = c[1];
-
-        if(val.type === ChannelType.GuildText) texts.push(c[0]);
-      }
-    }else{
-      texts.push(connect_id);
-    }
-
-    const data = {
-      voice_id: new_voice_id,
-      text_ids: texts,
-    }
+    const text_ids = await resolve_text_ids(new_s.guild, conf[voice_id]);
+    if(!text_ids) return;
 
     try{
-      await this._connect_vc(guild_id, data);
+      await this._connect_vc(guild_id, { voice_id, text_ids });
     }catch(_){
       // do not
     }
