@@ -13,6 +13,7 @@ const log4js = require('log4js');
 const { VMLError, VMLParseError } = require('vml');
 const { Readable } = require('stream');
 const crypto = require("crypto");
+const ora = require("ora").default;
 
 const VoiceEngines = require('./voice_engines.js');
 const YomiParser = require('./yomi_parser/index.js');
@@ -72,7 +73,6 @@ module.exports = class App{
 
   async setup_resources(){
     console.log("Preparing resources...");
-    const { default: ora } = await import('ora');
     const spinner = ora({ text: 'Initializing voice engines...', spinner: 'dots' }).start();
 
     try {
@@ -799,6 +799,7 @@ module.exports = class App{
     if(!connection) return;
 
     const member = new_s.member;
+    // NOTE: ボットが最後に抜けた場合や、ボットだけVCに残ってる状態に対応できていない
     if(member.user.bot) return;
 
     const new_voice_id = new_s.channelId;
